@@ -51,35 +51,74 @@ input[type=search],input[type=text]{width:100%}
 #speedBox{display:inline-flex;align-items:center;gap:4px}
 #speed{width:80px}
 
-/* バトルステージ */
+/* バトルステージ(前作のUIをベースに刷新) */
 .stage{margin:14px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
 .stagehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .stagehead h2{font-size:16px}
-.arena{display:grid;grid-template-columns:1fr 90px 1fr;gap:10px;align-items:start}
-.side{position:relative;border:2px solid var(--line);border-radius:10px;padding:8px 10px;transition:border-color .2s,background .2s}
-.side .rk{font-size:12px;color:var(--accent2);font-weight:700}
-.side .nm{font-family:var(--mincho);font-size:19px;font-weight:700;overflow-wrap:anywhere}
-.side .cond{font-size:12px;margin:2px 0 4px;color:var(--dim)}
-.side .cond[data-c="1.2"]{color:var(--accent);font-weight:700}
-.side .cond[data-c="0.8"]{color:var(--bad)}
-.side .st{font-size:11px;color:var(--dim);margin-top:4px}
-.bar{height:14px;background:var(--chip);border-radius:7px;overflow:hidden;border:1px solid var(--line)}
-.bar i{display:block;height:100%;width:100%;background:var(--bar);transition:width .25s}
-.bar i[data-lv=mid]{background:var(--barmid)} .bar i[data-lv=lo]{background:var(--barlow)}
-.hpt{font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
-.side.win{border-color:var(--good);background:color-mix(in srgb,var(--good) 10%,var(--panel))}
-.side.lose{opacity:.65}
+.duel{position:relative;border-radius:12px;overflow:hidden;padding:12px 10px 12px;color:#fff;
+  background:var(--stage-bg,linear-gradient(180deg,#7ea6ee 0%,#a9c6f4 52%,#c9d6e6 100%));background-size:cover;background-position:center}
+.arena{display:grid;grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);gap:10px;align-items:start}
+.side{position:relative;display:flex;flex-direction:column;gap:5px;min-width:0;max-width:360px;width:100%;cursor:pointer;transition:opacity .25s}
+#sideR{margin-left:auto}
+.who{display:flex;align-items:baseline;justify-content:center;gap:4px;flex-wrap:wrap;background:rgba(12,24,60,.5);border-radius:8px;padding:3px 8px;text-align:center}
+.who .rk{font-size:13px;font-weight:800;color:color-mix(in srgb,var(--dc,#ccc) 45%,#fff)}
+.who .nm{font-size:clamp(16px,2.6vw,22px);font-weight:800;overflow-wrap:anywhere;text-shadow:0 1px 3px #0008}
+.who .mv{font-size:15px;font-weight:900;color:#5dff9a}.who .mv.dn{color:#ff8a80}
+.cond{text-align:center;font-size:12px;text-shadow:0 1px 3px #000a}
+.cond[data-c="1.2"]{color:#ffe27a;font-weight:700}.cond[data-c="0.8"]{color:#ffb4ab}
+.hpt{text-align:center;font-weight:800;font-size:clamp(13px,2.2vw,18px);font-variant-numeric:tabular-nums;text-shadow:0 1px 3px #000a}
+.bar{height:18px;background:rgba(18,18,22,.88);border-radius:99px;overflow:hidden;border:2px solid #111}
+.bar i{display:block;height:100%;width:100%;background:linear-gradient(180deg,#9bff5a,#5fd23a);transition:width .25s}
+.bar i[data-lv=mid]{background:linear-gradient(180deg,#ffd35a,#d9a21b)} .bar i[data-lv=lo]{background:linear-gradient(180deg,#ff6a5a,#c4372b)}
+.portrait{position:relative;width:100%;aspect-ratio:1/1;border:6px solid var(--fr,#efe2c2);background:#1b1b22;border-radius:3px;box-shadow:0 3px 10px #0004}
+.portrait[data-tier=top]{--fr:#f5c542}.portrait[data-tier=sen]{--fr:#9db8ee}.portrait[data-tier=toshi]{--fr:#79d3cf}
+.portrait[data-tier=top]::before,.portrait[data-tier=top]::after{content:"✨";position:absolute;top:-17px;font-size:17px;animation:twk 1.6s infinite alternate;pointer-events:none}
+.portrait[data-tier=top]::before{left:-8px}.portrait[data-tier=top]::after{right:-8px;animation-delay:.6s}
+@keyframes twk{from{opacity:.35;transform:scale(.8)}to{opacity:1;transform:scale(1.15)}}
+.pimg{position:absolute;inset:0;overflow:hidden}
+.pimg img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .3s}
+.pimg .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mincho);font-size:clamp(48px,9vw,96px);font-weight:700;color:#ffffffd0;text-shadow:0 2px 8px #0006}
+.vm{position:absolute;top:10%;bottom:10%;width:14px;background:rgba(18,18,22,.78);border:2px solid #111;border-radius:99px;overflow:hidden;transition:opacity .2s}
+#sideL .vm{right:6px}#sideR .vm{left:6px}
+.vm.off{opacity:.18}
+.vm i{position:absolute;left:0;right:0;bottom:0;height:0;background:#3a1cff;transition:height .25s}
+.vm i[data-full="1"]{background:#ff9d1c;animation:glow 1s infinite alternate}
+.spt{align-self:center;font-size:11px;color:#ffe27a;border:1px solid #ffe27a;border-radius:99px;padding:0 8px;background:rgba(12,24,60,.45)}
+.chips{display:flex;gap:2px}
+.chips span{flex:1 1 0;min-width:0;height:26px;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  background:#454545;border:2px solid #1c1c1c;font-size:min(11px,2.5vw);font-weight:800;color:transparent}
+.chips span.w{background:#f8dd55;border-color:#ee9a2c;color:#e98a14}
+.chips span.l{background:#8c4fe0;border-color:#5a2ca8;color:#3a1478}
+.chips span.now{border-color:#fff;animation:glow .7s infinite alternate}
+.side .st{font-size:11px;text-align:center;text-shadow:0 1px 3px #000a}
+.side.win .portrait{--fr:#ffd23f;box-shadow:0 0 0 3px #ffd23f66,0 3px 14px #0006}
+.side.lose .pimg img,.side.lose .pimg .ph{filter:grayscale(.85) brightness(.75)}
 .side.hit{animation:shake .28s}
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
-.mid{text-align:center;padding-top:14px}
-.mid .vs{font-family:var(--mincho);font-size:24px;color:var(--accent);font-weight:700}
-.mid .turn{font-size:12px;color:var(--dim)} .mid .res{font-size:12px;font-weight:700;margin-top:4px}
-.pop{position:absolute;right:10px;top:6px;font-weight:800;font-size:18px;pointer-events:none;animation:up .9s forwards}
-.pop.ph{color:var(--accent)} .pop.pc{color:#e08a00;font-size:24px} .pop.pm{color:var(--dim);font-size:14px}
+.mid{text-align:center;padding-top:6px;text-shadow:0 2px 6px #0007}
+#duelBasho{font-size:12px;opacity:.95}
+#duelDay{font-size:clamp(26px,5vw,42px);font-weight:900;line-height:1.1;font-family:var(--mincho)}
+#duelSub{font-size:11px;opacity:.9}
+.mid .vs{font-family:var(--mincho);font-size:24px;color:#ffe27a;font-weight:800;margin-top:10px}
+.mid .turn{font-size:12px} .mid .res{font-size:12px;font-weight:700;margin-top:4px}
+.pop{position:absolute;right:8px;top:6px;font-weight:800;font-size:18px;pointer-events:none;animation:up .9s forwards;z-index:3;text-shadow:0 1px 3px #000c}
+.pop.ph{color:#ff5a4d} .pop.pc{color:#ffb020;font-size:26px} .pop.pm{color:#e6e6e6;font-size:15px}
+.pop.pcrit,.pop.pspec{left:0;right:0;top:auto;bottom:8px;text-align:center;font-size:clamp(20px,4.6vw,40px);font-weight:900;font-style:italic;
+  color:transparent;background:linear-gradient(90deg,#ff3b3b,#c030d0);-webkit-background-clip:text;background-clip:text;text-shadow:none;-webkit-text-stroke:1.5px #fff;filter:drop-shadow(0 1px 2px #000c);animation-duration:1.1s}
+.pop.pspec{background:linear-gradient(90deg,#ffd23f,#ff7a1c)}
 @keyframes up{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-28px)}}
+.gameset{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;
+  padding:10px 14px;background:rgba(24,36,232,.93);cursor:pointer;animation:gsin .35s}
+@keyframes gsin{from{opacity:0;transform:translateY(-50%) scaleY(.2)}to{opacity:1;transform:translateY(-50%) scaleY(1)}}
+.gsn{text-align:center;min-width:0}
+.gsn .n{font-size:clamp(13px,2.6vw,24px);font-weight:800;overflow-wrap:anywhere}
+.gsn .r{font-size:clamp(20px,5vw,44px);font-weight:900;line-height:1.1}
+.gsn.w{color:#ff4a3a}.gsn.l{color:#c8c8c8}
+.gst{font-size:clamp(26px,6vw,56px);font-weight:900;line-height:.95;text-align:center;color:#6bff3a;text-shadow:0 2px 0 #0a6a00,0 0 12px #0008}
 .feed{margin-top:10px;height:116px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px}
 .feed .crit{color:#e08a00;font-weight:700} .feed .miss{color:var(--dim)}
-.idle .arena{opacity:.35}
+.idle .arena{opacity:.45}
+.pfimg{display:block;width:100%;max-width:220px;aspect-ratio:1/1;object-fit:cover;border-radius:10px;margin:8px auto;border:3px solid var(--line)}
 
 /* タブ */
 .tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin-top:6px}
@@ -143,10 +182,9 @@ code{font-size:11px;word-break:break-all}
 .mbar i[data-full="1"]{background:#e08a00;animation:glow 1s infinite alternate}
 @keyframes glow{from{opacity:.65}to{opacity:1}}
 .spt{display:inline-block;margin-top:4px;font-size:11px;color:var(--accent2);border:1px solid var(--accent2);border-radius:99px;padding:0 8px}
-.side{cursor:pointer}
-.side.cast{animation:cast .7s;border-color:#e08a00}
+.side.cast .portrait{animation:cast .7s}
 @keyframes cast{0%{box-shadow:0 0 0 0 #e08a0099}60%{box-shadow:0 0 0 12px #e08a0000}100%{box-shadow:none}}
-.pop.ps{color:#c0301f;font-size:28px} .pop.pg{color:var(--good);font-size:20px} .pop.pf{color:#4a7fd1;font-size:16px}
+.pop.ps{color:#ff6a3d;font-size:28px} .pop.pg{color:#6dff9c;font-size:20px} .pop.pf{color:#bcd4ff;font-size:16px}
 .feed .trig{color:#e08a00;font-weight:800} .feed .fx{color:#4a7fd1} .feed .spk{color:#c0301f;font-weight:700} .feed .heal{color:var(--good)}
 .sp{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:8px 0}
 .sp ul{margin:4px 0 0;padding-left:18px;font-size:13px}
@@ -155,7 +193,9 @@ code{font-size:11px;word-break:break-all}
 
 @media(max-width:720px){
   .status{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .arena{grid-template-columns:1fr 1fr}.mid{grid-column:1/-1;order:3;padding:0;display:flex;gap:10px;justify-content:center;align-items:center}
+  .arena{grid-template-columns:1fr 1fr}.mid{grid-column:1/-1;order:-1;padding:0;display:flex;gap:4px 12px;flex-wrap:wrap;justify-content:center;align-items:baseline}.mid .vs{margin-top:0;font-size:18px}.vm{width:11px}
+  .who{min-height:50px;align-content:center}
+  .chips span{height:24px}.chips span.w,.chips span.l{font-size:0}.chips span.w::after,.chips span.l::after{content:attr(data-s);font-size:12px}
   .m{grid-template-columns:1fr 20px 18px 20px 1fr}.m .r{display:none}
   .stats{grid-template-columns:repeat(2,1fr)}
 }
@@ -191,10 +231,13 @@ code{font-size:11px;word-break:break-all}
 <main class="wrap">
   <section class="stage" id="stageBody">
     <div class="stagehead"><h2>本日の一番</h2><span><small class="dim" id="stNext"></small> <button id="bSkip">スキップ</button></span></div>
-    <div class="arena">
-      <div class="side" id="sideL"><div class="rk">-</div><div class="nm">-</div><div class="cond"></div><div class="bar"><i></i></div><div class="hpt"></div><div class="mt" hidden><span>メーター</span><div class="mbar"><i></i></div></div><div class="spt" hidden></div><div class="st"></div></div>
-      <div class="mid"><div class="vs">VS</div><div class="turn" id="turn"></div><div class="res" id="res"></div></div>
-      <div class="side" id="sideR"><div class="rk">-</div><div class="nm">-</div><div class="cond"></div><div class="bar"><i></i></div><div class="hpt"></div><div class="mt" hidden><span>メーター</span><div class="mbar"><i></i></div></div><div class="spt" hidden></div><div class="st"></div></div>
+    <div class="duel" id="duel">
+      <div class="arena">
+        <div class="side" id="sideL"></div>
+        <div class="mid"><div id="duelBasho"></div><div id="duelDay"></div><div id="duelSub"></div><div class="vs">VS</div><div class="turn" id="turn"></div><div class="res" id="res"></div></div>
+        <div class="side" id="sideR"></div>
+      </div>
+      <div class="gameset" id="gameset" hidden></div>
     </div>
     <div class="feed" id="feed"></div>
   </section>
@@ -257,16 +300,24 @@ const DIV_COLOR={大将:'#b3261e',副将:'#c4551b',先鋒:'#b8892b',旗頭:'#7d6
 const COND_LABEL={1.2:'絶好調',1.1:'好調',1:'普通',0.9:'不調',0.8:'絶不調'};
 
 const S={people:[],byId:new Map(),basho:null,history:[],logs:[],thirdStart:0,
-  settings:{superMode:false,special:true,meterRate:25,gateHp:true}};
+  settings:{superMode:false,special:true,meterRate:25,gateHp:true,mmT6:40,mmF5:20,mmF6:50}};
 
 function L(msg){S.logs.push(msg);if(S.logs.length>400)S.logs.shift();}
 function norm(x){return (x==='(null)'||x==='なし'||x==null)?'':x;}
+/* 画像URL: GitHubの表示ページ(.../blob/main/xxx.png)は画像ファイルではないので、直接読み込める raw 形式に変換する */
+function imgUrl(u){
+  u=norm(String(u==null?'':u).trim());
+  if(!u)return '';
+  const m=u.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/(?:blob|raw)\/(.+)$/);
+  if(m)return `https://raw.githubusercontent.com/${m[1]}/${m[2]}/${m[3]}`;
+  return /^https?:\/\//.test(u)?u:'';
+}
 
 /* ---------- データ初期化 ---------- */
 function mkPerson(r){
   return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
-    fav:norm(r[8]),bad:norm(r[9]),inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,
-    div:'',slot:0,pk:0,w:0,l:0,met:[],rec:[],titles:[],tsuna:false,demoted:false};
+    fav:norm(r[8]),bad:norm(r[9]),inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),
+    div:'',slot:0,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false};
 }
 function initPeople(rows){
   rows=rows||DATA;
@@ -285,6 +336,21 @@ function initPeople(rows){
   S.history=[];S.logs=[];
   startBasho(1);
 }
+/* 番付・優勝記録などの変動データを手動でリセットする。
+   全員を上等兵以下に落とし、能力評価値(大きい順)に上等兵1から順に埋める。
+   キャラクターのデータ・設定・観戦リストは変更しない。 */
+function resetProgress(){
+  const list=S.people.slice().sort((a,b)=>b.ab-a.ab||a.id-b.id);
+  list.forEach(p=>{
+    p.pre=false;p.demoted=false;p.tsuna=false;
+    p.w=0;p.l=0;p.met=[];p.res=[];p.rec=[];p.titles=[];
+  });
+  layout(list,'上等兵');
+  S.people.forEach(p=>p.pk=p.slot);
+  S.history=[];S.logs=[];
+  startBasho(1);
+  L(`番付・記録をリセット: ${list.length}人を能力評価値順に上等兵1から配置`);
+}
 function nameKey(s){return String(s).replace(/[\s\u3000]/g,'');}
 function pname(id){const p=S.byId.get(id);return p?p.name:(S.retired[id]||'(不明)');}
 /* キャラクターデータの更新を進行中のゲームへ反映する(場所の合間のみ呼ぶこと)。
@@ -298,7 +364,7 @@ function applyRoster(rows){
     if(p){
       keep.add(p);
       p.name=r[1];p.hp=r[2];p.pw=r[3];p.gd=r[4];p.iq=r[5];p.ab=r[6];
-      p.fav=norm(r[8]);p.bad=norm(r[9]);p.inc=r[10];p.cmd=r[11]||'';p.com=r[13]||0;p.gaku=r[14]||0;
+      p.fav=norm(r[8]);p.bad=norm(r[9]);p.inc=r[10];p.cmd=r[11]||'';p.com=r[13]||0;p.gaku=r[14]||0;p.img=imgUrl(r[15]);
     }else{
       const np=mkPerson(r);
       np.div='前相撲';np.slot=9999;np.pre=true;np.pk=9999;
@@ -321,9 +387,10 @@ function applyRoster(rows){
 }
 
 /* 並び順(良い順)から番付枠へ流し込む。1枚につき2人(東西) */
-function layout(list){
+function layout(list,fromDiv){
   let idx=0;
-  for(const [name,start,cap] of LAYOUT){
+  const fi=fromDiv?LAYOUT.findIndex(x=>x[0]===fromDiv):0;
+  for(const [name,start,cap] of LAYOUT.slice(Math.max(0,fi))){
     for(let k=0;k<cap&&idx<list.length;k++,idx++){
       const p=list[idx];p.div=name;p.slot=start+Math.floor(k/2);p.pre=false;p.demoted=false;
     }
@@ -364,34 +431,227 @@ function met(a,b){return a.met.includes(b.id);}
 function ordKey(p){return rankSortKey(p)*10000-p.ab;}   // 小さいほど上位
 function sortRank(list){return list.slice().sort((a,b)=>ordKey(a)-ordKey(b)||a.id-b.id);}
 
-function foldPairs(list,rot){
-  let arr=list.slice(),parts=[arr];
-  if(arr.length>19){const k=Math.floor(arr.length/3);parts=[arr.slice(0,k),arr.slice(k,2*k),arr.slice(2*k)];}
-  for(let i=0;i<parts.length-1;i++)if(parts[i].length%2)parts[i+1].unshift(parts[i].pop());
-  const pairs=[];
-  for(let part of parts){
-    if(part.length>1&&rot){const r=rot%part.length;part=part.slice(r).concat(part.slice(0,r));}
-    const rest=part.slice();
-    while(rest.length>1){
-      const x=rest.shift();let k=rest.length-1;
-      while(k>=0&&met(x,rest[k]))k--;
-      if(k<0)k=rest.length-1;
-      pairs.push([x,rest.splice(k,1)[0]]);
+/* =====================================================================
+   取組編成エンジン(取組編成ロジック仕様表 v1.1 準拠)
+   処理の流れ(仕様書§21):
+     出場者取得 → 固定対戦(7日目) → ハード禁止判定 isMatchAllowed
+     → 解禁抽選 → rank_fit/record_fit → 重要対戦ボーナス・再戦ペナルティ
+     → 全体マッチング(個別に最善手を選ばず、ペア全体の合計点を最大化)
+   ===================================================================== */
+const MM={
+  // 基本ウェイト [番付適合度, 成績適合度] ×日数(仕様書§6)。キーはClass(1:大将 2:副将・先鋒・旗頭 3:戦士 4:闘士 5:上等兵以下)
+  W:{
+    1:[[90,10],[85,15],[80,20],[70,30],[55,45],[35,65],[20,80]],
+    2:[[85,15],[80,20],[75,25],[65,35],[50,50],[35,65],[20,80]],
+    3:[[65,35],[60,40],[55,45],[50,50],[45,55],[30,70],[20,80]],
+    4:[[55,45],[50,50],[45,55],[40,60],[30,70],[20,80],[10,90]],
+    5:[[60,40],[50,50],[40,60],[25,75],[10,90]]
+  },
+  REC_FIT:[100,75,45,20,5],                                   // 勝ち数差0,1,2,3,4以上(§8)
+  RANK_FIT:[[2,100],[5,90],[10,75],[20,55],[30,35],[50,20]],  // 番付距離の上限→適合度。51以上は5(§9)
+  ADJ:70, FAR:25,                                             // 隣接クラス / 2クラス以上離れ(§10)
+  // 重要対戦ボーナス(§18)。T=大将 F=副将 S=先鋒
+  BONUS:{TT:{5:70,6:90,7:200},TF:{5:50,6:75,7:120},FF:{5:50,6:75,7:110},
+         TS:{5:30,6:45,7:70},FS:{5:25,6:40,7:60},SS:{5:20,6:35,7:50}},
+  REMATCH1:-1000, REMATCH2:-3000,                             // 再戦ペナルティ(§19)
+  NOISE:3,                                                    // ランダム補正 ±3(§23)
+  RESTARTS:4,
+  DEF:{mmT6:40,mmF5:20,mmF6:50}                               // 解禁確率の初期値(%)(§14,§15)。設定画面で変更可
+};
+const isTaisho=p=>p.div==='大将';
+const isFukusho=p=>p.div==='副将';
+const isSenpo=p=>p.div==='先鋒';
+const isHatagashira=p=>p.div==='旗頭';
+const isSanyakuUp=p=>isTaisho(p)||isFukusho(p)||isSenpo(p);      // 先鋒以上
+const isTaishoOrFukusho=p=>isTaisho(p)||isFukusho(p);
+function topKind(p){return p.div==='大将'?'T':p.div==='副将'?'F':p.div==='先鋒'?'S':'';}
+function mmClass(p){
+  switch(p.div){
+    case '大将':return 1;
+    case '副将':case '先鋒':case '旗頭':return 2;
+    case '戦士':return 3;
+    case '闘士':return 4;
+    default:return 5; // 上等兵・一等兵・二等兵・三等兵・前相撲
+  }
+}
+function mmProb(key){const v=+S.settings[key];return Number.isFinite(v)&&S.settings[key]!==''&&S.settings[key]!=null?Math.max(0,Math.min(100,v)):MM.DEF[key];}
+function topPairKey(a,b){
+  const ka=topKind(a),kb=topKind(b);if(!ka||!kb)return '';
+  const o={T:0,F:1,S:2};return o[ka]<=o[kb]?ka+kb:kb+ka;
+}
+
+/* その日・その取組グループの文脈(大将/副将の人数と解禁抽選結果) */
+function mmContext(list,day,notes){
+  const nT=list.filter(isTaisho).length,nF=list.filter(isFukusho).length;
+  const ul={T6:false,F5:false,F6:false,info:[]};
+  const lot=(flag,label,key)=>{
+    const p=mmProb(key),ok=Math.random()*100<p;ul[flag]=ok;
+    const s=`${label} 解禁確率${p}% → ${ok?'解禁':'解禁せず'}`;ul.info.push(s);notes&&notes.push(s);
+  };
+  if(nT>=3&&day===6)lot('T6','大将3人以上・6日目','mmT6');
+  if(nF>=3&&day===5)lot('F5','副将3人以上・5日目','mmF5');
+  if(nF>=3&&day===6)lot('F6','副将3人以上・6日目','mmF6');
+  return {nT,nF,unlock:ul};
+}
+
+/* isMatchAllowed の本体: 許可なら null、禁止なら理由の文字列を返す(§12〜§16,§25) */
+function mmHard(a,b,day,ctx){
+  const k=topPairKey(a,b);if(!k)return null;            // 先鋒以上同士でなければ制限なし
+  if(day<=3)return '先鋒以上同士は1〜3日目禁止';
+  if(k==='TT'){
+    if(ctx.nT===2)return day===7?null:'大将2人: 大将同士は7日目に固定(温存)';
+    if(day<=5)return `大将${ctx.nT}人: 大将同士は1〜5日目禁止`;
+    if(day===6)return ctx.unlock.T6?null:`大将${ctx.nT}人: 6日目の解禁抽選に外れ`;
+    return null;
+  }
+  if(k==='FF'){
+    if(ctx.nF===2)return day===7?null:'副将2人: 副将同士は7日目に固定(温存)';
+    if(day<=4)return `副将${ctx.nF}人: 副将同士は1〜4日目禁止`;
+    if(day===5)return ctx.unlock.F5?null:`副将${ctx.nF}人: 5日目の解禁抽選に外れ`;
+    if(day===6)return ctx.unlock.F6?null:`副将${ctx.nF}人: 6日目の解禁抽選に外れ`;
+    return null;
+  }
+  if(k==='TF')return day<=4?'大将↔副将は1〜4日目禁止':null;
+  return null;                                           // 大将/副将/先鋒↔先鋒は4日目から解禁
+}
+function isMatchAllowed(a,b,day,ctx){return mmHard(a,b,day,ctx)===null;}
+
+/* 通常スコア(§7〜§10,§18,§19)。禁止判定は呼び出し側で先に行うこと */
+function mmEval(a,b,day,ctx){
+  const ca=mmClass(a),cb=mmClass(b);
+  let rf,dist=null;
+  if(ca!==cb)rf=Math.abs(ca-cb)===1?MM.ADJ:MM.FAR;
+  else{dist=Math.abs(a.slot-b.slot);rf=5;for(const [mx,v] of MM.RANK_FIT)if(dist<=mx){rf=v;break;}}
+  const diff=Math.abs(a.w-b.w),cf=MM.REC_FIT[Math.min(diff,MM.REC_FIT.length-1)];
+  const tbl=MM.W[Math.min(ca,cb)],[rw,cw]=tbl[Math.min(day,tbl.length)-1];   // 上位クラス側の表を使う
+  const base=(rf*rw+cf*cw)/100;
+  const k=topPairKey(a,b);
+  const bonus=(k&&MM.BONUS[k]&&MM.BONUS[k][day])||0;
+  const n=a.met.filter(x=>x===b.id).length;
+  const rem=n===0?0:n===1?MM.REMATCH1:MM.REMATCH2;
+  return {rf,cf,rw,cw,dist,diff,base,bonus,rem,final:base+bonus+rem};
+}
+
+/* 7日目の固定・最優先対戦(§14〜§17,§26,§27) */
+function mmFixed(list,day,ctx){
+  const fx=[];if(day!==7)return fx;
+  const T=list.filter(isTaisho),F=list.filter(isFukusho);
+  const best=arr=>{
+    let r=null;
+    for(let i=0;i<arr.length;i++)for(let j=i+1;j<arr.length;j++){
+      if(mmHard(arr[i],arr[j],day,ctx))continue;
+      const e=mmEval(arr[i],arr[j],day,ctx);
+      if(!r||e.final>r.e.final)r={a:arr[i],b:arr[j],e};
     }
-  }
-  return pairs;
+    return r;
+  };
+  if(T.length===2)fx.push({a:T[0],b:T[1],tier:0,why:'大将2人 → 7日目の大将同士は固定(Tier0)'});
+  else if(T.length>=3){const x=best(T);if(x)fx.push({a:x.a,b:x.b,tier:1,why:`大将${T.length}人 → 7日目の大将同士を最優先で1組確保(Tier1)`});}
+  if(F.length===2)fx.push({a:F[0],b:F[1],tier:0,why:'副将2人 → 7日目の副将同士は固定(Tier0)'});
+  else if(F.length>=3){const x=best(F);if(x)fx.push({a:x.a,b:x.b,tier:2,why:`副将${F.length}人 → 7日目の副将同士を高優先で1組確保(Tier2)`});}
+  return fx;
 }
-function swissPairs(list){
-  const rest=list.slice().sort((a,b)=>b.w-a.w||a.l-b.l||ordKey(a)-ordKey(b));
-  const pairs=[];
-  while(rest.length>1){
-    const x=rest.shift();let k=0;
-    while(k<rest.length&&met(x,rest[k]))k++;
-    if(k>=rest.length)k=0;
-    pairs.push([x,rest.splice(k,1)[0]]);
+
+/* 全体マッチング: 重み行列W(null=禁止)から合計点が最大になるペアの組を求める。
+   貪欲法(高得点順)で初期解を作り、2組の相手を入れ替える改善(2-opt)で磨く。数回やり直して最良を採用。 */
+function mmSolve(n,W){
+  let m=0;
+  for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(W[i][j]!=null)m++;
+  const ci=new Int32Array(m),cj=new Int32Array(m),cs=new Float64Array(m);
+  for(let i=0,k=0;i<n;i++)for(let j=i+1;j<n;j++)if(W[i][j]!=null){ci[k]=i;cj[k]=j;cs[k]=W[i][j];k++;}
+  const fixLeft=mate=>{
+    for(;;){
+      const L=[];for(let i=0;i<n;i++)if(mate[i]===-1)L.push(i);
+      if(L.length<2)return;
+      let best=null;
+      const x=L[0];
+      for(const y of L){ // 余り同士で組む
+        if(y!==x&&W[x][y]!=null&&(!best||W[x][y]>best.s))best={s:W[x][y],t:0,y};
+      }
+      for(const y of L){ // 既存のペア(u,v)を解いて (x,u)+(y,v) / (x,v)+(y,u) に組み直す
+        if(y===x)continue;
+        for(let u=0;u<n;u++){
+          const v=mate[u];if(v<0||u>v)continue;
+          if(W[x][u]!=null&&W[y][v]!=null){const s=W[x][u]+W[y][v]-W[u][v];if(!best||s>best.s)best={s,t:1,y,u,v,o:0};}
+          if(W[x][v]!=null&&W[y][u]!=null){const s=W[x][v]+W[y][u]-W[u][v];if(!best||s>best.s)best={s,t:1,y,u,v,o:1};}
+        }
+      }
+      if(!best){mate[x]=-2;continue;}            // どうしても組めない人は一旦保留
+      if(best.t===0){mate[x]=best.y;mate[best.y]=x;}
+      else{
+        const {y,u,v,o}=best;
+        if(o===0){mate[x]=u;mate[u]=x;mate[y]=v;mate[v]=y;}
+        else{mate[x]=v;mate[v]=x;mate[y]=u;mate[u]=y;}
+      }
+    }
+  };
+  const improve=mate=>{
+    for(let pass=0,ch=true;ch&&pass<40;pass++){
+      ch=false;
+      for(let a=0;a<n;a++){
+        if(mate[a]<a)continue;                       // 各ペアは小さい番号側からだけ調べる
+        for(let c=a+1;c<n;c++){
+          const b=mate[a],d=mate[c];
+          if(d<c||b===c)continue;                    // d<c は 保留(負)または相方が先に調べた側
+          const cur=W[a][b]+W[c][d];let bs=cur,opt=0;
+          if(W[a][c]!=null&&W[b][d]!=null){const s=W[a][c]+W[b][d];if(s>bs+1e-9){bs=s;opt=1;}}
+          if(W[a][d]!=null&&W[b][c]!=null){const s=W[a][d]+W[b][c];if(s>bs+1e-9){bs=s;opt=2;}}
+          if(opt===1){mate[a]=c;mate[c]=a;mate[b]=d;mate[d]=b;ch=true;}
+          else if(opt===2){mate[a]=d;mate[d]=a;mate[b]=c;mate[c]=b;ch=true;}
+        }
+      }
+    }
+  };
+  let bestRes=null;
+  for(let r=0;r<MM.RESTARTS;r++){
+    const key=new Float64Array(m);
+    for(let k=0;k<m;k++)key[k]=cs[k]+(r===0?0:Math.random()*15);
+    const order=new Uint32Array(m);for(let k=0;k<m;k++)order[k]=k;
+    order.sort((x,y)=>key[y]-key[x]);
+    const mate=new Array(n).fill(-1);
+    for(let t=0;t<m;t++){const k=order[t],i=ci[k],j=cj[k];if(mate[i]===-1&&mate[j]===-1){mate[i]=j;mate[j]=i;}}
+    fixLeft(mate);improve(mate);
+    let tot=0,left=0;
+    for(let i=0;i<n;i++){if(mate[i]<0)left++;else if(mate[i]>i)tot+=W[i][mate[i]];}
+    if(!bestRes||left<bestRes.left||(left===bestRes.left&&tot>bestRes.tot))bestRes={mate:mate.slice(),tot,left};
   }
-  return pairs;
+  const pairs=[],left=[];
+  bestRes.mate.forEach((m,i)=>{if(m>i)pairs.push([i,m]);else if(m<0)left.push(i);});
+  return {pairs,left};
 }
+
+/* 先鋒以上の選手が「誰とは組めなかったか」を理由つきで記録(§28) */
+function mmBlocked(p,list,day,ctx){
+  const by=new Map();
+  for(const o of list){
+    if(o===p||!isSanyakuUp(o))continue;
+    const why=mmHard(p,o,day,ctx);if(!why)continue;
+    if(!by.has(why))by.set(why,[]);by.get(why).push(`${o.name}(${rankLabel(o)})`);
+  }
+  return [...by].map(([w,ns])=>`${w}:${ns.slice(0,6).join('、')}${ns.length>6?` ほか${ns.length-6}人`:''}`);
+}
+
+function mmDbg(a,b,day,ctx,e,tier,fixedWhy,noise,pool){
+  const k=topPairKey(a,b);
+  const d={day,ra:rankLabel(a),rb:rankLabel(b),wa:a.w,wb:b.w,
+    rf:e.rf,cf:e.cf,rw:e.rw,cw:e.cw,dist:e.dist,base:+e.base.toFixed(1),bonus:e.bonus,rem:e.rem,
+    noise:+(noise||0).toFixed(1),final:+(e.final+(noise||0)).toFixed(1),
+    hard:'OK',tier:tier,fx:fixedWhy||'',ul:ctx.unlock.info.slice()};
+  if(isSanyakuUp(a))d.blkA=mmBlocked(a,pool,day,ctx);
+  if(isSanyakuUp(b))d.blkB=mmBlocked(b,pool,day,ctx);
+  if(k)d.kind=k;
+  return d;
+}
+function mmTier(a,b,day,fixedTier){
+  if(fixedTier!=null)return fixedTier;
+  const k=topPairKey(a,b);
+  if(k==='TT')return 1;
+  if(k==='FF')return 2;
+  if(k==='TF'&&day>=5)return 3;
+  if((k==='TS'||k==='FS'||k==='SS')&&day>=4)return 4;
+  return 5;
+}
+
 function planDay(day){
   const B=S.basho;B.byes=[];
   const pools=[];
@@ -407,25 +667,54 @@ function planDay(day){
       else{B.byes.push(pools[i].list.pop());}
     }
   }
-  const out=[];
+  const out=[],notes=[];
   for(const {g,gi,list} of pools){
-    const swiss=g.days===7?day>=6:(day===2||day===5);
-    const pairs=swiss?swissPairs(list):foldPairs(list,day-1);
-    pairs.forEach(([a,b])=>{
+    const ctx=mmContext(list,day,notes);
+    const fixed=mmFixed(list,day,ctx);
+    const used=new Set();fixed.forEach(f=>{used.add(f.a);used.add(f.b);});
+    const rest=list.filter(p=>!used.has(p));
+    const n=rest.length;
+    const pairs=fixed.map(f=>({a:f.a,b:f.b,fx:f}));
+    if(n>=2){
+      const W=Array.from({length:n},()=>new Array(n).fill(null));
+      const E=Array.from({length:n},()=>new Array(n).fill(null));
+      for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){
+        if(!isMatchAllowed(rest[i],rest[j],day,ctx))continue;       // 禁止はスコア計算の対象にしない(§25)
+        const e=mmEval(rest[i],rest[j],day,ctx);
+        const nz=(Math.random()*2-1)*MM.NOISE;
+        E[i][j]=E[j][i]={e,nz};
+        W[i][j]=W[j][i]=e.final+nz;
+      }
+      const {pairs:ps,left}=mmSolve(n,W);
+      ps.forEach(([i,j])=>pairs.push({a:rest[i],b:rest[j],ev:E[i][j]}));
+      // 禁止ルールを破らずには組めない人は休みにする(絶対禁止は緩和しない §22)
+      left.forEach(i=>{B.byes.push(rest[i]);notes.push(`${rest[i].name}は禁止ルールを破らずに組める相手がなく休み`);});
+    }
+    for(const pr of pairs){
+      let {a,b}=pr;
+      let e,nz=0,tier,why='';
+      if(pr.fx){e=mmEval(a,b,day,ctx);tier=pr.fx.tier;why=pr.fx.why;notes.push(`${a.name}↔${b.name}: ${why}`);}
+      else{e=pr.ev.e;nz=pr.ev.nz;tier=mmTier(a,b,day,null);}
+      const dbg=mmDbg(a,b,day,ctx,e,tier,why,nz,list);
       if(ordKey(b)<ordKey(a))[a,b]=[b,a];
-      out.push({a,b,gi,w:null,swiss});
-    });
+      out.push({a,b,gi,w:null,swiss:false,dbg});
+    }
+    if(g.key==='総合'&&(ctx.nT||ctx.nF)){
+      notes.unshift(`大将${ctx.nT}人・副将${ctx.nF}人`);
+    }
   }
   // 下位の取組から順に。最後が最上位(結び)
   out.sort((x,y)=>y.gi-x.gi||ordKey(y.a)-ordKey(x.a));
+  B.mmNotes=notes;
   return out;
 }
 function beginDay(){
   const B=S.basho;
   B.day++;B.mi=0;B.phase='days';
   B.matches=planDay(B.day);
-  L(`第${B.no}場所 ${B.day}日目:${B.matches.length}番の取組を編成`);
+  L(`第${B.no}場所 ${B.day}日目:${B.matches.length}番の取組を編成`+((B.mmNotes&&B.mmNotes.length)?`(${B.mmNotes.join(' / ')})`:''));
 }
+
 function applyResult(m,res){
   m.w=res.winner===m.a?'A':'B';
   m.turns=res.turns;m.sp=res.sp;m.condA=res.A.c;m.condB=res.B.c;
@@ -1073,7 +1362,7 @@ function parseChars(text){
   const need=['名前','体力','パワー','ガード','IQ','能力評価値'];
   const miss=need.filter(n=>col(n)<0);
   if(miss.length)throw new UpdateError('必要な列がありません: '+miss.join('、'),'スプレッドシートの列名(体力・パワー・ガード・IQ・能力評価値)が変わっていないか確認してください。');
-  const opt={fav:col('得意場所'),bad:col('苦手場所'),inc:col('場所収入'),cmd:col('特殊能力コマンド'),com:col('コミュ力'),gaku:col('学力')};
+  const opt={fav:col('得意場所'),bad:col('苦手場所'),inc:col('場所収入'),cmd:col('特殊能力コマンド'),com:col('コミュ力'),gaku:col('学力'),img:col('画像URL')};
   const out=[],skipped=[],dups=[];const seen=new Set();
   for(let i=hi+1;i<rows.length;i++){
     const r=rows[i];
@@ -1084,9 +1373,9 @@ function parseChars(text){
     const key=nameKey(name);
     if(seen.has(key)){dups.push(name);continue;}
     seen.add(key);
-    const o=x=>x<0?undefined:(r[x]||'').trim();
+    const o=x=>x<0?undefined:norm((r[x]||'').trim());   // (null) は空欄扱い
     const nn=x=>{const n=x<0?NaN:toNum(r[x]);return Number.isNaN(n)?undefined:n;};
-    out.push({name,...v,fav:o(opt.fav),bad:o(opt.bad),inc:o(opt.inc),cmd:o(opt.cmd),com:nn(opt.com),gaku:nn(opt.gaku)});
+    out.push({name,...v,fav:o(opt.fav),bad:o(opt.bad),inc:o(opt.inc),cmd:o(opt.cmd),com:nn(opt.com),gaku:nn(opt.gaku),img:o(opt.img)});
   }
   if(out.length<MIN_ROWS)throw new UpdateError(`有効なキャラが${out.length}人しかありません(最低${MIN_ROWS}人)。`,'取得内容がおかしい可能性があるため、データは変更していません。');
   return {chars:out,skipped,dups};
@@ -1117,10 +1406,11 @@ function buildMerge(text){
     const cmd=pick(c.cmd,old?old[11]:'',live?live.cmd:undefined);
     const com=c.com!==undefined?c.com:(live?live.com:(old?(old[13]||0):0));
     const gaku=c.gaku!==undefined?c.gaku:(live?live.gaku:(old?(old[14]||0):0));
-    rows.push([id,c.name,c.hp,c.pw,c.gd,c.iq,c.ab,rk,fav||'',bad||'',inc,cmd||'',old?old[12]:0,com,gaku]);
+    const img=c.img!==undefined?imgUrl(c.img):(live?(live.img||''):(old?(old[15]||''):''));   // 列があれば空欄も「画像なし」
+    rows.push([id,c.name,c.hp,c.pw,c.gd,c.iq,c.ab,rk,fav||'',bad||'',inc,cmd||'',old?old[12]:0,com,gaku,img]);
     if(!live&&!old)added.push(c.name);
     else if(!live)added.push(c.name+'(再登場)');
-    else if(live.hp!==c.hp||live.pw!==c.pw||live.gd!==c.gd||live.iq!==c.iq||Math.abs(live.ab-c.ab)>0.05||live.com!==com||live.gaku!==gaku||(live.cmd||'')!==(cmd||''))changed.push(c.name);
+    else if(live.hp!==c.hp||live.pw!==c.pw||live.gd!==c.gd||live.iq!==c.iq||Math.abs(live.ab-c.ab)>0.05||live.com!==com||live.gaku!==gaku||(live.cmd||'')!==(cmd||'')||(live.img||'')!==img)changed.push(c.name);
     else same++;
   }
   const removed=S.people.filter(p=>!newKeys.has(nameKey(p.name)));
@@ -1192,12 +1482,12 @@ function showUpdateDialog(m){
   <div class="stats">
     <div><small>新規追加</small><b>${m.added.length}</b></div>
     <div><small>整理(削除)</small><b>${m.removed.length}</b></div>
-    <div><small>能力変更</small><b>${m.changed.length}</b></div>
+    <div><small>変更あり</small><b>${m.changed.length}</b></div>
   </div>
   ${m.added.length?`<p><small class="dim">追加(前相撲から開始)</small><br>${nameList(m.added)}</p>`:''}
   ${m.removed.length?`<p><small class="dim">整理される人(番付から外れます)</small><br>${nameList(m.removed)}</p>`:''}
   ${m.topRemoved.length?`<p class="up" style="color:var(--bad)">⚠ 戦士以上の番付者が含まれます: ${nameList(m.topRemoved,8)}</p>`:''}
-  ${m.changed.length?`<p><small class="dim">能力が変わる人</small><br>${nameList(m.changed,8)}</p>`:''}
+  ${m.changed.length?`<p><small class="dim">能力・画像などが変わる人</small><br>${nameList(m.changed,8)}</p>`:''}
   ${m.skipped.length?`<p class="dim"><small>能力値が空のため取り込まなかった行: ${m.skipped.length}件</small></p>`:''}
   <p class="dim"><small>得意/苦手場所・特殊能力は、同名のキャラは現在の設定を引き継ぎます。優勝などの記録は引き継がれ、整理された人の名前は歴代記録にだけ残ります。</small></p>
   ${now?'':'<p class="dim">⚠ 場所の途中のため、今は反映できません。次の場所の開始時に自動で適用できます。</p>'}
@@ -1262,10 +1552,10 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,
-    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,div:p.div,slot:p.slot,pre:p.pre,pk:p.pk,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted})),
+    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,pre:p.pre,pk:p.pk,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],
       byes:B.byes.map(p=>p.id),
-      matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0])}};
+      matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
 }
 function restore(d){
   initPeople();
@@ -1280,7 +1570,7 @@ function restore(d){
   const b=d.basho;
   S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,
     playoffs:b.playoffs||[],changes:b.changes||[],byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),
-    matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0}))};
+    matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0,dbg:r[9]||null}))};
   if(S.basho.mi>S.basho.matches.length)S.basho.mi=S.basho.matches.length;
 }
 let saveTimer=0;
@@ -1291,22 +1581,84 @@ function loadSaved(){
 }
 
 /* ---------- 戦闘ステージ ---------- */
+const STAGE_BG_URL='';   // 背景画像のURL(例: 'bg/town.png')。空ならデフォルトのグラデーション背景
+const SIDE_TPL=`<div class="who"><span class="rk">-</span><span class="nm">-</span><span class="mv"></span></div>
+<div class="cond"></div>
+<div class="hpt"></div>
+<div class="bar"><i></i></div>
+<div class="portrait"><div class="pimg"><div class="ph"></div><img alt="" referrerpolicy="no-referrer" hidden></div><div class="vm off"><i></i></div></div>
+<div class="spt" hidden></div>
+<div class="chips"></div>
+<div class="st"></div>`;
+function mvIcon(p){
+  const k=rankSortKey(p);
+  if(p.rec.length===0||p.pk===k||p.div==='前相撲')return '';
+  return k<p.pk?'<span class="mv" title="前場所より昇進">⤴</span>':'<span class="mv dn" title="前場所より降下">⤵</span>';
+}
+function nameHue(n){let h=0;for(const c of String(n))h=(h*31+c.codePointAt(0))%360;return h;}
 const stage={
   init(){
-    this.el={L:$('sideL'),R:$('sideR'),feed:$('feed'),turn:$('turn'),res:$('res')};
-    this.el.L.onclick=()=>this.cur&&openProfile(this.cur.a.id);
-    this.el.R.onclick=()=>this.cur&&openProfile(this.cur.b.id);
+    $('sideL').innerHTML=SIDE_TPL;$('sideR').innerHTML=SIDE_TPL;
+    this.el={L:$('sideL'),R:$('sideR'),feed:$('feed'),turn:$('turn'),res:$('res'),gs:$('gameset'),
+      basho:$('duelBasho'),day:$('duelDay'),sub:$('duelSub')};
+    this.el.L.onclick=()=>this.cur&&this.cur.a&&openProfile(this.cur.a.id);
+    this.el.R.onclick=()=>this.cur&&this.cur.b&&openProfile(this.cur.b.id);
+    this.el.gs.onclick=e=>{e.stopPropagation();this.el.gs.hidden=true;};
+    if(STAGE_BG_URL)$('duel').style.setProperty('--stage-bg',`url("${STAGE_BG_URL}") center/cover no-repeat`);
+  },
+  head(m){
+    const B=S.basho;
+    if(m&&m.practice){this.el.basho.textContent='練習戦';this.el.day.textContent='';this.el.sub.textContent='';return;}
+    this.el.basho.textContent=`第${B.no}場所 ・ ${B.place.name}`;
+    this.el.day.textContent=B.phase==='done'?'終了':(B.day?`${B.day}日目`:'開幕前');
+    this.el.sub.textContent=(m&&B.matches.includes(m))?`${GROUPS[m.gi]?GROUPS[m.gi].key:''} ・ ${B.matches.indexOf(m)+1}/${B.matches.length}番`:'';
   },
   idle(){
     $('stageBody').classList.add('idle');this.cur=null;
+    this.el.gs.hidden=true;this.head(null);this.el.turn.textContent='';this.el.res.textContent='';
     this.el.feed.innerHTML='<div class="dim">取組を始めるとここに戦闘が表示されます。</div>';
+  },
+  daysOf(m){return m.practice?0:Math.max(1,(GROUPS[m.gi]||{days:7}).days);},
+  portrait(el,p,m){
+    const box=el.querySelector('.portrait'),img=box.querySelector('img'),ph=box.querySelector('.ph');
+    box.dataset.tier=m.practice?'norm':TOP_DIVS.includes(p.div)?'top':p.div==='戦士'?'sen':p.div==='闘士'?'toshi':'norm';
+    const h=nameHue(p.name);
+    ph.textContent=[...String(p.name).replace(/\s/g,'')][0]||'?';
+    ph.style.background=`linear-gradient(135deg,hsl(${h},50%,62%),hsl(${(h+45)%360},50%,38%))`;
+    const url=imgUrl(p.img);
+    const showPh=()=>{img.hidden=true;ph.hidden=false;};
+    const showImg=()=>{img.hidden=false;ph.hidden=true;};
+    img.onload=showImg;img.onerror=showPh;
+    if(!url){img.removeAttribute('src');showPh();return;}
+    showPh();                                   // 読み込めるまでは頭文字の仮画像
+    if(img.getAttribute('src')!==url)img.src=url;
+    if(img.complete&&img.naturalWidth)showImg();
+  },
+  chips(el,p,m,full){
+    const box=el.querySelector('.chips'),days=this.daysOf(m);
+    if(!days){box.hidden=true;return;}
+    box.hidden=false;
+    const all=p.res||[];
+    const done=full?all:all.slice(0,-1);        // 戦闘中は、この一番の結果をまだ見せない
+    const n=Math.max(days,done.length+(full?0:1));
+    let h='';
+    for(let i=0;i<n;i++){
+      const r=done[i];
+      h+=r?`<span class="${r.w?'w':'l'}" data-s="${r.w?'W':'L'}">${r.w?'Win':'Lose'}</span>`:`<span${!full&&i===done.length?' class="now"':''}></span>`;
+    }
+    box.innerHTML=h;
   },
   setup(m,A,B){
     this.cur=m;
     $('stageBody').classList.remove('idle');
+    this.el.gs.hidden=true;
+    this.head(m);
     const put=(el,s,p)=>{
-      el.querySelector('.rk').textContent=m.practice?'練習戦':rankLabel(p);
+      const rk=el.querySelector('.rk');
+      rk.textContent=m.practice?'(練習戦)':`(${rankLabel(p)})`;
+      rk.style.setProperty('--dc',TOP_DIVS.includes(p.div)?'#ffc83d':(DIV_COLOR[p.div]||'#aaa'));
       el.querySelector('.nm').textContent=p.name;
+      const mv=el.querySelector('.who .mv');mv.outerHTML=m.practice?'<span class="mv"></span>':(mvIcon(p)||'<span class="mv"></span>');
       const cl=COND_LABEL[s.base]||'普通';
       const ps=s.c/s.base;
       const place=ps>1.001?' ・得意場所':ps<0.999?' ・苦手場所':'';
@@ -1317,12 +1669,17 @@ const stage={
       const tag=el.querySelector('.spt');
       const n=s.cmds.length;
       tag.hidden=!n;tag.textContent=n?`✦ 特殊能力(${n})`:'';
-      el.querySelector('.mt').hidden=!s.hasMeter;
+      el.querySelector('.vm').classList.toggle('off',!s.hasMeter);
       this.hp(el,s.hp,s.max);this.meter(el,0);
       el.classList.remove('win','lose','hit','cast');
+      this.portrait(el,p,m);
+      this.chips(el,p,m,false);
     };
     put(this.el.L,A,m.a);put(this.el.R,B,m.b);
     this.el.turn.textContent='開始';this.el.res.textContent='';this.el.feed.innerHTML='';
+    // 次の取組の画像を先読みして、切り替え時のちらつきを減らす
+    const Bs=S.basho,nx=!m.practice&&Bs.matches[Bs.mi];
+    if(nx)for(const q of [nx.a,nx.b]){const u=imgUrl(q.img);if(u)(new Image()).src=u;}
   },
   hp(el,hp,max){
     const shown=Math.min(Math.max(0,hp),max);     // 一時的な体力増加は表示上は上限で止める
@@ -1330,11 +1687,11 @@ const stage={
     const bar=el.querySelector('.bar i');
     bar.style.width=(r*100)+'%';
     bar.dataset.lv=r>.5?'hi':r>.2?'mid':'lo';
-    el.querySelector('.hpt').textContent=`${fmt(shown)} / ${fmt(max)}`;
+    el.querySelector('.hpt').textContent=`HP:${fmt(shown)}/${fmt(max)}`;
   },
   meter(el,v){
     if(v==null)return;
-    const i=el.querySelector('.mt i');i.style.width=Math.min(100,v)+'%';
+    const i=el.querySelector('.vm i');i.style.height=Math.min(100,v)+'%';
     i.dataset.full=v>=100?'1':'0';
   },
   log(txt,cls){
@@ -1344,16 +1701,28 @@ const stage={
     this.el.feed.scrollTop=this.el.feed.scrollHeight;
   },
   pop(el,txt,cls){
-    const s=document.createElement('span');s.className='pop '+cls;s.textContent=txt;el.appendChild(s);
-    setTimeout(()=>s.remove(),900);
+    const s=document.createElement('span');s.className='pop '+cls;s.textContent=txt;
+    (el.querySelector('.portrait')||el).appendChild(s);
+    setTimeout(()=>s.remove(),1100);
   },
   flash(el,cls){el.classList.remove(cls);void el.offsetWidth;el.classList.add(cls);},
+  gameset(m,res){
+    const part=(p)=>{
+      const w=res.winner===p;
+      const rec=m.practice?(w?'WIN':'LOSE'):`${p.w}勝${p.l}敗`;
+      return `<div class="gsn ${w?'w':'l'}"><div class="n">${esc(p.name)}</div><div class="r">${rec}</div></div>`;
+    };
+    this.el.gs.innerHTML=part(m.a)+'<div class="gst">Game<br>Set!</div>'+part(m.b);
+    this.el.gs.hidden=false;
+  },
   finish(m,res){
     this.hp(this.el.L,res.A.hp,res.A.max);this.hp(this.el.R,res.B.hp,res.B.max);
     const W=res.win==='A'?this.el.L:this.el.R,Lo=res.win==='A'?this.el.R:this.el.L;
     W.classList.add('win');Lo.classList.add('lose');
+    this.chips(this.el.L,m.a,m,true);this.chips(this.el.R,m.b,m,true);
     this.el.turn.textContent=`${res.turns}ターン`;
     this.el.res.textContent=`勝者 ${res.winner.name}`;
+    this.gameset(m,res);
   }
 };
 const DELAY={1:1000,2:650,3:400,4:230,5:110};
@@ -1390,12 +1759,14 @@ async function showBattle(m,res,animate){
     else if(e.type==='miss')stage.pop(tgtEl,'MISS','pm');
     else{
       stage.pop(tgtEl,'-'+fmt(e.dmg),e.kind==='sp'?'ps':e.type==='crit'?'pc':'ph');
+      if(e.kind==='sp')stage.pop(tgtEl,'Special!','pspec');
+      else if(e.type==='crit')stage.pop(tgtEl,'Critical Hit!','pcrit');
       stage.flash(tgtEl,'hit');
     }
     await sleep(wait);
   }
   stage.finish(m,res);
-  if(!UI.skip&&!UI.stop)await sleep(Math.max(250,DELAY[UI.speed]));
+  if(!UI.skip&&!UI.stop)await sleep(Math.max(900,DELAY[UI.speed]*2));   // Game Set表示を読める時間
 }
 
 /* ---------- 進行制御 ---------- */
@@ -1409,8 +1780,8 @@ function inScope(m){
 }
 function finishBasho(){
   finishBashoLogic();
-  const t=S.basho.titles['総合'];
-  toast(`第${S.basho.no}場所 総合優勝:${pname(t.id)}(${t.w}勝${t.l}敗)`);
+  const g=GROUPS.find(g=>S.basho.titles[g.key]);   // 総合が空(リセット直後)なら最上位の優勝者を表示
+  if(g){const t=S.basho.titles[g.key];toast(`第${S.basho.no}場所 ${g.label}:${pname(t.id)}(${t.w}勝${t.l}敗)`);}
   UI.tab=(UI.tab==='matches')?'titles':UI.tab;
   saveSoon();
 }
@@ -1421,6 +1792,10 @@ async function playMatch(animate,quiet){
   if(B.day===0||dayDone()){
     if(B.day>=maxDays()&&dayDone()){finishBasho();return 'bashoend';}
     beginDay();renderAll();
+    if(!B.matches.length){            // その日に取組がない(リセット直後で上位階級が空など)
+      if(B.day>=maxDays()){finishBasho();return 'bashoend';}
+      return 'dayend';
+    }
   }
   const m=B.matches[B.mi++];
   const res=simulate(m.a,m.b,B.place);
@@ -1484,6 +1859,36 @@ function renderStatus(){
 }
 function rowName(p){return `<a class="nl" data-id="${p.id}">${esc(p.name)}</a>`;}
 function idLink(id){const p=S.byId.get(id);return p?rowName(p):`<span class="dim">${esc(pname(id))}(整理済)</span>`;}
+
+const TIER_NAME=['Tier0 7日目固定対戦','Tier1 大将同士(3人以上)','Tier2 副将同士(3人以上)','Tier3 大将↔副将(5〜7日目)','Tier4 先鋒絡みの重要対戦(4日目〜)','Tier5 通常の番付+成績編成'];
+function mmBrief(d){
+  return `${TIER_NAME[d.tier]||''} / 番付適合${d.rf}×${d.rw}% + 成績適合${d.cf}×${d.cw}% = ${d.base}`+(d.bonus?` +重要対戦${d.bonus}`:'')+(d.rem?` ${d.rem}(再戦)`:'')+` → ${d.final}(クリックで詳細)`;
+}
+function openMatchInfo(i){
+  const m=S.basho.matches[i];if(!m||!m.dbg)return;
+  const d=m.dbg,li=a=>a&&a.length?`<ul class="memo">${a.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span class="dim">なし</span>';
+  const row=(k,v)=>`<tr><td>${k}</td><td>${v}</td></tr>`;
+  $('dlgBody').innerHTML=`<h2>取組の編成理由</h2>
+  <p>${d.day}日目 <b>${esc(m.a.name)}</b>(${esc(d.ra)} ${d.wa}勝)vs <b>${esc(m.b.name)}</b>(${esc(d.rb)} ${d.wb}勝)</p>
+  <div class="tbl small"><table><tbody>
+   ${row('優先順位',esc(TIER_NAME[d.tier]||''))}
+   ${d.fx?row('固定・優先の理由',esc(d.fx)):''}
+   ${row('ハード禁止判定',esc(d.hard))}
+   ${row('番付適合度 × ウェイト',`${d.rf}${d.dist!=null?`(距離${d.dist})`:'(クラス違い)'} × ${d.rw}%`)}
+   ${row('成績適合度 × ウェイト',`${d.cf}(勝ち数差${Math.abs(d.wa-d.wb)}) × ${d.cw}%`)}
+   ${row('基本対戦スコア',d.base)}
+   ${row('重要対戦ボーナス',d.bonus)}
+   ${row('再戦ペナルティ',d.rem)}
+   ${row('ランダム補正',d.noise)}
+   ${row('最終スコア',`<b>${d.final}</b>`)}
+  </tbody></table></div>
+  ${d.ul&&d.ul.length?`<h3>解禁抽選</h3>${li(d.ul)}`:''}
+  ${d.blkA&&d.blkA.length?`<h3>${esc(m.a.name)}が組めなかった相手</h3>${li(d.blkA)}`:''}
+  ${d.blkB&&d.blkB.length?`<h3>${esc(m.b.name)}が組めなかった相手</h3>${li(d.blkB)}`:''}
+  <div class="row"><button id="mClose">閉じる</button></div>`;
+  $('mClose').onclick=()=>$('dlg').close();
+  if(!$('dlg').open)$('dlg').showModal();
+}
 function renderMatches(){
   const B=S.basho;const el=$('tab_matches');
   const sel=`<div class="row"><label>階級 <select id="mFilter">${['all',...GROUPS.map(g=>g.key)].map(k=>`<option value="${k}"${UI.mFilter===k?' selected':''}>${k==='all'?'全て':k}</option>`).join('')}</select></label>
@@ -1495,7 +1900,7 @@ function renderMatches(){
       if(UI.mFilter!=='all'&&GROUPS[m.gi].key!==UI.mFilter)return;
       const cur=(i===B.mi&&B.phase!=='done')?' cur':'';
       const wa=m.w==='A',wb=m.w==='B';
-      html+=`<div class="m${cur}"><span class="r">${rankLabel(m.a)}</span>${rowName(m.a)}<b class="${wa?'w':m.w?'x':''}">${wa?'○':m.w?'●':'・'}</b><i>${m.sp?'✦':'vs'}</i><b class="${wb?'w':m.w?'x':''}">${wb?'○':m.w?'●':'・'}</b>${rowName(m.b)}<span class="r">${rankLabel(m.b)}</span></div>`;
+      html+=`<div class="m${cur}" data-mi="${i}"${m.dbg?` title="${esc(mmBrief(m.dbg))}"`:''}><span class="r">${rankLabel(m.a)}</span>${rowName(m.a)}<b class="${wa?'w':m.w?'x':''}">${wa?'○':m.w?'●':'・'}</b><i>${m.sp?'✦':'vs'}</i><b class="${wb?'w':m.w?'x':''}">${wb?'○':m.w?'●':'・'}</b>${rowName(m.b)}<span class="r">${rankLabel(m.b)}</span></div>`;
     });
     html+='</div>';
     if(B.byes.length)html+=`<p class="dim">休み:${B.byes.map(p=>esc(p.name)).join('、')}</p>`;
@@ -1572,17 +1977,23 @@ function renderSettings(){
   <div class="set"><label>メーター増加量(暫定) <input type="number" id="oMeter" min="1" max="100" step="1" value="${S.settings.meterRate}" style="width:72px"> % / ターン <small class="dim">100%で満タン。${Math.ceil(100/Math.max(1,S.settings.meterRate))}ターンごとに発動</small></label></div>
   <div class="set"><label><input type="checkbox" id="oGate" ${S.settings.gateHp!==false?'checked':''}> 条件分岐の「体力」を、現在のHPで判定する <small class="dim">オフにすると原作どおり、データ上の体力値で判定します</small></label></div>
   <div class="set"><label><input type="checkbox" id="oSuper" ${S.settings.superMode?'checked':''}> 超絶好調リスト(7名)の「調子+50」を有効にする <small class="dim">原作の仕様。有効にすると該当者は事実上無敵になります</small></label></div>
+  <h3>取組編成(解禁確率)</h3>
+  <div class="set"><label>大将が3人以上のとき、大将同士を6日目に解禁する確率 <input type="number" id="oT6" min="0" max="100" step="1" value="${mmProb('mmT6')}" style="width:72px"> %</label></div>
+  <div class="set"><label>副将が3人以上のとき、副将同士を5日目に解禁する確率 <input type="number" id="oF5" min="0" max="100" step="1" value="${mmProb('mmF5')}" style="width:72px"> %</label></div>
+  <div class="set"><label>副将が3人以上のとき、副将同士を6日目に解禁する確率 <input type="number" id="oF6" min="0" max="100" step="1" value="${mmProb('mmF6')}" style="width:72px"> %</label> <small class="dim">いずれも次の日の編成から反映。2人のときは7日目固定で確率は使いません</small></div>
   <div class="set"><label>アニメ観戦の対象
     <select id="oScope"><option value="top"${UI.scope==='top'?' selected':''}>総合+闘士の取組</option><option value="watch"${UI.scope==='watch'?' selected':''}>観戦リスト(空なら総合のみ)</option><option value="all"${UI.scope==='all'?' selected':''}>全ての取組(とても長い)</option></select></label></div>
   <div class="set"><label><input type="checkbox" id="oAuto" ${UI.autoNext?'checked':''}> 場所が終わったら自動で次の場所へ進む(「自動で進める」使用時)</label></div>
-  <div class="set btns"><button id="oSave">いま保存</button><button id="oExport">ファイルに書き出す</button><label class="btn">読み込む<input type="file" id="oImport" accept=".json" hidden></label><button id="oReset" class="danger">最初からやり直す</button></div>
+  <div class="set btns"><button id="oSave">いま保存</button><button id="oExport">ファイルに書き出す</button><label class="btn">読み込む<input type="file" id="oImport" accept=".json" hidden></label><button id="oResetProg" class="danger">番付・記録をリセット</button><button id="oReset" class="danger">最初からやり直す</button></div>
   <p class="dim">進行状況は、このブラウザに自動保存されます。</p>
+  <p class="dim">「番付・記録をリセット」: 番付・優勝歴・場所ごとの成績を消し、全員を上等兵以下に落として能力評価値の高い順に上等兵1から並べ直します。「最初からやり直す」はキャラクターデータの更新も含めた完全な初期化です。</p>
   <h3>この版の仕様メモ</h3><ul class="memo">
   <li>戦闘式は TurboWarp 版の「対戦処理」を移植(調子5段階、得意/苦手場所補正、IQによる会心・ミス、ガード軽減)。</li>
   <li>番付は「内部スコア=番付−評価点」方式。大将・副将・先鋒・旗頭は独立した昇進ルール。</li>
   <li>特殊能力コマンド(能力調整・攻撃・システム介入・条件分岐)を実装。メーターは暫定で毎ターン一定量ずつ増加。</li>
   <li>「HPに応じる」(発動条件2)は、HPが指定%以下のとき毎ターン判定する形で実装(仕様書では未実装扱い)。</li>
   <li>種別9(例外コード)は呼び出し口のみ用意(中身は未定義)。</li>
+  <li>取組編成は「取組編成ロジック仕様表 v1.1」準拠。番付適合度と成績適合度を日数別ウェイトで合成し、大将・副将同士の解禁/固定ルールと再戦ペナルティを加えて全体マッチングで決定。取組表の行をクリックすると編成理由を確認できます。</li>
   </ul>`;
   bindUpdateInfo();
   $('oSpecial').onchange=e=>{S.settings.special=e.target.checked;saveSoon();};
@@ -1592,6 +2003,7 @@ function renderSettings(){
   };
   $('oGate').onchange=e=>{S.settings.gateHp=e.target.checked;saveSoon();};
   $('oSuper').onchange=e=>{S.settings.superMode=e.target.checked;saveSoon();};
+  [['oT6','mmT6'],['oF5','mmF5'],['oF6','mmF6']].forEach(([id,k])=>{$(id).onchange=e=>{let v=Math.round(+e.target.value);if(!(v>=0))v=MM.DEF[k];v=Math.min(100,v);e.target.value=v;S.settings[k]=v;saveSoon();};});
   $('oScope').onchange=e=>{UI.scope=e.target.value;saveSoon();};
   $('oAuto').onchange=e=>{UI.autoNext=e.target.checked;saveSoon();};
   $('oSave').onclick=()=>{saveNow();toast('保存しました');};
@@ -1603,6 +2015,12 @@ function renderSettings(){
   $('oImport').onchange=async e=>{
     try{restore(JSON.parse(await e.target.files[0].text()));saveNow();renderAll();toast('読み込みました');}
     catch(err){toast('読み込みに失敗しました');}
+  };
+  $('oResetProg').onclick=()=>{
+    if(UI.busy){toast('進行中です。停止してからリセットしてください');return;}
+    if(!confirm('番付・優勝記録・場所ごとの成績をすべて消します。\n全員が上等兵以下に落ち、能力評価値の高い順に上等兵1から並び直します。\n(キャラクターのデータと設定は変わりません)\nよろしいですか?'))return;
+    UI.stop=true;resetProgress();stage.idle();renderAll();saveNow();
+    toast('番付と記録をリセットしました(第1場所から開始)');
   };
   $('oReset').onclick=()=>{
     if(!confirm('進行状況をすべて消して最初からやり直します。よろしいですか?'))return;
@@ -1684,6 +2102,7 @@ function openProfile(id){
   const tl=p.titles.map(t=>`第${t.b}場所 ${t.key}`).slice(-12).join('、');
   const tw=p.rec.reduce((s,r)=>s+r.w,0),tl2=p.rec.reduce((s,r)=>s+r.l,0);
   $('dlgBody').innerHTML=`<h2>${esc(p.name)}</h2>
+  ${p.img?`<img class="pfimg" src="${esc(imgUrl(p.img))}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}
   <p><b>${rankLabel(p)}</b> ${p.pre?'(前相撲)':''}${p.tsuna?' ・綱取りの場所':''}</p>
   <div class="stats">
    <div><small>体力</small><b>${fmt(p.hp)}</b>${bar(p.hp,25000)}</div>
@@ -1710,6 +2129,7 @@ function boot(){
   stage.idle();
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.tab;renderTab();});
   document.addEventListener('click',e=>{const a=e.target.closest('a.nl');if(a)openProfile(+a.dataset.id);});
+  document.addEventListener('click',e=>{if(e.target.closest('a.nl'))return;const r=e.target.closest('.m[data-mi]');if(r)openMatchInfo(+r.dataset.mi);});
   document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>{UI.mode=r.value;syncModeUI();saveSoon();});
   $('speed').oninput=e=>{UI.speed=+e.target.value;saveSoon();};
   $('bOne').onclick=()=>{
