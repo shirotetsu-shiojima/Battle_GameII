@@ -3,87 +3,121 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>番付バトルシミュレーター2</title>
+<title>SE戦闘ゲームII</title>
+<meta name="theme-color" content="#c78fe3">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='225 195 675 665'%3E%3Cpath d='M605.4 241.4A290 290 0 1 0 829.6 620' fill='none' stroke='%23c78fe3' stroke-width='55'/%3E%3Ccircle cx='738' cy='427' r='118' fill='none' stroke='%23585858' stroke-width='56'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f3eee3;--panel:#fffdf8;--ink:#201c17;--dim:#7a7064;--line:#ddd3c1;--accent:#b3261e;--accent2:#8a6a1f;
-  --good:#1d7a46;--bad:#a33;--bar:#2f9e5a;--barmid:#d9a21b;--barlow:#c4372b;--chip:#efe7d6;
-  --mincho:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP","BIZ UDMincho",serif;
+  /* SE CHARACTERS ロゴの配色: ラベンダー #c78fe3 / チャコール #585858 / 白 */
+  --lav:#c78fe3;--gray:#585858;
+  --bg:#faf6fe;--panel:#ffffff;--ink:#3b3542;--dim:#8a8296;--line:#eadff5;
+  --accent:#9b57c9;--accent2:#8a4fb8;--on-accent:#fff;--btn1:#b476dc;--btn2:#9b57c9;
+  --good:#1f9c78;--bad:#d9466f;--bar:#2f9e5a;--barmid:#d9a21b;--barlow:#c4372b;--chip:#f4ebfb;
+  --shadow:0 6px 24px rgba(155,87,201,.12);--shadow-sm:0 2px 8px rgba(155,87,201,.10);
+  --disp:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+  --latin:"Jost","Futura","Century Gothic","Avenir Next",sans-serif;
 }
 @media(prefers-color-scheme:dark){:root:not([data-theme=light]){
-  --bg:#181613;--panel:#222019;--ink:#efe9dc;--dim:#a39a89;--line:#3a352b;--accent:#ee6b60;--accent2:#d8b25a;
-  --good:#58c487;--bad:#ee7b7b;--chip:#2f2b22;}}
-*{box-sizing:border-box}
+  --bg:#1b1623;--panel:#251e31;--ink:#f0eaf6;--dim:#aaa0ba;--line:#3b3150;
+  --accent:#d6a9f0;--accent2:#c995e8;--on-accent:#2a1740;--btn1:#d6a9f0;--btn2:#c78fe3;
+  --gray:#c9c1d4;--good:#5fd4ae;--bad:#ff8aa8;--chip:#31283f;--shadow:0 6px 24px rgba(0,0,0,.35);--shadow-sm:0 2px 8px rgba(0,0,0,.3);}}
+*{box-sizing:border-box;scrollbar-width:thin;scrollbar-color:var(--lav) transparent}
 [hidden]{display:none!important}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:14px/1.55 system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;
+::selection{background:#e6cdf5;color:#3b3542}
+:focus-visible{outline:2px solid var(--lav);outline-offset:2px}
+input[type=range],input[type=checkbox],input[type=radio]{accent-color:var(--accent)}
+body{background:
+    radial-gradient(900px 520px at 108% -8%,rgba(199,143,227,.24),transparent 62%),
+    radial-gradient(700px 440px at -12% 24%,rgba(199,143,227,.13),transparent 62%),
+    var(--bg);background-attachment:fixed;
+  color:var(--ink);font:14px/1.6 "Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic UI",system-ui,-apple-system,sans-serif;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-h1,h2,h3{font-family:var(--mincho);margin:0}
-h3{font-size:15px;margin:18px 0 8px;border-left:4px solid var(--accent);padding-left:8px}
+/* ロゴの輪をモチーフにした背景の飾り */
+body::before,body::after{content:"";position:fixed;border-radius:50%;pointer-events:none;z-index:0}
+body::before{right:-130px;bottom:-130px;width:400px;height:400px;border:46px solid var(--lav);opacity:.10}
+body::after{left:-46px;bottom:90px;width:150px;height:150px;border:24px solid var(--gray);opacity:.045}
+h1,h2,h3{font-family:var(--disp);margin:0}
+h3{font-size:15px;font-weight:700;margin:20px 0 8px;display:flex;align-items:center;gap:8px}
+h3::before{content:"";width:13px;height:13px;border:3.5px solid var(--lav);border-radius:50%;flex:none}
 button,select,input{font:inherit;color:inherit}
-button,.btn{padding:7px 12px;border:1px solid var(--line);background:var(--panel);border-radius:8px;cursor:pointer;display:inline-block}
-button:hover:not(:disabled),.btn:hover{border-color:var(--accent)}
+button,.btn{padding:7px 15px;border:1px solid var(--line);background:var(--panel);border-radius:999px;cursor:pointer;display:inline-block;
+  transition:border-color .15s,color .15s,transform .15s,box-shadow .15s,filter .15s}
+button:hover:not(:disabled),.btn:hover{border-color:var(--lav);color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+button:active:not(:disabled){transform:translateY(0) scale(.98)}
 button:disabled{opacity:.45;cursor:default}
-button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary{background:linear-gradient(135deg,var(--btn1),var(--btn2));border-color:transparent;color:var(--on-accent);font-weight:700;box-shadow:0 3px 10px rgba(155,87,201,.28)}
+button.primary:hover:not(:disabled){color:var(--on-accent);border-color:transparent;filter:brightness(1.07)}
 button.danger{color:var(--bad)}
-select,input[type=search],input[type=text]{padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+button.danger:hover:not(:disabled){border-color:var(--bad);color:var(--bad)}
+select,input[type=search],input[type=text],input[type=number]{padding:6px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel);transition:border-color .15s,box-shadow .15s}
+select:focus,input[type=search]:focus,input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--lav);box-shadow:0 0 0 3px rgba(199,143,227,.25)}
 input[type=search],input[type=text]{width:100%}
 .dim{color:var(--dim)} small{font-size:12px}
-.wrap{max-width:1180px;margin:0 auto;padding:0 12px 40px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 12px 40px;position:relative;z-index:1}
 
 /* ヘッダ */
-.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:2px solid var(--accent);padding:8px 0;
-  padding-top:max(8px,env(safe-area-inset-top,0px))}
-.top .in{max-width:1180px;margin:0 auto;padding:0 12px;display:grid;gap:8px}
-.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
-.brand h1{font-size:20px;letter-spacing:.08em}
-.brand small{color:var(--dim)}
-.status{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-.status div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 8px;min-width:0}
+.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--panel) 86%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  padding:10px 0 12px;padding-top:max(10px,env(safe-area-inset-top,0px));box-shadow:0 6px 22px rgba(155,87,201,.10)}
+.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--lav),#ecd9f8 50%,var(--lav))}
+.top .in{max-width:1180px;margin:0 auto;padding:0 12px;display:grid;gap:9px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .logo{width:46px;height:46px;flex:none}
+.brand .tt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.brand h1{font-size:22px;font-weight:900;letter-spacing:.05em}
+.brand .wm{font-family:var(--latin);font-size:10.5px;font-weight:500;letter-spacing:.36em;color:var(--dim);margin-top:3px}
+.status{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.status div{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:5px 11px;min-width:0;box-shadow:var(--shadow-sm)}
 .status small{display:block;color:var(--dim)}
-.status b{display:block;font-family:var(--mincho);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ctl{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.status b{display:block;font-family:var(--disp);font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ctl{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
 .ctl .grow{flex:1}
-.modes{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
-.modes label{padding:6px 10px;cursor:pointer}
+.modes{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:var(--panel)}
+.modes label{padding:6px 14px;cursor:pointer;transition:background .15s}
 .modes input{display:none}
-.modes label:has(input:checked){background:var(--accent);color:#fff}
+.modes label:has(input:checked){background:linear-gradient(135deg,var(--btn1),var(--btn2));color:var(--on-accent);font-weight:700}
 #speedBox{display:inline-flex;align-items:center;gap:4px}
 #speed{width:80px}
 
 /* バトルステージ(前作のUIをベースに刷新) */
-.stage{margin:14px 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stage{margin:16px 0;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:14px;box-shadow:var(--shadow)}
 .stagehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.stagehead h2{font-size:16px}
-.duel{position:relative;border-radius:12px;overflow:hidden;padding:12px 10px 12px;color:#fff;
-  background:var(--stage-bg,linear-gradient(180deg,#7ea6ee 0%,#a9c6f4 52%,#c9d6e6 100%));background-size:cover;background-position:center}
+.stagehead h2{font-size:16px;font-weight:900;letter-spacing:.04em}
+.duel{position:relative;border-radius:18px;overflow:hidden;padding:12px 10px 12px;color:#fff;
+  background:var(--stage-bg,linear-gradient(180deg,#b79ef2 0%,#d8c3f6 54%,#f3e7fb 100%));background-size:cover;background-position:center}
 .arena{display:grid;grid-template-columns:minmax(0,1fr) 120px minmax(0,1fr);gap:10px;align-items:start}
 .side{position:relative;display:flex;flex-direction:column;gap:5px;min-width:0;max-width:360px;width:100%;cursor:pointer;transition:opacity .25s}
 #sideR{margin-left:auto}
-.who{display:flex;align-items:baseline;justify-content:center;gap:4px;flex-wrap:wrap;background:rgba(12,24,60,.5);border-radius:8px;padding:3px 8px;text-align:center}
+.who{display:flex;align-items:baseline;justify-content:center;gap:4px;flex-wrap:wrap;background:rgba(74,46,106,.55);border-radius:12px;padding:3px 10px;text-align:center}
 .who .rk{font-size:13px;font-weight:800;color:color-mix(in srgb,var(--dc,#ccc) 45%,#fff)}
 .who .nm{font-size:clamp(16px,2.6vw,22px);font-weight:800;overflow-wrap:anywhere;text-shadow:0 1px 3px #0008}
 .who .mv{font-size:15px;font-weight:900;color:#5dff9a}.who .mv.dn{color:#ff8a80}
 .cond{text-align:center;font-size:12px;text-shadow:0 1px 3px #000a}
-.cond[data-c="1.2"]{color:#ffe27a;font-weight:700}.cond[data-c="0.8"]{color:#ffb4ab}
+.cond:not(:empty){align-self:center;background:rgba(74,46,106,.6);border-radius:99px;padding:1px 12px;color:#fff;text-shadow:none}
+.cond[data-c="fav"]{color:#ffe27a}.cond[data-c="bad"]{color:#ffc2cf}.cond[data-c="sup"]{color:#ffd23f;font-weight:700;box-shadow:0 0 10px rgba(255,157,0,.7)}
+.nl .sup{margin-left:2px}
 .hpt{text-align:center;font-weight:800;font-size:clamp(13px,2.2vw,18px);font-variant-numeric:tabular-nums;text-shadow:0 1px 3px #000a}
 .bar{height:18px;background:rgba(18,18,22,.88);border-radius:99px;overflow:hidden;border:2px solid #111}
 .bar i{display:block;height:100%;width:100%;background:linear-gradient(180deg,#9bff5a,#5fd23a);transition:width .25s}
 .bar i[data-lv=mid]{background:linear-gradient(180deg,#ffd35a,#d9a21b)} .bar i[data-lv=lo]{background:linear-gradient(180deg,#ff6a5a,#c4372b)}
-.portrait{position:relative;width:100%;aspect-ratio:1/1;border:6px solid var(--fr,#efe2c2);background:#1b1b22;border-radius:3px;box-shadow:0 3px 10px #0004}
-.portrait[data-tier=top]{--fr:#f5c542}.portrait[data-tier=sen]{--fr:#9db8ee}.portrait[data-tier=toshi]{--fr:#79d3cf}
+.portrait{position:relative;width:100%;aspect-ratio:1/1;border:6px solid var(--fr,#fff);background:#2a2433;border-radius:18px;overflow:visible;box-shadow:0 6px 16px rgba(74,46,106,.35)}
+.pimg{border-radius:12px}
+.portrait[data-tier=top]{--fr:#f7c948}.portrait[data-tier=sen]{--fr:#c9a6f0}.portrait[data-tier=toshi]{--fr:#8fdad3}
 .portrait[data-tier=top]::before,.portrait[data-tier=top]::after{content:"✨";position:absolute;top:-17px;font-size:17px;animation:twk 1.6s infinite alternate;pointer-events:none}
 .portrait[data-tier=top]::before{left:-8px}.portrait[data-tier=top]::after{right:-8px;animation-delay:.6s}
 @keyframes twk{from{opacity:.35;transform:scale(.8)}to{opacity:1;transform:scale(1.15)}}
 .pimg{position:absolute;inset:0;overflow:hidden}
 .pimg img{width:100%;height:100%;object-fit:cover;display:block;transition:filter .3s}
-.pimg .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mincho);font-size:clamp(48px,9vw,96px);font-weight:700;color:#ffffffd0;text-shadow:0 2px 8px #0006}
+.pimg .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:clamp(48px,9vw,96px);font-weight:700;color:#ffffffd0;text-shadow:0 2px 8px #0006}
 .vm{position:absolute;top:10%;bottom:10%;width:14px;background:rgba(18,18,22,.78);border:2px solid #111;border-radius:99px;overflow:hidden;transition:opacity .2s}
 #sideL .vm{right:6px}#sideR .vm{left:6px}
 .vm.off{opacity:.18}
 .vm i{position:absolute;left:0;right:0;bottom:0;height:0;background:#3a1cff;transition:height .25s}
 .vm i[data-full="1"]{background:#ff9d1c;animation:glow 1s infinite alternate}
-.spt{align-self:center;font-size:11px;color:#ffe27a;border:1px solid #ffe27a;border-radius:99px;padding:0 8px;background:rgba(12,24,60,.45)}
+.spt{align-self:center;font-size:11px;color:#ffe27a;border:1px solid #ffe27a;border-radius:99px;padding:0 10px;background:rgba(74,46,106,.5)}
 .chips{display:flex;gap:2px}
 .chips span{flex:1 1 0;min-width:0;height:26px;display:flex;align-items:center;justify-content:center;overflow:hidden;
   background:#454545;border:2px solid #1c1c1c;font-size:min(11px,2.5vw);font-weight:800;color:transparent}
@@ -96,10 +130,10 @@ input[type=search],input[type=text]{width:100%}
 .side.hit{animation:shake .28s}
 @keyframes shake{0%,100%{transform:none}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .mid{text-align:center;padding-top:6px;text-shadow:0 2px 6px #0007}
-#duelBasho{font-size:12px;opacity:.95}
-#duelDay{font-size:clamp(26px,5vw,42px);font-weight:900;line-height:1.1;font-family:var(--mincho)}
+#duelBasho{font-size:12px;opacity:.95;white-space:pre-line;line-height:1.35}
+#duelDay{font-size:clamp(26px,5vw,42px);font-weight:900;line-height:1.1;font-family:var(--disp)}
 #duelSub{font-size:11px;opacity:.9}
-.mid .vs{font-family:var(--mincho);font-size:24px;color:#ffe27a;font-weight:800;margin-top:10px}
+.mid .vs{font-family:var(--disp);font-size:24px;color:#ffe27a;font-weight:800;margin-top:10px}
 .mid .turn{font-size:12px} .mid .res{font-size:12px;font-weight:700;margin-top:4px}
 .pop{position:absolute;right:8px;top:6px;font-weight:800;font-size:18px;pointer-events:none;animation:up .9s forwards;z-index:3;text-shadow:0 1px 3px #000c}
 .pop.ph{color:#ff5a4d} .pop.pc{color:#ffb020;font-size:26px} .pop.pm{color:#e6e6e6;font-size:15px}
@@ -108,26 +142,25 @@ input[type=search],input[type=text]{width:100%}
 .pop.pspec{background:linear-gradient(90deg,#ffd23f,#ff7a1c)}
 @keyframes up{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-28px)}}
 .gameset{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;
-  padding:10px 14px;background:rgba(24,36,232,.93);cursor:pointer;animation:gsin .35s}
+  padding:10px 14px;background:linear-gradient(90deg,rgba(84,52,128,.95),rgba(138,79,184,.95),rgba(84,52,128,.95));cursor:pointer;animation:gsin .35s}
 @keyframes gsin{from{opacity:0;transform:translateY(-50%) scaleY(.2)}to{opacity:1;transform:translateY(-50%) scaleY(1)}}
 .gsn{text-align:center;min-width:0}
 .gsn .n{font-size:clamp(13px,2.6vw,24px);font-weight:800;overflow-wrap:anywhere}
 .gsn .r{font-size:clamp(20px,5vw,44px);font-weight:900;line-height:1.1}
-.gsn.w{color:#ff4a3a}.gsn.l{color:#c8c8c8}
-.gst{font-size:clamp(26px,6vw,56px);font-weight:900;line-height:.95;text-align:center;color:#6bff3a;text-shadow:0 2px 0 #0a6a00,0 0 12px #0008}
-.feed{margin-top:10px;height:116px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px}
+.gsn.w{color:#ffe27a;text-shadow:0 1px 4px #0006}.gsn.l{color:#c8c8c8}
+.gst{font-size:clamp(26px,6vw,56px);font-weight:900;line-height:.95;text-align:center;color:#fff;text-shadow:0 2px 0 #7a3fb0,0 0 14px #0006}
+.feed{margin-top:12px;height:116px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:6px 10px;font-size:12.5px}
 .feed .crit{color:#e08a00;font-weight:700} .feed .miss{color:var(--dim)}
 .idle .arena{opacity:.45}
-.pfimg{display:block;width:100%;max-width:220px;aspect-ratio:1/1;object-fit:cover;border-radius:10px;margin:8px auto;border:3px solid var(--line)}
+.pfimg{display:block;width:100%;max-width:220px;aspect-ratio:1/1;object-fit:cover;border-radius:18px;margin:8px auto;border:4px solid var(--line)}
 
-/* タブ */
-.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid var(--line);margin-top:6px}
-.tabs button{border-radius:8px 8px 0 0;border-bottom:none;background:transparent}
-.tabs button.on{background:var(--panel);border-color:var(--accent);color:var(--accent);font-weight:700}
-.pane{background:var(--panel);border:1px solid var(--line);border-top:none;border-radius:0 0 12px 12px;padding:12px;min-height:240px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.tabs button{padding:7px 17px}
+.tabs button.on{background:linear-gradient(135deg,var(--btn1),var(--btn2));border-color:transparent;color:var(--on-accent);font-weight:700;box-shadow:0 3px 10px rgba(155,87,201,.3)}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;min-height:240px;box-shadow:var(--shadow)}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 
-.mlist{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.mlist{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:16px}
 .m{display:grid;grid-template-columns:62px 1fr 22px 20px 22px 1fr 62px;gap:4px;align-items:center;padding:3px 8px;border-bottom:1px solid var(--line);font-size:13px}
 .mlist>.m:last-child{border-bottom:none}
 .m .r{font-size:11px;color:var(--dim)} .m .r:last-child{text-align:right}
@@ -140,16 +173,16 @@ input[type=search],input[type=text]{width:100%}
 a.nl{color:inherit;cursor:pointer;text-decoration:underline dotted var(--dim);text-underline-offset:3px;overflow-wrap:anywhere}
 a.nl:hover{color:var(--accent)}
 
-.tbl{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.tbl{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:16px}
 .tbl.small{max-height:220px;margin:8px 0}
 table{width:100%;border-collapse:collapse}
 th,td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
 td:nth-child(3){white-space:normal}
-th{position:sticky;top:0;background:var(--chip);font-size:12px}
+th{position:sticky;top:0;background:var(--chip);font-size:12px;color:var(--accent2)}
 .up{color:var(--good)} .dn{color:var(--bad)}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
-.card{border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
-.card small{display:block} .card b{font-family:var(--mincho);font-size:16px;display:block}
+.card{border:1px solid var(--line);border-radius:16px;padding:9px 12px;background:var(--bg)}
+.card small{display:block} .card b{font-family:var(--disp);font-size:16px;display:block}
 .chg{margin:0;padding-left:20px;font-size:13px}
 ol.rk{margin:0;padding-left:22px}
 .logbox{max-height:520px;overflow:auto;font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace}
@@ -160,25 +193,25 @@ ol.rk{margin:0;padding-left:22px}
 .set{margin:10px 0}.set.btns{display:flex;gap:8px;flex-wrap:wrap}
 .memo{font-size:13px;color:var(--dim);padding-left:20px}
 
-dialog{border:1px solid var(--accent);border-radius:14px;background:var(--panel);color:var(--ink);max-width:560px;width:calc(100% - 24px);padding:16px}
-dialog::backdrop{background:#0008}
-dialog h2{font-size:22px}
+dialog{border:none;border-radius:26px;background:var(--panel);color:var(--ink);max-width:560px;width:calc(100% - 24px);padding:20px;box-shadow:0 24px 70px rgba(60,30,90,.38)}
+dialog::backdrop{background:rgba(50,30,70,.45);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+dialog h2{font-size:22px;font-weight:900}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
-.stats div{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.stats div{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:7px 10px}
 .stats small{display:block;color:var(--dim)} .stats b{font-size:16px}
 .sb{display:block;height:5px;background:var(--chip);border-radius:3px;overflow:hidden;margin-top:3px}
 .sb i{display:block;height:100%;background:var(--accent2)}
 code{font-size:11px;word-break:break-all}
 
 #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:var(--ink);color:var(--bg);
-  padding:10px 16px;border-radius:99px;opacity:0;pointer-events:none;transition:.3s;z-index:20;max-width:90%;text-align:center}
+  padding:10px 20px;border-radius:99px;box-shadow:0 8px 24px rgba(60,30,90,.3);opacity:0;pointer-events:none;transition:.3s;z-index:20;max-width:90%;text-align:center}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
 
 /* メーター・特殊能力 */
 .mt{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:11px;color:var(--dim)}
 .mbar{flex:1;height:8px;background:var(--chip);border-radius:4px;overflow:hidden;border:1px solid var(--line)}
-.mbar i{display:block;height:100%;width:0;background:#4a7fd1;transition:width .25s}
+.mbar i{display:block;height:100%;width:0;background:#8b7be0;transition:width .25s}
 .mbar i[data-full="1"]{background:#e08a00;animation:glow 1s infinite alternate}
 @keyframes glow{from{opacity:.65}to{opacity:1}}
 .spt{display:inline-block;margin-top:4px;font-size:11px;color:var(--accent2);border:1px solid var(--accent2);border-radius:99px;padding:0 8px}
@@ -186,12 +219,18 @@ code{font-size:11px;word-break:break-all}
 @keyframes cast{0%{box-shadow:0 0 0 0 #e08a0099}60%{box-shadow:0 0 0 12px #e08a0000}100%{box-shadow:none}}
 .pop.ps{color:#ff6a3d;font-size:28px} .pop.pg{color:#6dff9c;font-size:20px} .pop.pf{color:#bcd4ff;font-size:16px}
 .feed .trig{color:#e08a00;font-weight:800} .feed .fx{color:#4a7fd1} .feed .spk{color:#c0301f;font-weight:700} .feed .heal{color:var(--good)}
-.sp{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;margin:8px 0}
+.duel .spt{margin-top:0;color:#fff;border-color:rgba(255,255,255,.75);background:rgba(74,46,106,.6)}
+.sp{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:9px 14px;margin:8px 0}
 .sp ul{margin:4px 0 0;padding-left:18px;font-size:13px}
 .sp li.gate{color:var(--accent2)} .sp li.atk{color:#c0301f}
 .sp details{margin-top:4px}
 
 @media(max-width:720px){
+  .top{padding:7px 0 9px}.top .in{gap:6px}
+  .brand .logo{width:38px;height:38px}.brand h1{font-size:19px}
+  .status{gap:5px}.status div{padding:3px 9px;border-radius:12px}.status b{font-size:14px}
+  .ctl{gap:5px}.ctl button{padding:5px 12px;font-size:13px}.modes label{padding:5px 12px;font-size:13px}
+  .tabs button{padding:6px 13px}
   .status{grid-template-columns:repeat(3,minmax(0,1fr))}
   .arena{grid-template-columns:1fr 1fr}.mid{grid-column:1/-1;order:-1;padding:0;display:flex;gap:4px 12px;flex-wrap:wrap;justify-content:center;align-items:baseline}.mid .vs{margin-top:0;font-size:18px}.vm{width:11px}
   .who{min-height:50px;align-content:center}
@@ -203,9 +242,9 @@ code{font-size:11px;word-break:break-all}
 </head>
 <body>
 <header class="top"><div class="in">
-  <div class="brand"><h1>番付バトルシミュレーター2</h1><small>観戦型・後継作</small></div>
+  <div class="brand"><svg class="logo" viewBox="225 195 675 665" role="img" aria-label="SE CHARACTERS"><path d="M605.4 241.4A290 290 0 1 0 829.6 620" fill="none" stroke="#c78fe3" stroke-width="55"/><circle cx="738" cy="427" r="118" fill="none" style="stroke:var(--gray)" stroke-width="56"/></svg><div class="tt"><h1>SE戦闘ゲームII</h1><span class="wm">SE CHARACTERS</span></div></div>
   <div class="status">
-    <div><small>場所</small><b id="stNo">-</b></div>
+    <div><small>大会</small><b id="stNo">-</b></div>
     <div><small>開催地</small><b id="stPlace">-</b></div>
     <div><small>日程</small><b id="stDay">-</b></div>
     <div><small>残り取組</small><b id="stLeft">-</b></div>
@@ -214,10 +253,10 @@ code{font-size:11px;word-break:break-all}
   <div class="ctl">
     <button class="primary" id="bOne">▶ 次の1番</button>
     <button id="bDay">今日を進める</button>
-    <button id="bBasho">場所を最後まで</button>
+    <button id="bBasho">大会を最後まで</button>
     <button id="bAuto">▶ 自動で進める</button>
     <button class="danger" id="bStop" hidden>■ 停止</button>
-    <button class="primary" id="bNext" hidden>次の場所へ ▶</button>
+    <button class="primary" id="bNext" hidden>次の大会へ ▶</button>
     <button id="bUpd" title="スプレッドシートから最新のキャラクターデータを取得">⟳ データ更新</button>
     <span class="grow"></span>
     <div class="modes" title="戦闘の見せ方">
@@ -275,15 +314,21 @@ const DATA=[[1,"黒川 怜衣",8710.0,6052.0,5737.0,131.0,8634.5,75.0,"ブルテ
    - 昇進ルール: 旗頭→先鋒→副将→大将
    ===================================================================== */
 const PLACES=[
-  {key:'舞愛',name:'舞愛'},{key:'御卦原',name:'御卦原・みけ原'},{key:'エアロ',name:'エアロ'},
+  {key:'舞愛',name:'舞愛'},{key:'御卦原',name:'みけ原'},{key:'エアロ',name:'エアロ'},
   {key:'三花',name:'三花'},{key:'ブルテ',name:'ブルテ'},{key:'檸檬',name:'檸檬'}
 ];
+/* 大会は年6回。PLACESの並びがそのまま 1・3・5・7・9・11月 の開催地に対応(7回目は2年目1月大会) */
+const TOURN_MONTHS=[1,3,5,7,9,11];
+function tYear(no){return Math.floor((no-1)/TOURN_MONTHS.length)+1;}
+function tMonth(no){return TOURN_MONTHS[(no-1)%TOURN_MONTHS.length];}
+function tName(no){return `${tYear(no)}年目${tMonth(no)}月大会`;}
 const HYO=[-13,-9,-5,-2,2,5,10,15];       // 評価点(7日制・番付37未満)
 const MID=[-13,-9,-5,5,10,15];            // 評価値(中位)
 const LOW=[-20,-12,-5,5,20,30];           // 評価値(下位)
 const LOWEST=[0,2,5,10,20,30];            // 評価値(最下位)
 const PRE=[0,2,5,7,9,12];                 // 前相撲評価点
-const SUPER_IDS=new Set([44,219,243,300,341,353,564]); // 超絶好調リスト
+const SUPER_BOOST=0.5;     // 超絶好調: 調子値に+0.5(+50%)。基本値×得意苦手補正のあとに加算
+const SUPER_PROB_DEF=1;    // 大会前の抽選確率(%)の初期値
 const TOP_NAMES={1:'大将',2:'副将',3:'先鋒',4:'旗頭'};
 const TOP_DIVS=['大将','副将','先鋒','旗頭'];
 const LAYOUT=[['戦士',5,34],['闘士',22,30],['上等兵',37,80],['一等兵',77,150]]; // [名称,開始番号,定員(2人1枚)]
@@ -297,10 +342,9 @@ const GROUPS=[
   {key:'三等兵',label:'三等兵優勝',divs:['三等兵','前相撲'],days:5},
 ];
 const DIV_COLOR={大将:'#b3261e',副将:'#c4551b',先鋒:'#b8892b',旗頭:'#7d6a2c',戦士:'#2457a6',闘士:'#1f7a78',上等兵:'#6a4fa3',一等兵:'#5e6b7a',二等兵:'#85745a',三等兵:'#9a8f80',前相撲:'#a3a3a3'};
-const COND_LABEL={1.2:'絶好調',1.1:'好調',1:'普通',0.9:'不調',0.8:'絶不調'};
 
 const S={people:[],byId:new Map(),basho:null,history:[],logs:[],thirdStart:0,
-  settings:{superMode:false,special:true,meterRate:25,gateHp:true,mmT6:40,mmF5:20,mmF6:50}};
+  settings:{superOn:true,superProb:1,special:true,meterRate:25,gateHp:true,mmT6:40,mmF5:20,mmF6:50}};
 
 function L(msg){S.logs.push(msg);if(S.logs.length>400)S.logs.shift();}
 function norm(x){return (x==='(null)'||x==='なし'||x==null)?'':x;}
@@ -353,7 +397,7 @@ function resetProgress(){
 }
 function nameKey(s){return String(s).replace(/[\s\u3000]/g,'');}
 function pname(id){const p=S.byId.get(id);return p?p.name:(S.retired[id]||'(不明)');}
-/* キャラクターデータの更新を進行中のゲームへ反映する(場所の合間のみ呼ぶこと)。
+/* キャラクターデータの更新を進行中のゲームへ反映する(大会の合間のみ呼ぶこと)。
    rows: [id,名前,体力,パワー,ガード,IQ,能力評価値,初期番付,得意,苦手,収入,特殊能力,前相撲] */
 function applyRoster(rows){
   const B=S.basho;
@@ -420,12 +464,21 @@ function rankLabel(p){
 function groupIndex(p){return GROUPS.findIndex(g=>g.divs.includes(p.div));}
 function rankSortKey(p){return p.div==='前相撲'?99999:p.slot;}
 
-/* ---------- 場所の進行 ---------- */
+/* ---------- 大会の進行 ---------- */
 function startBasho(no){
   S.people.forEach(p=>{p.w=0;p.l=0;p.met=[];p.res=[];});
   S.basho={no,place:PLACES[(no-1)%PLACES.length],day:0,matches:[],mi:0,phase:'ready',
-    titles:null,playoffs:[],byes:[]};
+    titles:null,playoffs:[],byes:[],supers:rollSupers()};
+  if(S.basho.supers.length)L(`${tName(no)} 超絶好調: ${S.basho.supers.map(id=>pname(id)).join('、')}`);
 }
+/* 大会前に全員が抽選。当たった人はその大会中ずっと超絶好調(調子値+0.5) */
+function superProb(){const v=+S.settings.superProb;return Number.isFinite(v)&&S.settings.superProb!==''&&S.settings.superProb!=null?Math.max(0,Math.min(100,v)):SUPER_PROB_DEF;}
+function rollSupers(){
+  if(S.settings.superOn===false)return [];
+  const pr=superProb();
+  return S.people.filter(()=>Math.random()*100<pr).map(p=>p.id);
+}
+function isSuper(p){const B=S.basho;return !!(B&&B.supers&&B.supers.includes(p.id));}
 function maxDays(){return 7;}
 function met(a,b){return a.met.includes(b.id);}
 function ordKey(p){return rankSortKey(p)*10000-p.ab;}   // 小さいほど上位
@@ -712,7 +765,7 @@ function beginDay(){
   const B=S.basho;
   B.day++;B.mi=0;B.phase='days';
   B.matches=planDay(B.day);
-  L(`第${B.no}場所 ${B.day}日目:${B.matches.length}番の取組を編成`+((B.mmNotes&&B.mmNotes.length)?`(${B.mmNotes.join(' / ')})`:''));
+  L(`${tName(B.no)} ${B.day}日目:${B.matches.length}番の取組を編成`+((B.mmNotes&&B.mmNotes.length)?`(${B.mmNotes.join(' / ')})`:''));
 }
 
 function applyResult(m,res){
@@ -756,7 +809,7 @@ function decideTitles(){
     const ch=cand[0];
     B.titles[g.key]={id:ch.id,w:ch.w,l:ch.l,playoff:first.length>1,n:first.length};
     ch.titles.push({b:B.no,key:g.key});
-    L(`第${B.no}場所 ${g.label}:${ch.name}(${ch.w}勝${ch.l}敗)${first.length>1?' 決定戦':''}`);
+    L(`${tName(B.no)} ${g.label}:${ch.name}(${ch.w}勝${ch.l}敗)${first.length>1?' 決定戦':''}`);
   }
   B.phase='titled';
 }
@@ -775,7 +828,7 @@ function rebalance(){
     if(p.div==='大将'){tops.push(p);continue;}
     if(p.div==='副将'){
       if(p.w===7){
-        if(p.tsuna){promote(p,'大将');p.tsuna=false;changes.push(`${p.name}:副将→大将(2場所連続7勝)`);}
+        if(p.tsuna){promote(p,'大将');p.tsuna=false;changes.push(`${p.name}:副将→大将(2大会連続7勝)`);}
         else p.tsuna=true;
         tops.push(p);
       }else{
@@ -927,7 +980,7 @@ function describeMain(a){
     const list=Array.isArray(a[6])?a[6]:[];
     if(a[2]===1){
       const names=list.map(i=>(PLACES[i-1]||{}).name||i).join('・')||'(なし)';
-      return `【条件】現在の場所が ${names} ${a[7]===0?'のいずれか':'以外'}の場合、以降のコマンドを実行`;
+      return `【条件】現在の開催地が ${names} ${a[7]===0?'のいずれか':'以外'}の場合、以降のコマンドを実行`;
     }
     return `【条件】相手のIDが ${list.join(',')||'(なし)'} に${a[7]===0?'含まれる':'含まれない'}場合、以降のコマンドを実行`;
   }
@@ -994,12 +1047,13 @@ function gateOK(r,s,o,ctx){
 }
 
 /* ---------- 戦闘用の状態 ---------- */
-function mkSide(p,place,key){
-  const base=condRoll();let c=base;
-  if(place.key===p.fav)c*=1.2;
-  else if(place.key===p.bad)c*=0.8;
-  if(S.settings.superMode&&SUPER_IDS.has(p.id))c+=50;
-  return {key,p,base,c,hp:p.hp,max:p.hp,maxHp:p.hp,prevBonus:0,meter:0,hasMeter:false,cmds:[],last:0,
+function mkSide(p,place,key,noSuper){
+  const base=condRoll();let c=base,pl='';
+  if(place.key===p.fav){c*=1.2;pl='fav';}
+  else if(place.key===p.bad){c*=0.8;pl='bad';}
+  const sup=!noSuper&&isSuper(p);
+  if(sup)c+=SUPER_BOOST;
+  return {key,p,base,c,sup,pl,hp:p.hp,max:p.hp,maxHp:p.hp,prevBonus:0,meter:0,hasMeter:false,cmds:[],last:0,
     v:null,critO:null,missO:null,defO:null,critMult:DEF_CRIT_MULT};
 }
 function resetVars(s){
@@ -1195,8 +1249,8 @@ function tick(s){
 }
 
 /* ---------- 1試合 ---------- */
-function simulate(a,b,place){
-  const A=mkSide(a,place,'A'),B=mkSide(b,place,'B');
+function simulate(a,b,place,noSuper){
+  const A=mkSide(a,place,'A',noSuper),B=mkSide(b,place,'B',noSuper);
   const useSp=S.settings.special!==false;
   A.cmds=useSp?compileCmds(a):[];
   B.cmds=useSp?compileCmds(b):[];
@@ -1490,14 +1544,14 @@ function showUpdateDialog(m){
   ${m.changed.length?`<p><small class="dim">能力・画像などが変わる人</small><br>${nameList(m.changed,8)}</p>`:''}
   ${m.skipped.length?`<p class="dim"><small>能力値が空のため取り込まなかった行: ${m.skipped.length}件</small></p>`:''}
   <p class="dim"><small>得意/苦手場所・特殊能力は、同名のキャラは現在の設定を引き継ぎます。優勝などの記録は引き継がれ、整理された人の名前は歴代記録にだけ残ります。</small></p>
-  ${now?'':'<p class="dim">⚠ 場所の途中のため、今は反映できません。次の場所の開始時に自動で適用できます。</p>'}
-  <div class="row">${now?'<button class="primary" id="uApply">今すぐ適用</button>':'<button class="primary" id="uLater">次の場所の開始時に適用</button>'}<button id="uClose">キャンセル</button></div>`);
+  ${now?'':'<p class="dim">⚠ 大会の途中のため、今は反映できません。次の大会の開始時に自動で適用できます。</p>'}
+  <div class="row">${now?'<button class="primary" id="uApply">今すぐ適用</button>':'<button class="primary" id="uLater">次の大会の開始時に適用</button>'}<button id="uClose">キャンセル</button></div>`);
   $('uClose').onclick=()=>$('dlg').close();
   if(now)$('uApply').onclick=()=>{$('dlg').close();commitUpdate(m.rows,m.fetchedAt);};
   else $('uLater').onclick=()=>{
     lsSet(PEND_KEY,{fetchedAt:m.fetchedAt,rows:m.rows,sum:{a:m.added.length,r:m.removed.length,c:m.changed.length}});
     $('dlg').close();renderStatus();if(UI.tab==='settings')renderSettings();
-    toast('次の場所の開始時にデータを更新します');
+    toast('次の大会の開始時にデータを更新します');
   };
 }
 async function checkUpdate(){
@@ -1519,7 +1573,7 @@ function updateInfoHTML(){
   const db=getDB(),pd=getPending();
   return `<h3>キャラクターデータ</h3>
   <div class="set">現在 <b>${S.people.length}人</b> ／ データ元: <b>${db?'スプレッドシートから更新済み':'組み込みの初期データ'}</b>${db?` ／ 最終取得: ${fmtDate(db.fetchedAt)}`:''}</div>
-  ${pd?`<div class="set" style="color:var(--accent2)">適用待ち: 追加${pd.sum?pd.sum.a:'?'}人・整理${pd.sum?pd.sum.r:'?'}人・能力変更${pd.sum?pd.sum.c:'?'}人(次の場所の開始時に反映) <button id="oPendDel">破棄</button></div>`:''}
+  ${pd?`<div class="set" style="color:var(--accent2)">適用待ち: 追加${pd.sum?pd.sum.a:'?'}人・整理${pd.sum?pd.sum.r:'?'}人・能力変更${pd.sum?pd.sum.c:'?'}人(次の大会の開始時に反映) <button id="oPendDel">破棄</button></div>`:''}
   <div class="set"><button id="oUpd" class="primary">⟳ 最新データに更新</button> <small class="dim">押したときだけ取得します。起動時の自動取得はしません(連続更新は30秒あける必要があります)。</small></div>
   <div class="set"><label>取得先URL<input type="text" id="oUrl" value="${esc(getGasUrl())}" spellcheck="false"></label> <button id="oUrlReset">初期値に戻す</button></div>`;
 }
@@ -1553,7 +1607,7 @@ function serialize(){
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,
     people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,pre:p.pre,pk:p.pk,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted})),
-    basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],
+    basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],
       byes:B.byes.map(p=>p.id),
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
 }
@@ -1569,7 +1623,7 @@ function restore(d){
   if(d.ui){UI.mode=d.ui.mode||UI.mode;UI.speed=d.ui.speed||UI.speed;UI.scope=d.ui.scope||UI.scope;if(d.ui.autoNext!=null)UI.autoNext=d.ui.autoNext;}
   const b=d.basho;
   S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,
-    playoffs:b.playoffs||[],changes:b.changes||[],byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),
+    playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),
     matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0,dbg:r[9]||null}))};
   if(S.basho.mi>S.basho.matches.length)S.basho.mi=S.basho.matches.length;
 }
@@ -1590,11 +1644,6 @@ const SIDE_TPL=`<div class="who"><span class="rk">-</span><span class="nm">-</sp
 <div class="spt" hidden></div>
 <div class="chips"></div>
 <div class="st"></div>`;
-function mvIcon(p){
-  const k=rankSortKey(p);
-  if(p.rec.length===0||p.pk===k||p.div==='前相撲')return '';
-  return k<p.pk?'<span class="mv" title="前場所より昇進">⤴</span>':'<span class="mv dn" title="前場所より降下">⤵</span>';
-}
 function nameHue(n){let h=0;for(const c of String(n))h=(h*31+c.codePointAt(0))%360;return h;}
 const stage={
   init(){
@@ -1609,7 +1658,7 @@ const stage={
   head(m){
     const B=S.basho;
     if(m&&m.practice){this.el.basho.textContent='練習戦';this.el.day.textContent='';this.el.sub.textContent='';return;}
-    this.el.basho.textContent=`第${B.no}場所 ・ ${B.place.name}`;
+    this.el.basho.textContent=`${tName(B.no)}\n${B.place.name}`;
     this.el.day.textContent=B.phase==='done'?'終了':(B.day?`${B.day}日目`:'開幕前');
     this.el.sub.textContent=(m&&B.matches.includes(m))?`${GROUPS[m.gi]?GROUPS[m.gi].key:''} ・ ${B.matches.indexOf(m)+1}/${B.matches.length}番`:'';
   },
@@ -1621,7 +1670,7 @@ const stage={
   daysOf(m){return m.practice?0:Math.max(1,(GROUPS[m.gi]||{days:7}).days);},
   portrait(el,p,m){
     const box=el.querySelector('.portrait'),img=box.querySelector('img'),ph=box.querySelector('.ph');
-    box.dataset.tier=m.practice?'norm':TOP_DIVS.includes(p.div)?'top':p.div==='戦士'?'sen':p.div==='闘士'?'toshi':'norm';
+    box.dataset.tier=m.practice?'norm':p.div==='大将'?'top':(TOP_DIVS.includes(p.div)||p.div==='戦士')?'sen':p.div==='闘士'?'toshi':'norm';   // 金枠+きらめきは大将だけ
     const h=nameHue(p.name);
     ph.textContent=[...String(p.name).replace(/\s/g,'')][0]||'?';
     ph.style.background=`linear-gradient(135deg,hsl(${h},50%,62%),hsl(${(h+45)%360},50%,38%))`;
@@ -1658,13 +1707,14 @@ const stage={
       rk.textContent=m.practice?'(練習戦)':`(${rankLabel(p)})`;
       rk.style.setProperty('--dc',TOP_DIVS.includes(p.div)?'#ffc83d':(DIV_COLOR[p.div]||'#aaa'));
       el.querySelector('.nm').textContent=p.name;
-      const mv=el.querySelector('.who .mv');mv.outerHTML=m.practice?'<span class="mv"></span>':(mvIcon(p)||'<span class="mv"></span>');
-      const cl=COND_LABEL[s.base]||'普通';
-      const ps=s.c/s.base;
-      const place=ps>1.001?' ・得意場所':ps<0.999?' ・苦手場所':'';
-      const sp=s.c>10?' ・超絶好調!':'';
-      el.querySelector('.cond').textContent=cl+place+sp;
-      el.querySelector('.cond').dataset.c=s.base;
+      const mv=el.querySelector('.who .mv');   // 矢印: 得意場所=上向き / 苦手場所=下向き
+      mv.outerHTML=s.pl==='fav'?'<span class="mv" title="得意場所">⤴</span>':s.pl==='bad'?'<span class="mv dn" title="苦手場所">⤵</span>':'<span class="mv"></span>';
+      const tags=[];
+      if(s.sup)tags.push('超絶好調!');
+      if(s.pl==='fav')tags.push('得意場所');else if(s.pl==='bad')tags.push('苦手場所');
+      const cd=el.querySelector('.cond');
+      cd.textContent=tags.join(' ・ ');
+      cd.dataset.c=s.sup?'sup':(s.pl||'');
       el.querySelector('.st').textContent=`体${fmt(p.hp)} 力${fmt(p.pw)} 守${fmt(p.gd)} IQ${p.iq}`;
       const tag=el.querySelector('.spt');
       const n=s.cmds.length;
@@ -1781,7 +1831,7 @@ function inScope(m){
 function finishBasho(){
   finishBashoLogic();
   const g=GROUPS.find(g=>S.basho.titles[g.key]);   // 総合が空(リセット直後)なら最上位の優勝者を表示
-  if(g){const t=S.basho.titles[g.key];toast(`第${S.basho.no}場所 ${g.label}:${pname(t.id)}(${t.w}勝${t.l}敗)`);}
+  if(g){const t=S.basho.titles[g.key];toast(`${tName(S.basho.no)} ${g.label}:${pname(t.id)}(${t.w}勝${t.l}敗)`);}
   UI.tab=(UI.tab==='matches')?'titles':UI.tab;
   saveSoon();
 }
@@ -1845,19 +1895,20 @@ function toast(msg){
 function renderStatus(){
   const B=S.basho;
   if(!UI.updating)$('bUpd').textContent=updLabel();
-  $('stNo').textContent=`第${B.no}場所`;
+  $('stNo').textContent=`${tName(B.no)}`;
   $('stPlace').textContent=B.place.name;
   const d=B.phase==='done'?'終了':(B.day===0?'開幕前':`${B.day}日目`);
   $('stDay').textContent=d+(B.day?` / ${maxDays()}日制`:'');
   $('stLeft').textContent=B.phase==='done'?'-':(B.day?`${B.matches.length-B.mi}/${B.matches.length}`:'-');
   const n=B.phase==='done'?null:(B.day===0||dayDone()?null:B.matches[B.mi]);
-  $('stNext').textContent=n?`${n.a.name} vs ${n.b.name}`:(B.phase==='done'?'次の場所へ':'次の日へ');
+  $('stNext').textContent=n?`${n.a.name} vs ${n.b.name}`:(B.phase==='done'?'次の大会へ':'次の日へ');
   $('bNext').hidden=B.phase!=='done';
   $('bOne').hidden=$('bDay').hidden=$('bBasho').hidden=(B.phase==='done');
   const t=B.titles&&B.titles['総合'];
   $('stChamp').textContent=t?pname(t.id):'-';
 }
 function rowName(p){return `<a class="nl" data-id="${p.id}">${esc(p.name)}</a>`;}
+function rowNameS(p){return `<a class="nl" data-id="${p.id}">${esc(p.name)}${isSuper(p)?'<span class="sup" title="今大会 超絶好調">⚡</span>':''}</a>`;}
 function idLink(id){const p=S.byId.get(id);return p?rowName(p):`<span class="dim">${esc(pname(id))}(整理済)</span>`;}
 
 const TIER_NAME=['Tier0 7日目固定対戦','Tier1 大将同士(3人以上)','Tier2 副将同士(3人以上)','Tier3 大将↔副将(5〜7日目)','Tier4 先鋒絡みの重要対戦(4日目〜)','Tier5 通常の番付+成績編成'];
@@ -1894,13 +1945,14 @@ function renderMatches(){
   const sel=`<div class="row"><label>階級 <select id="mFilter">${['all',...GROUPS.map(g=>g.key)].map(k=>`<option value="${k}"${UI.mFilter===k?' selected':''}>${k==='all'?'全て':k}</option>`).join('')}</select></label>
   <span class="dim">${B.day?`${B.day}日目の取組(下位から上位の順)`:'「▶ 次の1番」か「今日を進める」で開幕します'}</span></div>`;
   let html=sel;
+  if(B.supers&&B.supers.length)html+=`<p class="dim">⚡ 今大会の超絶好調: ${B.supers.map(id=>idLink(id)).join('、')}</p>`;
   if(B.day){
     html+='<div class="mlist">';
     B.matches.forEach((m,i)=>{
       if(UI.mFilter!=='all'&&GROUPS[m.gi].key!==UI.mFilter)return;
       const cur=(i===B.mi&&B.phase!=='done')?' cur':'';
       const wa=m.w==='A',wb=m.w==='B';
-      html+=`<div class="m${cur}" data-mi="${i}"${m.dbg?` title="${esc(mmBrief(m.dbg))}"`:''}><span class="r">${rankLabel(m.a)}</span>${rowName(m.a)}<b class="${wa?'w':m.w?'x':''}">${wa?'○':m.w?'●':'・'}</b><i>${m.sp?'✦':'vs'}</i><b class="${wb?'w':m.w?'x':''}">${wb?'○':m.w?'●':'・'}</b>${rowName(m.b)}<span class="r">${rankLabel(m.b)}</span></div>`;
+      html+=`<div class="m${cur}" data-mi="${i}"${m.dbg?` title="${esc(mmBrief(m.dbg))}"`:''}><span class="r">${rankLabel(m.a)}</span>${rowNameS(m.a)}<b class="${wa?'w':m.w?'x':''}">${wa?'○':m.w?'●':'・'}</b><i>${m.sp?'✦':'vs'}</i><b class="${wb?'w':m.w?'x':''}">${wb?'○':m.w?'●':'・'}</b>${rowNameS(m.b)}<span class="r">${rankLabel(m.b)}</span></div>`;
     });
     html+='</div>';
     if(B.byes.length)html+=`<p class="dim">休み:${B.byes.map(p=>esc(p.name)).join('、')}</p>`;
@@ -1926,7 +1978,7 @@ function renderBanzuke(){
     return `<tr><td>${rankLabel(p)} <small class="dim">${side}</small></td><td>${arrow(p)}</td><td>${rowName(p)}</td><td>${S.basho.day?`${p.w}-${p.l}`:'-'}</td><td>${p.rec.length?`${p.rec[p.rec.length-1].w}勝`:'-'}</td><td>${champs?'★'.repeat(Math.min(champs,6))+(champs>6?'+'+(champs-6):''):''}</td></tr>`;
   }).join('');
   el.innerHTML=`<div class="row"><label>表示 <select id="bFilter">${divs.map(k=>`<option value="${k}"${UI.bFilter===k?' selected':''}>${k==='all'?'全て':k}</option>`).join('')}</select></label><span class="dim">${list.length}人</span></div>
-  <div class="tbl"><table><thead><tr><th>番付</th><th></th><th>名前</th><th>今場所</th><th>前場所</th><th>総合優勝</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  <div class="tbl"><table><thead><tr><th>番付</th><th></th><th>名前</th><th>今大会</th><th>前大会</th><th>総合優勝</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   $('bFilter').onchange=e=>{UI.bFilter=e.target.value;renderBanzuke();};
 }
 function renderStandings(){
@@ -1946,14 +1998,14 @@ function renderTitles(){
   const ranking=S.people.map(p=>({p,n:p.titles.filter(t=>t.key==='総合').length,all:p.titles.length})).filter(x=>x.all).sort((a,b)=>b.n-a.n||b.all-a.all).slice(0,12);
   const hist=S.history.slice(-30).reverse().map(h=>{
     const t=h.titles&&h.titles['総合'];
-    return `<tr><td>第${h.no}場所</td><td>${esc(h.place)}</td><td>${t?idLink(t.id):'-'}</td><td>${t?`${t.w}-${t.l}`:''}</td><td>${h.titles&&h.titles['闘士']?idLink(h.titles['闘士'].id):''}</td></tr>`;
+    return `<tr><td>${tName(h.no)}</td><td>${esc(h.place)}</td><td>${t?idLink(t.id):'-'}</td><td>${t?`${t.w}-${t.l}`:''}</td><td>${h.titles&&h.titles['闘士']?idLink(h.titles['闘士'].id):''}</td></tr>`;
   }).join('');
   const ch=(B.changes||[]).filter(c=>/大将|副将|先鋒|旗頭/.test(c)).slice(0,20);
-  el.innerHTML=`<h3>${B.titles?`第${B.no}場所の結果`:'今場所の優勝(終了後に確定)'}</h3><div class="cards">${cards}</div>
+  el.innerHTML=`<h3>${B.titles?`${tName(B.no)}の結果`:'今大会の優勝(終了後に確定)'}</h3><div class="cards">${cards}</div>
   ${B.playoffs&&B.playoffs.length?`<p class="dim">優勝決定戦 ${B.playoffs.length}番:${B.playoffs.slice(0,8).map(x=>`${esc(pname(x.a))}×${esc(pname(x.b))}→${esc(pname(x.win))}`).join(' / ')}${B.playoffs.length>8?' …':''}</p>`:''}
   ${ch.length?`<h3>上位番付の変動</h3><ul class="chg">${ch.map(c=>`<li>${esc(c)}</li>`).join('')}</ul>`:''}
   <h3>総合優勝 回数ランキング</h3>${ranking.length?`<ol class="rk">${ranking.map(x=>`<li>${rowName(x.p)} <b>${x.n}回</b> <small class="dim">(全部門 ${x.all}回)</small></li>`).join('')}</ol>`:'<p class="dim">まだ優勝者はいません。</p>'}
-  <h3>歴代の総合優勝</h3><div class="tbl"><table><thead><tr><th>場所</th><th>開催地</th><th>総合優勝</th><th>成績</th><th>闘士優勝</th></tr></thead><tbody>${hist||'<tr><td colspan="5" class="dim">まだありません</td></tr>'}</tbody></table></div>`;
+  <h3>歴代の総合優勝</h3><div class="tbl"><table><thead><tr><th>大会</th><th>開催地</th><th>総合優勝</th><th>成績</th><th>闘士優勝</th></tr></thead><tbody>${hist||'<tr><td colspan="5" class="dim">まだありません</td></tr>'}</tbody></table></div>`;
 }
 function renderSearch(){
   const el=$('tab_search');
@@ -1976,19 +2028,20 @@ function renderSettings(){
   <div class="set"><label><input type="checkbox" id="oSpecial" ${S.settings.special!==false?'checked':''}> 特殊能力を有効にする <small class="dim">オフにすると全員が通常攻撃だけで戦います</small></label></div>
   <div class="set"><label>メーター増加量(暫定) <input type="number" id="oMeter" min="1" max="100" step="1" value="${S.settings.meterRate}" style="width:72px"> % / ターン <small class="dim">100%で満タン。${Math.ceil(100/Math.max(1,S.settings.meterRate))}ターンごとに発動</small></label></div>
   <div class="set"><label><input type="checkbox" id="oGate" ${S.settings.gateHp!==false?'checked':''}> 条件分岐の「体力」を、現在のHPで判定する <small class="dim">オフにすると原作どおり、データ上の体力値で判定します</small></label></div>
-  <div class="set"><label><input type="checkbox" id="oSuper" ${S.settings.superMode?'checked':''}> 超絶好調リスト(7名)の「調子+50」を有効にする <small class="dim">原作の仕様。有効にすると該当者は事実上無敵になります</small></label></div>
+  <div class="set"><label><input type="checkbox" id="oSuper" ${S.settings.superOn!==false?'checked':''}> 超絶好調を有効にする <small class="dim">大会の開始前に全員が抽選し、当たった人はその大会中ずっと調子値が +0.5(基本値×得意苦手補正のあとに加算)</small></label></div>
+  <div class="set"><label>超絶好調の抽選確率 <input type="number" id="oSuperP" min="0" max="100" step="0.1" value="${superProb()}" style="width:72px"> %(1人ずつ独立に抽選・次の大会から反映)</label></div>
   <h3>取組編成(解禁確率)</h3>
   <div class="set"><label>大将が3人以上のとき、大将同士を6日目に解禁する確率 <input type="number" id="oT6" min="0" max="100" step="1" value="${mmProb('mmT6')}" style="width:72px"> %</label></div>
   <div class="set"><label>副将が3人以上のとき、副将同士を5日目に解禁する確率 <input type="number" id="oF5" min="0" max="100" step="1" value="${mmProb('mmF5')}" style="width:72px"> %</label></div>
   <div class="set"><label>副将が3人以上のとき、副将同士を6日目に解禁する確率 <input type="number" id="oF6" min="0" max="100" step="1" value="${mmProb('mmF6')}" style="width:72px"> %</label> <small class="dim">いずれも次の日の編成から反映。2人のときは7日目固定で確率は使いません</small></div>
   <div class="set"><label>アニメ観戦の対象
     <select id="oScope"><option value="top"${UI.scope==='top'?' selected':''}>総合+闘士の取組</option><option value="watch"${UI.scope==='watch'?' selected':''}>観戦リスト(空なら総合のみ)</option><option value="all"${UI.scope==='all'?' selected':''}>全ての取組(とても長い)</option></select></label></div>
-  <div class="set"><label><input type="checkbox" id="oAuto" ${UI.autoNext?'checked':''}> 場所が終わったら自動で次の場所へ進む(「自動で進める」使用時)</label></div>
+  <div class="set"><label><input type="checkbox" id="oAuto" ${UI.autoNext?'checked':''}> 大会が終わったら自動で次の大会へ進む(「自動で進める」使用時)</label></div>
   <div class="set btns"><button id="oSave">いま保存</button><button id="oExport">ファイルに書き出す</button><label class="btn">読み込む<input type="file" id="oImport" accept=".json" hidden></label><button id="oResetProg" class="danger">番付・記録をリセット</button><button id="oReset" class="danger">最初からやり直す</button></div>
   <p class="dim">進行状況は、このブラウザに自動保存されます。</p>
-  <p class="dim">「番付・記録をリセット」: 番付・優勝歴・場所ごとの成績を消し、全員を上等兵以下に落として能力評価値の高い順に上等兵1から並べ直します。「最初からやり直す」はキャラクターデータの更新も含めた完全な初期化です。</p>
+  <p class="dim">「番付・記録をリセット」: 番付・優勝歴・大会ごとの成績を消し、全員を上等兵以下に落として能力評価値の高い順に上等兵1から並べ直します。「最初からやり直す」はキャラクターデータの更新も含めた完全な初期化です。</p>
   <h3>この版の仕様メモ</h3><ul class="memo">
-  <li>戦闘式は TurboWarp 版の「対戦処理」を移植(調子5段階、得意/苦手場所補正、IQによる会心・ミス、ガード軽減)。</li>
+  <li>戦闘式は TurboWarp 版の「対戦処理」を移植(調子5段階(内部のみ・画面には出さない)、得意/苦手場所補正、大会前抽選の超絶好調、IQによる会心・ミス、ガード軽減)。</li>
   <li>番付は「内部スコア=番付−評価点」方式。大将・副将・先鋒・旗頭は独立した昇進ルール。</li>
   <li>特殊能力コマンド(能力調整・攻撃・システム介入・条件分岐)を実装。メーターは暫定で毎ターン一定量ずつ増加。</li>
   <li>「HPに応じる」(発動条件2)は、HPが指定%以下のとき毎ターン判定する形で実装(仕様書では未実装扱い)。</li>
@@ -2002,7 +2055,8 @@ function renderSettings(){
     e.target.value=v;S.settings.meterRate=v;saveSoon();renderSettings();
   };
   $('oGate').onchange=e=>{S.settings.gateHp=e.target.checked;saveSoon();};
-  $('oSuper').onchange=e=>{S.settings.superMode=e.target.checked;saveSoon();};
+  $('oSuper').onchange=e=>{S.settings.superOn=e.target.checked;saveSoon();};
+  $('oSuperP').onchange=e=>{let v=+e.target.value;if(!(v>=0))v=SUPER_PROB_DEF;v=Math.min(100,v);e.target.value=v;S.settings.superProb=v;saveSoon();};
   [['oT6','mmT6'],['oF5','mmF5'],['oF6','mmF6']].forEach(([id,k])=>{$(id).onchange=e=>{let v=Math.round(+e.target.value);if(!(v>=0))v=MM.DEF[k];v=Math.min(100,v);e.target.value=v;S.settings[k]=v;saveSoon();};});
   $('oScope').onchange=e=>{UI.scope=e.target.value;saveSoon();};
   $('oAuto').onchange=e=>{UI.autoNext=e.target.checked;saveSoon();};
@@ -2010,7 +2064,7 @@ function renderSettings(){
   $('oExport').onclick=()=>{
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob([JSON.stringify(serialize())],{type:'application/json'}));
-    a.download=`banzuke_save_basho${S.basho.no}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+    a.download=`se_battle2_save_basho${S.basho.no}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
   };
   $('oImport').onchange=async e=>{
     try{restore(JSON.parse(await e.target.files[0].text()));saveNow();renderAll();toast('読み込みました');}
@@ -2018,9 +2072,9 @@ function renderSettings(){
   };
   $('oResetProg').onclick=()=>{
     if(UI.busy){toast('進行中です。停止してからリセットしてください');return;}
-    if(!confirm('番付・優勝記録・場所ごとの成績をすべて消します。\n全員が上等兵以下に落ち、能力評価値の高い順に上等兵1から並び直します。\n(キャラクターのデータと設定は変わりません)\nよろしいですか?'))return;
+    if(!confirm('番付・優勝記録・大会ごとの成績をすべて消します。\n全員が上等兵以下に落ち、能力評価値の高い順に上等兵1から並び直します。\n(キャラクターのデータと設定は変わりません)\nよろしいですか?'))return;
     UI.stop=true;resetProgress();stage.idle();renderAll();saveNow();
-    toast('番付と記録をリセットしました(第1場所から開始)');
+    toast('番付と記録をリセットしました(1年目1月大会から開始)');
   };
   $('oReset').onclick=()=>{
     if(!confirm('進行状況をすべて消して最初からやり直します。よろしいですか?'))return;
@@ -2037,7 +2091,7 @@ function renderDuel(){
   <div class="row"><label>左 <input type="search" id="dA" list="dl" placeholder="名前" value="${esc(D.a)}" autocomplete="off"></label>
   <label>右 <input type="search" id="dB" list="dl" placeholder="名前" value="${esc(D.b)}" autocomplete="off"></label></div>
   <datalist id="dl">${names}</datalist>
-  <div class="row"><label>場所 <select id="dP">${PLACES.map((x,i)=>`<option value="${i}"${D.place===i?' selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
+  <div class="row"><label>開催地 <select id="dP">${PLACES.map((x,i)=>`<option value="${i}"${D.place===i?' selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
   <label><input type="checkbox" id="dS" ${D.spOnly?'checked':''}> ランダムは特殊能力持ちを優先</label></div>
   <div class="row"><button class="primary" id="dGo">▶ 対戦する</button><button id="dRnd">🎲 ランダムに選ぶ</button><button id="dRep">もう一度</button></div>
   <div id="dMsg" class="dim"></div>
@@ -2061,7 +2115,7 @@ function renderDuel(){
     if(UI.busy)return;
     UI.busy=true;UI.stop=false;setBusy(true);$('dMsg').textContent='';
     try{
-      const res=simulate(a,b,PLACES[D.place]);
+      const res=simulate(a,b,PLACES[D.place],true);   // 練習戦は超絶好調なし
       const m={a,b,practice:true};
       window.scrollTo({top:0,behavior:'smooth'});
       await showBattle(m,res,true);
@@ -2098,12 +2152,12 @@ function cmdHTML(p){
 function openProfile(id){
   const p=S.byId.get(id);if(!p)return;
   const bar=(v,max)=>`<span class="sb"><i style="width:${Math.min(100,v/max*100)}%"></i></span>`;
-  const rec=p.rec.slice(-12).reverse().map(r=>`<tr><td>第${r.b}場所</td><td>${esc(r.div)}</td><td>${r.w}勝${r.l}敗</td></tr>`).join('');
-  const tl=p.titles.map(t=>`第${t.b}場所 ${t.key}`).slice(-12).join('、');
+  const rec=p.rec.slice(-12).reverse().map(r=>`<tr><td>${tName(r.b)}</td><td>${esc(r.div)}</td><td>${r.w}勝${r.l}敗</td></tr>`).join('');
+  const tl=p.titles.map(t=>`${tName(t.b)} ${t.key}`).slice(-12).join('、');
   const tw=p.rec.reduce((s,r)=>s+r.w,0),tl2=p.rec.reduce((s,r)=>s+r.l,0);
   $('dlgBody').innerHTML=`<h2>${esc(p.name)}</h2>
   ${p.img?`<img class="pfimg" src="${esc(imgUrl(p.img))}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}
-  <p><b>${rankLabel(p)}</b> ${p.pre?'(前相撲)':''}${p.tsuna?' ・綱取りの場所':''}</p>
+  <p><b>${rankLabel(p)}</b> ${p.pre?'(前相撲)':''}${p.tsuna?' ・綱取りの大会':''}</p>
   <div class="stats">
    <div><small>体力</small><b>${fmt(p.hp)}</b>${bar(p.hp,25000)}</div>
    <div><small>パワー</small><b>${fmt(p.pw)}</b>${bar(p.pw,26000)}</div>
@@ -2112,10 +2166,10 @@ function openProfile(id){
    <div><small>能力評価値</small><b>${fmt(p.ab)}</b>${bar(p.ab,40000)}</div>
    <div><small>場所収入</small><b>${fmt(p.inc)}</b></div>
   </div>
-  <p>得意場所:<b>${esc(p.fav||'なし')}</b> / 苦手場所:<b>${esc(p.bad||'なし')}</b></p>
+  <p>得意場所:<b>${esc(p.fav||'なし')}</b> / 苦手場所:<b>${esc(p.bad||'なし')}</b>${isSuper(p)?' / <b style="color:#d98a00">⚡ 今大会は超絶好調</b>':''}</p>
   ${cmdHTML(p)}
   <p>通算(記録分): ${tw}勝${tl2}敗 ${tl?`<br>優勝歴: ${esc(tl)}`:''}</p>
-  ${rec?`<div class="tbl small"><table><thead><tr><th>場所</th><th>番付</th><th>成績</th></tr></thead><tbody>${rec}</tbody></table></div>`:'<p class="dim">まだ場所の記録がありません</p>'}
+  ${rec?`<div class="tbl small"><table><thead><tr><th>大会</th><th>番付</th><th>成績</th></tr></thead><tbody>${rec}</tbody></table></div>`:'<p class="dim">まだ大会の記録がありません</p>'}
   <div class="row"><button id="pWatch">${UI.watch.has(id)?'観戦リストから外す':'観戦リストに追加'}</button><button id="pClose">閉じる</button></div>`;
   $('pClose').onclick=()=>$('dlg').close();
   $('pWatch').onclick=()=>{UI.watch.has(id)?UI.watch.delete(id):UI.watch.add(id);saveSoon();openProfile(id);if(UI.tab==='search')renderSearch();};
