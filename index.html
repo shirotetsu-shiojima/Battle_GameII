@@ -358,7 +358,7 @@ const GROUPS=[
 const DIV_COLOR={大将:'#b3261e',副将:'#c4551b',先鋒:'#b8892b',旗頭:'#7d6a2c',戦士:'#2457a6',闘士:'#1f7a78',上等兵:'#6a4fa3',一等兵:'#5e6b7a',二等兵:'#85745a',三等兵:'#9a8f80',前相撲:'#a3a3a3'};
 
 const S={people:[],byId:new Map(),basho:null,history:[],logs:[],thirdStart:0,
-  settings:{soundOn:true,bgmVol:60,seVol:80,superOn:true,superProb:1,special:true,meterRate:25,gateHp:true,mmT6:40,mmF5:20,mmF6:50}};
+  settings:{soundOn:true,bgmVol:60,seVol:80,superOn:true,superProb:1,special:true,gateHp:true,mmT6:40,mmF5:20,mmF6:50}};
 
 function L(msg){S.logs.push(msg);if(S.logs.length>400)S.logs.shift();}
 function norm(x){return (x==='(null)'||x==='なし'||x==null)?'':x;}
@@ -759,11 +759,11 @@ function planDay(day){
     }
     for(const pr of pairs){
       let {a,b}=pr;
+      if(Math.random()<.5)[a,b]=[b,a];     // 先攻(画面左=a)は編成時にランダム。以前は番付が上の方が先攻だった
       let e,nz=0,tier,why='';
       if(pr.fx){e=mmEval(a,b,day,ctx);tier=pr.fx.tier;why=pr.fx.why;notes.push(`${a.name}↔${b.name}: ${why}`);}
       else{e=pr.ev.e;nz=pr.ev.nz;tier=mmTier(a,b,day,null);}
       const dbg=mmDbg(a,b,day,ctx,e,tier,why,nz,list);
-      if(ordKey(b)<ordKey(a))[a,b]=[b,a];
       out.push({a,b,gi,w:null,swiss:false,dbg});
     }
     if(g.key==='総合'&&(ctx.nT||ctx.nF)){
@@ -771,7 +771,8 @@ function planDay(day){
     }
   }
   // 下位の取組から順に。最後が最上位(結び)
-  out.sort((x,y)=>y.gi-x.gi||ordKey(y.a)-ordKey(x.a));
+  const top=m=>Math.min(ordKey(m.a),ordKey(m.b));            // 取組の並びは、組の上位側の番付で決める
+  out.sort((x,y)=>y.gi-x.gi||top(y)-top(x));
   B.mmNotes=notes;
   return out;
 }
@@ -931,7 +932,7 @@ function finishBashoLogic(){ // 日程終了後: 優勝決定→番付編成(決
 
    1ターンの流れ
      1. 両者の戦闘用ステータスを基礎値に戻す(体力の増減分だけは現在HPに反映)
-     2. メーターを加算(暫定: 毎ターン一定量)
+     2. メーターを加算(前作Scratchの式: コミュ力・能力評価値・体力差で増加量が変わる)
      3. 常時・HP条件・継続中の「能力調整/システム介入」を先攻→後攻の順に適用
      4. 先攻の行動 → 後攻の行動
         ・メーター満タンなら特殊能力が発動(メーターは0に戻る)
@@ -1225,11 +1226,30 @@ function hpCond(r,s,o){
   const t=r.a[9]===1?o:s;
   return t.hp/t.p.hp*100<=r.a[10];
 }
-/* メーター増加量。暫定: 毎ターン一定量(設定値)。
-   原作は コミュ力・能力評価値・体力差で変動するので、差し替える場合はここだけ直す */
+/* メーター増加量(前作 Scratch「ゲージ仕組み」の式を移植)。毎ターンの開始時に、生きている側それぞれに加算する。
+   原作のゲージは「0〜(能力評価値+3000)」。ここでは満タンを100%として割合で持つ。
+     ブースト   = 相手の能力評価値 ÷ 自分の能力評価値(1未満なら1)       … 格上の相手と戦うほど溜まりやすい
+                + 自分の体力割合が相手より低いとき、その差の1/3         … 劣勢なほど溜まりやすい
+                → さらに (ブースト−1)÷2+1 にならす(効きを半分に)
+     増加量     = (コミュ力 + (30000−能力評価値)÷2 の切り捨て) ÷ 5 × ブースト
+     満タン値   = (能力評価値の切り捨て + 3000) × METER_CAP_RATE            … 超えた分は満タンで止まる
+     METER_CAP_RATE: 原作の容量に対する倍率。0.7なら容量が7割(=約1.4倍の速さで溜まる)。溜まりやすさを調整するときはここだけ変える */
+const METER_CAP_RATE=0.7;
 function meterGain(s,o,ctx){
-  const r=S.settings.meterRate;
-  return Number.isFinite(r)?r:25;
+  const ps=s.p,po=o.p;
+  const abS=Math.max(1,ps.ab),abO=Math.max(1,po.ab);
+  let boost=abO/abS>1?abO/abS:1;
+  const rS=s.hp/ps.hp,rO=o.hp/po.hp;
+  if(rO-rS>0)boost+=(rO-rS)/3;
+  boost=(boost-1)/2+1;
+  const inc=((s.v.com||0)+Math.floor((30000-abS)/2))/5*boost;
+  const cap=(Math.floor(abS)+3000)*METER_CAP_RATE;
+  return inc/cap*METER_MAX;
+}
+/* プロフィール表示用の目安: ブースト1.0(互角の相手)のときの1ターンあたりの増加率(%) */
+function meterBaseRate(p){
+  const ab=Math.max(1,p.ab);
+  return ((p.com||0)+Math.floor((30000-ab)/2))/5/((Math.floor(ab)+3000)*METER_CAP_RATE)*100;
 }
 function passivePhase(ctx,s,o){
   if(s.hp<=0)return;
@@ -2113,6 +2133,7 @@ function openMatchInfo(i){
   $('dlgBody').innerHTML=`<h2>取組の編成理由</h2>
   <p>${d.day}日目 <b>${esc(m.a.name)}</b>(${esc(d.ra)} ${d.wa}勝)vs <b>${esc(m.b.name)}</b>(${esc(d.rb)} ${d.wb}勝)</p>
   <div class="tbl small"><table><tbody>
+   ${row('先攻(画面左)',`${esc(m.a.name)} <span class="dim">(編成時にランダム決定)</span>`)}
    ${row('優先順位',esc(TIER_NAME[d.tier]||''))}
    ${d.fx?row('固定・優先の理由',esc(d.fx)):''}
    ${row('ハード禁止判定',esc(d.hard))}
@@ -2226,7 +2247,6 @@ function renderSettings(){
   $('tab_settings').innerHTML=updateInfoHTML()+`
   <h3>ゲーム設定</h3>
   <div class="set"><label><input type="checkbox" id="oSpecial" ${S.settings.special!==false?'checked':''}> 特殊能力を有効にする <small class="dim">オフにすると全員が通常攻撃だけで戦います</small></label></div>
-  <div class="set"><label>メーター増加量(暫定) <input type="number" id="oMeter" min="1" max="100" step="1" value="${S.settings.meterRate}" style="width:72px"> % / ターン <small class="dim">100%で満タン。${Math.ceil(100/Math.max(1,S.settings.meterRate))}ターンごとに発動</small></label></div>
   <div class="set"><label><input type="checkbox" id="oGate" ${S.settings.gateHp!==false?'checked':''}> 条件分岐の「体力」を、現在のHPで判定する <small class="dim">オフにすると原作どおり、データ上の体力値で判定します</small></label></div>
   <div class="set"><label><input type="checkbox" id="oSuper" ${S.settings.superOn!==false?'checked':''}> 超絶好調を有効にする <small class="dim">大会の開始前に全員が抽選し、当たった人はその大会中ずっと調子値が +0.5(基本値×得意苦手補正のあとに加算)</small></label></div>
   <div class="set"><label>超絶好調の抽選確率 <input type="number" id="oSuperP" min="0" max="100" step="0.1" value="${superProb()}" style="width:72px"> %(1人ずつ独立に抽選・次の大会から反映)</label></div>
@@ -2247,17 +2267,13 @@ function renderSettings(){
   <h3>この版の仕様メモ</h3><ul class="memo">
   <li>戦闘式は TurboWarp 版の「対戦処理」を移植(調子5段階(内部のみ・画面には出さない)、得意/苦手場所補正、大会前抽選の超絶好調、IQによる会心・ミス、ガード軽減)。</li>
   <li>番付は「内部スコア=番付−評価点」方式。大将・副将・先鋒・旗頭は独立した昇進ルール。</li>
-  <li>特殊能力コマンド(能力調整・攻撃・システム介入・条件分岐)を実装。メーターは暫定で毎ターン一定量ずつ増加。</li>
+  <li>特殊能力コマンド(能力調整・攻撃・システム介入・条件分岐)を実装。メーターは前作(Scratch)と同じ式で増加(コミュ力・能力評価値・体力差で変わる)。</li>
   <li>「HPに応じる」(発動条件2)は、HPが指定%以下のとき毎ターン判定する形で実装(仕様書では未実装扱い)。</li>
   <li>種別9(例外コード)は呼び出し口のみ用意(中身は未定義)。</li>
   <li>取組編成は「取組編成ロジック仕様表 v1.1」準拠。番付適合度と成績適合度を日数別ウェイトで合成し、大将・副将同士の解禁/固定ルールと再戦ペナルティを加えて全体マッチングで決定。取組表の行をクリックすると編成理由を確認できます。</li>
   </ul>`;
   bindUpdateInfo();
   $('oSpecial').onchange=e=>{S.settings.special=e.target.checked;saveSoon();};
-  $('oMeter').onchange=e=>{
-    let v=Math.round(+e.target.value);if(!(v>=1))v=25;v=Math.min(100,v);
-    e.target.value=v;S.settings.meterRate=v;saveSoon();renderSettings();
-  };
   $('oGate').onchange=e=>{S.settings.gateHp=e.target.checked;saveSoon();};
   $('oSound').onchange=e=>setSound(e.target.checked);
   $('oBgmVol').oninput=e=>{S.settings.bgmVol=+e.target.value;$('oBgmVolV').textContent=e.target.value;bgm.apply();saveSoon();};
@@ -2355,7 +2371,10 @@ function cmdHTML(p){
     const cls=t===4?'gate':t===2?'atk':t===3?'sys':'stat';
     return `<li class="${cls}">${esc(describeCmd(c.a))}</li>`;
   }).join('');
-  return `<div class="sp"><b>✦ 特殊能力</b><ul>${items}</ul>${errs.length?`<p class="dim">解釈できないコマンドが${errs.length}件あります</p>`:''}
+  const hasM=cmds.some(c=>c.a[8]===0);
+  const mr=meterBaseRate(p);
+  const mline=hasM?`<p class="dim" style="margin:4px 0 0">メーター増加の目安: 互角の相手なら1ターン約${mr>=100?'100':mr.toFixed(0)}%(約${Math.max(1,Math.ceil(100/Math.min(100,mr)))}ターンで満タン)。相手が格上・自分が劣勢だと速くなります</p>`:'';
+  return `<div class="sp"><b>✦ 特殊能力</b><ul>${items}</ul>${mline}${errs.length?`<p class="dim">解釈できないコマンドが${errs.length}件あります</p>`:''}
   <details><summary class="dim">コマンドコード</summary><code>${esc(p.cmd)}</code></details></div>`;
 }
 function openProfile(id){
