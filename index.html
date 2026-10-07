@@ -1839,7 +1839,12 @@ function loadSaved(){
 }
 
 /* ---------- 戦闘ステージ ---------- */
-const STAGE_BG_URL='';   // 背景画像のURL(例: 'bg/town.png')。空ならデフォルトのグラデーション背景
+/* 対戦画面の背景: 開催地(開催月)ごとに images フォルダの「1月背景.png」「3月背景.png」…「11月背景.png」を使う。
+   画像が無い月は、下の STAGE_BG_URL(空ならデフォルトのグラデーション背景)になる。
+   画像は画面いっぱいに表示する(縦横比が合わないときは、短い辺に合わせて拡大し、はみ出す部分は中央を基準に切り取る)。 */
+const STAGE_BG_DIR='images/';                                 // 背景画像を入れるフォルダ(index.html からの相対パス)
+const STAGE_BG_FILE=month=>`${month}月背景.png`;               // 開催月 → ファイル名
+const STAGE_BG_URL='';   // 開催月の画像が無いときの共通背景(例: 'images/共通背景.png')。空ならデフォルトのグラデーション背景
 const SIDE_TPL=`<div class="who"><span class="rk">-</span><span class="nm">-</span><span class="mv"></span></div>
 <div class="cond"></div>
 <div class="hpt"></div>
@@ -1857,7 +1862,25 @@ const stage={
     this.el.L.onclick=()=>this.cur&&this.cur.a&&openProfile(this.cur.a.id);
     this.el.R.onclick=()=>this.cur&&this.cur.b&&openProfile(this.cur.b.id);
     this.el.gs.onclick=e=>{e.stopPropagation();this.el.gs.hidden=true;};
-    if(STAGE_BG_URL)$('duel').style.setProperty('--stage-bg',`url("${STAGE_BG_URL}") center/cover no-repeat`);
+  },
+  /* 開催地に合わせた背景にする。画像を先に読み込んで、あるときだけ差し替える(無ければ共通背景/グラデーション) */
+  _bgState:{},_bgWant:'',
+  bg(place){
+    const duel=$('duel');if(!duel)return;
+    const apply=url=>{if(url)duel.style.setProperty('--stage-bg',`url("${url}") center/cover no-repeat`);else duel.style.removeProperty('--stage-bg');};
+    const i=PLACES.indexOf(place);
+    if(i<0){apply(STAGE_BG_URL);return;}
+    const url=encodeURI(STAGE_BG_DIR+STAGE_BG_FILE(TOURN_MONTHS[i]));
+    this._bgWant=url;
+    const st=this._bgState[url];
+    if(st==='ok'){apply(url);return;}
+    if(st==='ng'){apply(STAGE_BG_URL);return;}
+    if(st==='loading')return;
+    this._bgState[url]='loading';
+    const img=new Image();
+    img.onload=()=>{this._bgState[url]='ok';if(this._bgWant===url)apply(url);};
+    img.onerror=()=>{this._bgState[url]='ng';if(this._bgWant===url)apply(STAGE_BG_URL);};
+    img.src=url;
   },
   head(m){
     const B=S.basho;
@@ -1888,6 +1911,7 @@ const stage={
   },
   idle(){
     $('stageBody').classList.add('idle');this.cur=null;this.el.aiai.hidden=true;
+    if(S.basho)this.bg(S.basho.place);
     this.el.gs.hidden=true;this.head(null);this.el.turn.textContent='';this.el.res.textContent='';
     this.el.feed.innerHTML='<div class="dim">取組を始めるとここに戦闘が表示されます。</div>';
   },
@@ -1925,6 +1949,7 @@ const stage={
     this.cur=m;
     $('stageBody').classList.remove('idle');
     this.el.gs.hidden=true;
+    this.bg(m.place||S.basho.place);     // 練習戦は選んだ開催地、本場所は今大会の開催地
     this.head(m);this.aiai(m,false);
     const put=(el,s,p)=>{
       const rk=el.querySelector('.rk');
@@ -2569,7 +2594,7 @@ function renderDuel(){
     UI.busy=true;UI.stop=false;setBusy(true);$('dMsg').textContent='';
     try{
       const res=simulate(a,b,PLACES[D.place],true);   // 練習戦は超絶好調なし
-      const m={a,b,practice:true};
+      const m={a,b,practice:true,place:PLACES[D.place]};
       window.scrollTo({top:0,behavior:'smooth'});
       await showBattle(m,res,true);
       $('dMsg').textContent=`${res.winner.name} の勝ち(${res.turns}ターン${res.sp?`・特殊能力の発動 ${res.sp}回`:''})`;
