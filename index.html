@@ -138,6 +138,20 @@ input[type=search],input[type=text]{width:100%}
 #duelSub{font-size:11px;opacity:.9}
 .mid .vs{font-family:var(--disp);font-size:24px;color:#ffe27a;font-weight:800;margin-top:10px}
 .mid .turn{font-size:12px} .mid .res{font-size:12px;font-weight:700;margin-top:4px}
+/* 合い口(戦士以上同士の対戦成績) */
+.aiai{display:inline-block;min-width:116px;margin:6px auto 0;padding:3px 12px 4px;border-radius:12px;background:rgba(74,46,106,.6);color:#fff;text-shadow:none;line-height:1.3}
+.aiai small{display:block;font-size:10px;opacity:.85;letter-spacing:.08em}
+.aiai .ab{font-family:var(--disp);font-weight:900;font-size:clamp(16px,2.4vw,20px);font-variant-numeric:tabular-nums;white-space:nowrap}
+.aiai .ab b{font-weight:900;opacity:.75}.aiai .ab b.aw{color:#ffe27a;opacity:1}
+.aiai .at{font-size:11px;font-weight:700;white-space:nowrap}
+.aiai.upd{animation:glow .7s 2 alternate}
+.aiaiP{margin:12px 0}
+.aiaiP .pair{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:8px 14px;margin:8px 0}
+.aiaiP h4{margin:12px 0 4px;font-size:14px;font-family:var(--disp)}
+.aiaiP .gl{display:flex;gap:8px;align-items:baseline;margin:3px 0;flex-wrap:wrap}
+.aiaiP .gl>b{flex:none;min-width:5.5em;font-size:12px}
+.aiaiP .gl.g>b{color:var(--good)}.aiaiP .gl.b>b{color:var(--bad)}
+.aiaiP .chip{padding:2px 10px}.aiaiP .chip em{font-style:normal;color:var(--dim);font-size:12px}
 .pop{position:absolute;right:8px;top:6px;font-weight:800;font-size:18px;pointer-events:none;animation:up .9s forwards;z-index:3;text-shadow:0 1px 3px #000c}
 .pop.ph{color:#ff5a4d} .pop.pc{color:#ffb020;font-size:26px} .pop.pm{color:#e6e6e6;font-size:15px}
 .pop.pcrit,.pop.pspec{left:0;right:0;top:auto;bottom:8px;text-align:center;font-size:clamp(20px,4.6vw,40px);font-weight:900;font-style:italic;
@@ -235,6 +249,7 @@ code{font-size:11px;word-break:break-all}
   .ctl{gap:5px}.ctl button{padding:5px 12px;font-size:13px}.modes label{padding:5px 12px;font-size:13px}
   .tabs button{padding:6px 13px}
   .status{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .aiai{margin:0}
   .arena{grid-template-columns:1fr 1fr}.mid{grid-column:1/-1;order:-1;padding:0;display:flex;gap:4px 12px;flex-wrap:wrap;justify-content:center;align-items:baseline}.mid .vs{margin-top:0;font-size:18px}.vm{width:11px}
   .who{min-height:50px;align-content:center}
   .chips span{height:24px}.chips span.w,.chips span.l{font-size:0}.chips span.w::after,.chips span.l::after{content:attr(data-s);font-size:12px}
@@ -277,7 +292,7 @@ code{font-size:11px;word-break:break-all}
     <div class="duel" id="duel">
       <div class="arena">
         <div class="side" id="sideL"></div>
-        <div class="mid"><div id="duelBasho"></div><div id="duelDay"></div><div id="duelSub"></div><div class="vs">VS</div><div class="turn" id="turn"></div><div class="res" id="res"></div></div>
+        <div class="mid"><div id="duelBasho"></div><div id="duelDay"></div><div id="duelSub"></div><div class="vs">VS</div><div class="aiai" id="duelAiai" hidden></div><div class="turn" id="turn"></div><div class="res" id="res"></div></div>
         <div class="side" id="sideR"></div>
       </div>
       <div class="gameset" id="gameset" hidden></div>
@@ -381,7 +396,7 @@ function initPeople(rows){
   rows=rows||DATA;
   S.people=rows.map(mkPerson);
   S.byId=new Map(S.people.map(p=>[p.id,p]));
-  S.retired={};
+  S.retired={};S.aiai={};
   const rest=[];
   for(const p of S.people){
     if(p.pre){p.div='前相撲';p.slot=9999;}
@@ -405,7 +420,7 @@ function resetProgress(){
   });
   layout(list,'上等兵');
   S.people.forEach(p=>p.pk=p.slot);
-  S.history=[];S.logs=[];
+  S.history=[];S.logs=[];S.aiai={};
   startBasho(1);
   L(`番付・記録をリセット: ${list.length}人を能力評価値順に上等兵1から配置`);
 }
@@ -783,7 +798,40 @@ function beginDay(){
   L(`${tName(B.no)} ${B.day}日目:${B.matches.length}番の取組を編成`+((B.mmNotes&&B.mmNotes.length)?`(${B.mmNotes.join(' / ')})`:''));
 }
 
+/* ---------- 合い口(戦士以上同士の対戦成績) ----------
+   S.aiai['小さいID-大きいID']=[小さいIDの勝ち数,大きいIDの勝ち数]
+   記録するのは、本場所の取組(決定戦を含む)で、対戦時点の番付が両者とも戦士以上のとき。練習戦は記録しない。 */
+const AIAI_DIVS=['大将','副将','先鋒','旗頭','戦士'];
+const AIAI_BIG=2;     // 勝ち数の差がこの数以上なら「得意/苦手」、1勝差は「やや得意/やや苦手」
+function aiaiEligible(a,b){return AIAI_DIVS.includes(a.div)&&AIAI_DIVS.includes(b.div);}
+function aiaiKey(x,y){return x<y?x+'-'+y:y+'-'+x;}
+function aiaiGet(a,b){      // aから見た [aの勝ち, bの勝ち]。記録がなければnull
+  const r=(S.aiai||{})[aiaiKey(a.id,b.id)];if(!r)return null;
+  return a.id<b.id?[r[0],r[1]]:[r[1],r[0]];
+}
+function aiaiRecord(win,lose){
+  if(!aiaiEligible(win,lose))return false;
+  if(!S.aiai)S.aiai={};
+  const k=aiaiKey(win.id,lose.id),r=S.aiai[k]||(S.aiai[k]=[0,0]);
+  r[win.id<lose.id?0:1]++;return true;
+}
+function aiaiOf(p){         // pの合い口一覧(現役の相手のみ): [{o,w,l}]
+  const out=[];
+  for(const k in (S.aiai||{})){
+    const [x,y]=k.split('-').map(Number);
+    if(x!==p.id&&y!==p.id)continue;
+    const o=S.byId.get(x===p.id?y:x);if(!o)continue;
+    const r=S.aiai[k];out.push({o,w:x===p.id?r[0]:r[1],l:x===p.id?r[1]:r[0]});
+  }
+  return out;
+}
+function aiaiLabel(w,l){    // 自分から見た評価
+  const d=w-l;if(!d)return '互角';
+  return (Math.abs(d)>=AIAI_BIG?(d>0?'得意':'苦手'):(d>0?'やや得意':'やや苦手'));
+}
 function applyResult(m,res){
+  m.aiaiPre=aiaiGet(m.a,m.b)||[0,0];     // この一番の前までの合い口(対戦画面で結果を先に見せないため)
+  aiaiRecord(res.winner,res.loser);
   m.w=res.winner===m.a?'A':'B';
   m.turns=res.turns;m.sp=res.sp;m.condA=res.A.c;m.condB=res.B.c;
   m.hpA=res.A.hp;m.hpB=res.B.hp;
@@ -838,6 +886,7 @@ function playoffPending(){
   return null;
 }
 function playoffApply(G,m,res){
+  aiaiRecord(res.winner,res.loser);
   S.basho.playoffs.push({key:G.key,round:G.round,a:m.a.id,b:m.b.id,win:res.winner.id});
   G.nxt.push(res.winner.id);G.pos+=2;
 }
@@ -1659,7 +1708,7 @@ function serialize(){
   const B=S.basho;
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
-    retired:S.retired,
+    retired:S.retired,aiai:S.aiai,
     people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,pre:p.pre,pk:p.pk,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
       byes:B.byes.map(p=>p.id),
@@ -1670,7 +1719,7 @@ function restore(d){
   const legacy=new Map(DATA.map(r=>[r[0],r]));
   S.people=d.people.map(x=>Object.assign(mkPerson(legacy.get(x.id)||[x.id,'?',0,0,0,0,0,0,'','',0,'',0]),x));
   S.byId=new Map(S.people.map(p=>[p.id,p]));
-  S.retired=d.retired||{};
+  S.retired=d.retired||{};S.aiai=d.aiai||{};
   S.thirdStart=d.thirdStart;S.maxSlot=d.maxSlot;S.history=d.history||[];S.logs=d.logs||[];
   Object.assign(S.settings,d.settings||{});
   UI.watch=new Set((d.watch||[]).filter(id=>S.byId.has(id)));
@@ -1708,7 +1757,7 @@ const stage={
   init(){
     $('sideL').innerHTML=SIDE_TPL;$('sideR').innerHTML=SIDE_TPL;
     this.el={L:$('sideL'),R:$('sideR'),feed:$('feed'),turn:$('turn'),res:$('res'),gs:$('gameset'),
-      basho:$('duelBasho'),day:$('duelDay'),sub:$('duelSub')};
+      basho:$('duelBasho'),day:$('duelDay'),sub:$('duelSub'),aiai:$('duelAiai')};
     this.el.L.onclick=()=>this.cur&&this.cur.a&&openProfile(this.cur.a.id);
     this.el.R.onclick=()=>this.cur&&this.cur.b&&openProfile(this.cur.b.id);
     this.el.gs.onclick=e=>{e.stopPropagation();this.el.gs.hidden=true;};
@@ -1723,8 +1772,26 @@ const stage={
     this.el.day.textContent=B.phase==='done'?'終了':(B.day?`${B.day}日目`:'開幕前');
     this.el.sub.textContent=(m&&B.matches.includes(m))?`${GROUPS[m.gi]?GROUPS[m.gi].key:''} ・ ${B.matches.indexOf(m)+1}/${B.matches.length}番`:'';
   },
+  /* 合い口の表示。after=true で、この一番の結果を加えた成績にする */
+  aiai(m,after,res){
+    const box=this.el.aiai;box.classList.remove('upd');
+    const pre=m.aiaiPre||aiaiGet(m.a,m.b)||[0,0],cnt=!m.practice&&aiaiEligible(m.a,m.b);
+    const cur=pre.slice();
+    if(after&&cnt&&res)cur[res.winner===m.a?0:1]++;
+    if(!cur[0]&&!cur[1]){
+      box.hidden=!cnt;
+      if(cnt)box.innerHTML='<small>合い口</small><div class="at">初顔合わせ</div>';
+      return;
+    }
+    const d=cur[0]-cur[1],lab=aiaiLabel(Math.max(cur[0],cur[1]),Math.min(cur[0],cur[1]));
+    box.innerHTML=`<small>合い口${after&&cnt?'(更新)':''}</small>`
+      +`<div class="ab"><b class="${d>0?'aw':''}">${cur[0]}勝</b> - <b class="${d<0?'aw':''}">${cur[1]}勝</b></div>`
+      +`<div class="at">${d>0?`◀ 左が${lab}`:d<0?`右が${lab} ▶`:'互角'}</div>`;
+    box.hidden=false;
+    if(after&&cnt){void box.offsetWidth;box.classList.add('upd');}
+  },
   idle(){
-    $('stageBody').classList.add('idle');this.cur=null;
+    $('stageBody').classList.add('idle');this.cur=null;this.el.aiai.hidden=true;
     this.el.gs.hidden=true;this.head(null);this.el.turn.textContent='';this.el.res.textContent='';
     this.el.feed.innerHTML='<div class="dim">取組を始めるとここに戦闘が表示されます。</div>';
   },
@@ -1762,7 +1829,7 @@ const stage={
     this.cur=m;
     $('stageBody').classList.remove('idle');
     this.el.gs.hidden=true;
-    this.head(m);
+    this.head(m);this.aiai(m,false);
     const put=(el,s,p)=>{
       const rk=el.querySelector('.rk');
       rk.textContent=m.practice?'(練習戦)':`(${rankLabel(p)})`;
@@ -1833,6 +1900,7 @@ const stage={
     this.chips(this.el.L,m.a,m,true);this.chips(this.el.R,m.b,m,true);
     this.el.turn.textContent=`${res.turns}ターン`;
     this.el.res.textContent=`勝者 ${res.winner.name}`;
+    this.aiai(m,true,res);
     this.gameset(m,res);
   }
 };
@@ -2308,11 +2376,33 @@ function renderSettings(){
     UI.watch=new Set();initPeople(dbRows());stage.idle();renderAll();toast('初期状態に戻しました(最新のキャラクターデータで開始)');
   };
 }
+/* 練習戦タブ用: 指定したキャラの合い口(得意な相手・苦手な相手)と、2人の組み合わせの成績 */
+function aiaiPanelHTML(a,b){
+  if(!a&&!b)return '';
+  const pair=(a&&b&&a!==b)?aiaiGet(a,b):null;
+  let h='';
+  if(pair){
+    const d=pair[0]-pair[1],lab=aiaiLabel(Math.max(...pair),Math.min(...pair));
+    h+=`<div class="pair"><b>この組み合わせの合い口</b>:${rowName(a)} ${pair[0]}勝 - ${pair[1]}勝 ${rowName(b)}`
+      +`(${d>0?`${esc(a.name)}が${lab}`:d<0?`${esc(b.name)}が${lab}`:'互角'})</div>`;
+  }
+  const one=p=>{
+    const list=aiaiOf(p);
+    if(!list.length)return `<h4>${esc(p.name)}の合い口</h4><div class="dim">合い口データはまだありません(戦士以上同士の本場所の対戦だけが記録されます)。</div>`;
+    const grp=(cls,title,arr)=>arr.length?`<div class="gl ${cls}"><b>${title}</b><span class="chips">${arr.map(x=>`<span class="chip">${rowName(x.o)} <em>${x.w}勝${x.l}敗</em></span>`).join('')}</span></div>`:'';
+    const by=f=>list.filter(f).sort((x,y)=>Math.abs(y.w-y.l)-Math.abs(x.w-x.l)||(y.w+y.l)-(x.w+x.l)||x.o.id-y.o.id);
+    return `<h4>${esc(p.name)}の合い口</h4>`
+      +grp('g','得意な相手',by(x=>x.w>x.l))+grp('b','苦手な相手',by(x=>x.w<x.l))+grp('','互角',by(x=>x.w===x.l));
+  };
+  if(a)h+=one(a);
+  if(b&&b!==a)h+=one(b);
+  return h;
+}
 function renderDuel(){
   const el=$('tab_duel');
   const names=S.people.map(p=>`<option value="${esc(p.name)}">`).join('');
   const D=UI.duel||(UI.duel={a:'',b:'',place:0,spOnly:true});
-  el.innerHTML=`<p class="dim">順位や成績に影響しない練習対戦です。特殊能力の動きを確かめるのに使えます。</p>
+  el.innerHTML=`<p class="dim">順位や成績に影響しない練習対戦です。特殊能力の動きを確かめるのに使えます。キャラを指定すると、本場所で戦士以上同士が戦った合い口(得意な相手・苦手な相手)も見られます。</p>
   <div class="row"><label>左 <input type="search" id="dA" list="dl" placeholder="名前" value="${esc(D.a)}" autocomplete="off"></label>
   <label>右 <input type="search" id="dB" list="dl" placeholder="名前" value="${esc(D.b)}" autocomplete="off"></label></div>
   <datalist id="dl">${names}</datalist>
@@ -2320,10 +2410,13 @@ function renderDuel(){
   <label><input type="checkbox" id="dS" ${D.spOnly?'checked':''}> ランダムは特殊能力持ちを優先</label></div>
   <div class="row"><button class="primary" id="dGo">▶ 対戦する</button><button id="dRnd">🎲 ランダムに選ぶ</button><button id="dRep">もう一度</button></div>
   <div id="dMsg" class="dim"></div>
+  <div class="aiaiP" id="dAiai"></div>
   <h3>特殊能力を持つキャラ(${S.people.filter(p=>p.cmd).length}人)</h3>
   <div class="chips">${S.people.filter(p=>p.cmd).map(p=>`<span class="chip">${rowName(p)}</span>`).join('')}</div>`;
   const find=n=>{const k=nameKey(n);return k?S.people.find(p=>nameKey(p.name)===k):null;};
   const sync=()=>{D.a=$('dA').value;D.b=$('dB').value;D.place=+$('dP').value;D.spOnly=$('dS').checked;};
+  const showAiai=()=>{sync();$('dAiai').innerHTML=aiaiPanelHTML(find(D.a),find(D.b));};
+  $('dA').oninput=$('dB').oninput=showAiai;
   $('dRnd').onclick=()=>{
     sync();
     const pool=S.people.filter(p=>!p.pre);
@@ -2331,7 +2424,7 @@ function renderDuel(){
     const pick=l=>l[Math.floor(Math.random()*l.length)];
     const a=D.spOnly&&sp.length?pick(sp):pick(pool);
     let b;do{b=pick(pool);}while(b===a);
-    D.a=a.name;D.b=b.name;$('dA').value=D.a;$('dB').value=D.b;
+    D.a=a.name;D.b=b.name;$('dA').value=D.a;$('dB').value=D.b;showAiai();
   };
   const go=async()=>{
     sync();
@@ -2348,6 +2441,7 @@ function renderDuel(){
     }finally{UI.busy=false;setBusy(false);}
   };
   $('dGo').onclick=go;$('dRep').onclick=go;
+  showAiai();
 }
 const TABS={duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,log:renderLog,settings:renderSettings};
 function renderTab(){
