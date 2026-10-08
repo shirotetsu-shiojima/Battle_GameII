@@ -256,6 +256,7 @@ code{font-size:11px;word-break:break-all}
 .pop.ps{color:#ff6a3d;font-size:28px} .pop.pg{color:#6dff9c;font-size:20px} .pop.pf{color:#bcd4ff;font-size:16px}
 .feed .trig{color:#e08a00;font-weight:800} .feed .fx{color:#4a7fd1} .feed .spk{color:#c0301f;font-weight:700} .feed .heal{color:var(--good)}
 .duel .spt{margin-top:0;color:#fff;border-color:rgba(255,255,255,.75);background:rgba(74,46,106,.6)}
+a.btn{color:var(--ink);text-decoration:none}
 .sp{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:9px 14px;margin:8px 0}
 .sp ul{margin:4px 0 0;padding-left:18px;font-size:13px}
 .sp li.gate{color:var(--accent2)} .sp li.atk{color:#c0301f}
@@ -2617,8 +2618,9 @@ function syncModeUI(){
 }
 
 /* ---------- プロフィール ---------- */
+const COMMAND_TOOL_URL='https://shirotetsu-shiojima.github.io/command/';   // 特殊能力コマンド生成ツール
 function cmdHTML(p){
-  if(!p.cmd)return '';
+  if(!p.cmd)return `<p><a class="btn" href="${COMMAND_TOOL_URL}" target="_blank" rel="noopener" title="特殊能力コマンド生成ツールを新しいタブで開きます">✦ 特殊能力を設定</a></p>`;
   const {cmds,errs}=parseCommands(p.cmd);
   const items=cmds.map(c=>{
     const t=c.a[0];
