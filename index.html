@@ -1043,8 +1043,11 @@ async function sbRun(){
   if(!sbEnabled()){toast('Supabaseの送信設定がありません');return;}
   const sb=sbState(B);
   sbSyncEvents();
-  if(sb.tid==null)sb.tid=sbTid(B);
-  if(sb.tid==null){sb.abort='番付サーバーの大会と同期できていません。ページを再読み込みしてから送信してください';toast(sb.abort);saveSoon();sbPaint();return;}
+  // 送信の直前に、番付サーバーの「今の大会」を取り直す(保存済みの大会IDに頼ると、終了した大会へ送ってしまうため)
+  const cur=await sbApi('GET','/current');
+  if(!cur.ok||cur.tournament_no==null){sb.abort='番付サーバーに接続できませんでした。通信を確かめてから「送信を再開」してください';toast(sb.abort);saveSoon();sbPaint();return;}
+  if(cur.tournament_no!==B.no){sb.abort=`第${B.no}場所は既に終了しています(今は大会${cur.tournament_no})。この結果は送れません。再読み込みすると最新の大会に合わせます`;toast(sb.abort);saveSoon();sbPaint();return;}
+  sb.tid=cur.tournament_id;
   delete sb.abort;
   const idx=new Map();
   for(const [a,b,w,e] of sb.ev){
@@ -1182,16 +1185,22 @@ async function sbSyncLineup(){
   sbApplyPositions(g.rankings,B.no);
   renderAll();saveSoon();
 }
-/* 起動時: 送信待ちのまま残っている大会が、番付サーバーの現在の大会と合わないとき(終了済み・番号違い)は、
-   その未送信の状態を取り除いてサーバーの大会に合わせる。送信できない結果を、表示だけ残さないため。 */
-async function sbDropStaleSubmit(){
-  const B=S.basho;if(!B||B.phase!=='submit'||!sbEnabled())return;
+/* 起動時(再読み込み): 番付サーバーの「今の大会」に合わせる。
+   - 同じ大会: 途中の結果はそのまま続ける(大会IDを保存しておく)。未開始なら番付を取り直す
+   - 違う大会: 途中の結果は送れないので取り除き、今の大会へ合わせる(終了した大会を進めない) */
+async function sbCatchUp(){
+  const B=S.basho;if(!B||!sbEnabled())return;
   const cur=await sbApi('GET','/current');
-  if(!cur.ok||cur.tournament_no==null||S.basho!==B)return;
-  const sb=sbState(B);
-  if(cur.tournament_no===B.no&&sb.tid!=null&&sb.tid===cur.tournament_id)return;   // 同じ大会の未送信なら、そのまま残す
+  if(S.basho!==B)return;
+  if(!cur.ok||cur.tournament_no==null){if(B.phase==='ready')await sbSyncLineup();return;}
+  if(cur.tournament_no===B.no){
+    if(B.phase==='ready'){await sbSyncLineup();return;}
+    const sb=sbState(B);if(sb.tid==null)sb.tid=cur.tournament_id;
+    return;
+  }
+  if(B.phase==='ready'&&B.day===0){startBasho(cur.tournament_no);await sbSyncLineup();return;}
   startBasho(cur.tournament_no);
-  toast(`送信できなかった第${B.no}場所の結果を取り除き、大会${cur.tournament_no}に合わせました`);
+  toast(`第${B.no}場所は終了しているため、途中の結果を取り除き、今の大会(${cur.tournament_no})に合わせました`);
   saveSoon();
   await sbSyncLineup();
 }
@@ -2913,8 +2922,7 @@ function boot(){
   $('bUpd').onclick=checkUpdate;
   $('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))$('dlg').close();});
   renderAll();setBusy(false);
-  sbDropStaleSubmit();
-  sbSyncLineup();
+  sbCatchUp();
 }
 window.addEventListener('DOMContentLoaded',boot);
 
