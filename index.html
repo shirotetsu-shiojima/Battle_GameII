@@ -257,6 +257,12 @@ code{font-size:11px;word-break:break-all}
 .feed .trig{color:#e08a00;font-weight:800} .feed .fx{color:#4a7fd1} .feed .spk{color:#c0301f;font-weight:700} .feed .heal{color:var(--good)}
 .duel .spt{margin-top:0;color:#fff;border-color:rgba(255,255,255,.75);background:rgba(74,46,106,.6)}
 a.btn{color:var(--ink);text-decoration:none}
+/* Supabase 大会結果送信パネル */
+.sbx{margin-top:8px;background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--lav);border-radius:16px;padding:8px 14px;box-shadow:var(--shadow-sm);font-size:13px}
+.sbx.err{border-left-color:var(--bad)}
+.sbx .bar{height:6px;border-radius:99px;background:var(--chip);overflow:hidden;margin:6px 0}
+.sbx .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--btn1),var(--btn2));transition:width .2s}
+.sbx ul{margin:4px 0;padding-left:1.4em}.sbx li{margin:1px 0}
 .sp{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:9px 14px;margin:8px 0}
 .sp ul{margin:4px 0 0;padding-left:18px;font-size:13px}
 .sp li.gate{color:var(--accent2)} .sp li.atk{color:#c0301f}
@@ -304,6 +310,7 @@ a.btn{color:var(--ink);text-decoration:none}
     </div>
     <span id="speedBox">速さ<input type="range" id="speed" min="1" max="5" step="1" value="3"></span>
   </div>
+  <div class="sbx" id="sbBox" hidden></div>
 </div></header>
 
 <main class="wrap">
@@ -354,7 +361,7 @@ const SFX_DATA={
 };
 </script>
 <script>
-const DATA=[[189,"葛西 鐘歌",1323,3325,2328,115,2795.9,275,"","",100,"",0,513,515,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kasai_Shoka.png"],[191,"千江 葉紗奈",4005,3206,6008,105,4888.3,294,"","",100,"",0,3022,2483,""],[193,"青部 葵",3032,6612,4213,111,6109.7,180,"","",100,"",0,5463,6131,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aobe_Aoi_V4.png"],[194,"天夜 博音",885,2025,3445,97,2729.5,307,"","",100,"",0,4012,6666,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/6_Hirone.png"],[27,"松本 三咲",4995,7104,8109,103,8182.7,68,"三花","檸檬",200,"[1 1 1 2 0 0 0.5 100 1 0 0 0]",0,9433,5022,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/4.png"],[33,"松本 沙織",5517,8018,5900,101,8312,78,"三花","檸檬",200,"",0,10263,4871,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/5.png"],[32,"松本 深紅",7038,2015,7084,97,6209.7,239,"エアロ","舞愛",100,"",0,13710,2195,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/6.png"],[71,"天夜 葉月",1948,9804,840,90,6007.9,248,"御卦原","エアロ",100,"",0,153,3505,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Hazuki_2.png"],[31,"松本 白乃",9851,1942,6104,116,6943.6,174,"三花","エアロ",100,"",0,6914,7014,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/8.png"],[34,"高杉 ひな",7014,6812,4168,108,8049.3,18,"三花","御卦原",2900,"[1 0 1 2 0 0 30 15 1 0 0 0]",0,9074,9581,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/9.png"],[25,"松本 海",9313,9804,6100,104,10359.5,28,"舞愛","エアロ",500,"",0,2916,5661,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/10.png"],[195,"天夜 菜琉",7890,3428,4109,108,6318.8,117,"","",200,"",0,8176,3889,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Naru_V2.png"],[196,"天夜 青香",8034,3392,7032,124,7511,159,"","",200,"",0,9128,9482,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Seika_V3.png"],[197,"天夜 葉那",9420,1895,6830,117,6801.4,213,"","",100,"",0,4031,7049,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/16_Hana.png"],[198,"天夜 みどり",2932,6280,5001,97,6037.3,207,"","",100,"",0,4161,6999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Midori_V3.png"],[199,"赤井 風流",3828,5244,3332,95,5379.4,142,"","",200,"",0,6091,3882,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akai_Furu_V3.png"],[200,"天夜 紅葉",3495,8583,7012,109,8112.1,104,"","",200,"",0,9806,4893,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Momiji_V4.png"],[201,"赤井 詩音",4839,6060,3213,98,6291.4,168,"","",100,"",0,5999,7012,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akai_Shion_V2.png"],[202,"坂井 朱音",2910,2009,3316,115,3436.8,305,"","",100,"",0,2169,7019,""],[203,"天夜 佳鈴",6093,7772,4021,101,7679.7,69,"","",500,"",0,4895,5126,""],[204,"天夜 海羽",9286,11283,5693,116,11420,33,"","",1500,"",0,9302,7033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Umiha_V3.png"],[205,"青部 瑠々",7958,3211,8453,113,7467.9,129,"","",200,"",0,4912,9192,""],[206,"青部 虹々",5078,4029,7979,105,6347.5,190,"","",100,"",0,2214,6158,""],[207,"天夜 心紗",7123,3503,4682,103,6396.8,152,"","",100,"",0,9016,6852,""],[208,"天夜 心来",6013,5813,4048,89,6375.2,165,"","",100,"",0,3292,836,""],[209,"天夜 沙夜",9823,2921,3862,96,6583.3,157,"","",100,"",0,5556,4080,""],[35,"桃園 美歌",8519,6108,1085,122,7361.9,68,"三花","舞愛",200,"",0,7081,8000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/26.png"],[210,"高杉 小春",7084,5518,6881,125,7753.4,87,"","",200,"",0,5079,5819,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Takasugi_Koharu_V3.png"],[28,"安藤 友奈",934,6914,441,69,3926,204,"三花","エアロ",100,"[2 1 0 1 0 0 3 100 0 0 0 1][1 0 0 2 0 0 0.5 100 0 0 0 1]",0,118,75,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/28.png"],[211,"御影 さくら",8773,7302,3832,119,8735.8,65,"","",500,"",0,6132,8913,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mikage_Sakura_V2(1).png"],[36,"松本 桃花",3816,1048,9105,113,5186,302,"舞愛","エアロ",100,"",0,8814,9099,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/30.png"],[212,"赤井 瑠菜",8383,3414,9981,120,8157.2,146,"","",200,"",0,7652,7146,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akai_Runa_V2.png"],[213,"御影 晴南",6413,3923,3526,84,5481.3,216,"","",100,"",0,3058,1917,""],[26,"松本 沙紀",8471,308,8047,138,6034,41,"エアロ","御卦原",1500,"[1 0 0 0 0 0 999999 15 1 0 0 0][1 0 1 2 0 0 30 100 0 0 0 0][1 0 3 2 0 0 200 100 1 0 0 0]",0,1094,9231,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/33.png"],[37,"松本 白穂",10731,7989,6199,127,10294.8,24,"三花","舞愛",500,"",0,3100,8999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/34.png"],[30,"松本 綾乃",4014,5088,2094,151,5362,187,"舞愛","エアロ",100,"",0,2960,8494,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/35.png"],[72,"上狭 海衣",7718,4035,1235,103,5780.4,137,"ブルテ","舞愛",100,"",0,5004,6013,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kazusa_Mi_V2.png"],[214,"早野 愛衣",3049,5132,9832,112,6696.6,217,"","",100,"",0,4928,5050,""],[215,"玉島 実米",912,5542,1527,118,3555.2,283,"","",100,"",0,480,617,""],[216,"天夜 彩矢",3767,5812,8213,99,7206.5,192,"","",100,"",0,8773,7999,""],[217,"天夜 二夜",6673,4228,5068,108,6587.8,113,"","",200,"",0,7727,5890,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Niya_V2.png"],[218,"黒葉 萌香",6829,3813,1829,104,5327.1,134,"","",100,"",0,2821,5028,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kuroha_Moka_V2.png"],[219,"天夜 帆歌",6020,4092,3688,114,5762.9,111,"","",200,"",0,5682,4444,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/51_Honoka.png"],[220,"天夜 柚芽",5024,4342,2392,107,5266.9,172,"","",100,"",0,5123,6686,""],[221,"天夜 実夜",571,603,4123,97,1960.8,315,"","",100,"",0,5050,3339,""],[222,"天夜 いろは",2688,6168,7882,113,6894.4,182,"","",100,"",0,8728,7000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Iroha_V2.png"],[223,"天夜 菜虹",4586,9019,3992,117,7889.7,104,"","",200,"",0,4022,7887,""],[224,"御空 彩音",7234,4824,1227,102,6156.6,147,"","",200,"",0,6221,8118,""],[225,"赤花 千夏",2048,4726,7912,114,5922.8,309,"","",100,"",0,8281,7014,""],[29,"松本 智花",741,147,6184,101,2550.9,317,"エアロ","舞愛",100,"",0,7000,6010,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/49.png"],[38,"松本 柚乃",6610,5888,4041,141,7106.8,90,"舞愛","エアロ",200,"",0,5000,6011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/50.png"],[42,"松本 凪",814,333,8133,110,3187.2,314,"舞愛","ブルテ",100,"",0,5089,7777,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/51.png"],[226,"天夜 海侑",6060,4932,7832,101,7003.2,158,"","",200,"",0,5069,1055,""],[48,"松本 莉花",6100,4099,5011,112,6523.1,179,"舞愛","エアロ",100,"",0,8800,8810,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/53.png"],[227,"清澄 奈々",5040,6610,4392,126,7133,94,"","",500,"",0,5551,8928,""],[228,"天夜 海菜",5038,4928,6038,100,6552,170,"","",200,"",0,7772,6012,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Mina_V2.png"],[229,"小町 愛名",4013,5002,4984,94,5750.2,247,"","",100,"",0,9111,910,""],[230,"水瀬 凛",3556,9013,7853,117,8415.8,109,"","",200,"",0,2023,8742,""],[231,"紫屋 花音",3968,8906,5232,113,7822.8,119,"","",200,"",0,3405,7143,""],[232,"赤月 瑞羽",8940,3232,830,101,5558.8,151,"","",100,"",0,2099,5501,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akatsuki_Mizuha.png"],[233,"鶴瀬 瑞帆",891,3928,2223,101,3342.6,316,"","",100,"",0,3039,6669,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Tsuruse_Mizuho_V2.png"],[43,"松本 海香",11345,16310,4914,93,13778.9,14,"三花","檸檬",1500,"",0,20,3011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/61.png"],[234,"天夜 鈴珠",4323,3394,5853,95,5360.3,231,"","",100,"",0,6781,5050,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Suzu.png"],[235,"青部 藍",7070,5021,8811,106,7593.8,124,"","",200,"",0,2111,2334,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aobe_Ai.png"],[236,"緑野 唯月",4129,4234,5555,98,5682.5,203,"","",100,"",0,6677,6010,""],[237,"空風 三琴",1555,3233,3302,86,3388.1,292,"","",100,"",0,2039,6070,""],[44,"松本 赤穂",11100,9133,6199,116,11185.1,11,"エアロ","ブルテ",1500,"",0,8841,8005,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/66.png"],[238,"夜山 夢羽",9637,3879,7111,115,7820.7,115,"","",200,"",0,6090,3218,""],[239,"清澄 日葵",5055,8717,7772,109,9038.7,71,"","",200,"",0,7013,9007,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kiyosumi_Himari_V2.png"],[240,"小竹 瀬奈",6876,7777,7889,99,9151.4,78,"","",500,"",0,9301,4991,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotake_Sena_V2.png"],[241,"青宮 結希",7819,5392,5682,110,7934.6,101,"","",200,"",0,7821,8999,""],[17,"永海 あやめ",98,101,4109,108,1733.3,313,"舞愛","ブルテ",100,"",0,8176,3889,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/71.png"],[242,"汐入 優月",6789,7016,6849,131,9011.4,86,"","",200,"",0,8958,12173,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Shioiri_Yuzuki_V2.png"],[243,"小町 愛花",7928,3334,4889,107,6323.8,97,"","",200,"",0,6781,2289,""],[244,"長津 詩奈",2116,4450,7871,108,5646.6,255,"","",100,"",0,4556,8011,""],[245,"元宮 深空",8772,3125,4498,123,6929.9,134,"","",200,"",0,8099,8918,""],[73,"元宮 小夏",8712,6894,7079,134,9243.1,52,"御卦原","檸檬",500,"",0,3701,8572,""],[246,"天夜 風香",3445,6038,7382,103,6840.4,195,"","",100,"",0,8703,4832,""],[247,"天夜 咲月",5213,4847,4957,107,6396,140,"","",200,"",0,6058,8888,""],[248,"美桃 来蘭",6054,4938,2413,103,6024.3,138,"","",200,"",0,7776,5690,""],[249,"御空 瑠璃",9732,3489,4488,101,7144.5,91,"","",200,"",0,5757,6745,""],[250,"線破 奈希",4444,8666,5353,122,7738,77,"","",500,"",0,4040,3250,""],[53,"松本 百合",8730,9635,6500,111,10416.9,46,"エアロ","舞愛",500,"",0,3012,9910,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/82.png"],[251,"東雲 珠衣",3021,6362,4049,105,6128.7,193,"","",100,"",0,6726,8881,""],[252,"三黒 夜菜",3214,6742,10888,121,8233.4,174,"","",100,"",0,9965,7222,""],[253,"青広 彩来",5784,6392,9481,148,8930.8,83,"","",500,"",0,9180,9953,""],[254,"緑野 椎奈",9028,9531,5059,111,10246.7,39,"","",1500,"",0,9872,6079,""],[255,"天夜 明日香",7896,5394,5775,117,7843.2,55,"","",500,"",0,3232,9912,""],[256,"御影 環希",9015,4081,3929,106,6955.1,121,"","",200,"",0,4556,6111,""],[257,"粉撒 緋南",3238,5686,4894,100,5670.7,218,"","",100,"",0,4545,3253,""],[258,"雪矢 二夢",5101,6051,3112,97,6250.9,164,"","",100,"",0,8619,2135,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Yukiya_Nimu.png"],[259,"上狭 由蘭",9013,7439,8200,113,10001,51,"","",500,"",0,8585,7475,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kazusa_Yuran.png"],[39,"松本 美愛",9014,6013,5011,114,8339.1,72,"檸檬","舞愛",500,"",0,6010,7001,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/92.png"],[260,"天夜 深瀬",8392,4748,5821,112,7771.8,66,"","",200,"",0,7588,7432,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Mirai.png"],[261,"天夜 音羽",7124,5324,6928,119,7786.9,106,"","",200,"",0,7819,5553,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Otoha.png"],[262,"琴見 里音",6012,5739,8003,109,7796.7,127,"","",200,"",0,5129,7623,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomi_Rio.png"],[263,"琴見 彩夢",6214,5501,5672,106,7173.8,108,"","",200,"",0,6069,7011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomi_Amu.png"],[45,"松本 穂南",9715,140,6910,88,5762.3,304,"エアロ","ブルテ",100,"",0,1919,5131,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/97.png"],[264,"古守 光葉",9207,8902,3910,83,9253,71,"","",500,"",0,7098,409,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Komori_Mitsuba.png"],[265,"古守 灯",1039,586,7862,119,3415.8,315,"","",100,"",0,6321,7591,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Komori_Akari.png"],[266,"天夜 える",4687,9422,7018,120,8870,69,"","",500,"",0,7860,4231,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Eru.png"],[267,"天夜 莉乃",9598,7867,8918,130,11006.5,45,"","",1500,"",0,9684,11693,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Rino.png"],[268,"天夜 美園",5906,4045,3728,103,5853.5,189,"","",100,"",0,5678,7774,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Misono.png"],[269,"清澄 百々",6223,7914,6058,117,8452.1,64,"","",500,"",0,8191,4058,""],[270,"黒矢 奈音",9523,4838,8133,104,8698.9,84,"","",200,"",0,7768,5521,""],[74,"水浜 彩奈",8080,4545,1919,104,6124.6,120,"三花","舞愛",200,"",0,5454,1340,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mizuhama_Ayana.png"],[271,"火燈 彩花",8888,6666,3201,96,7798.6,47,"","",500,"",0,1202,5672,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Hitoboshi_Ayaka.png"],[272,"晄音 怜花",4700,3300,4500,125,4995,239,"","",100,"",0,4900,3400,""],[273,"湊 美玲",5406,3456,3710,95,5154.8,235,"","",100,"",0,3000,6781,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Minato_Mirei.png"],[54,"松本 菫",8103,7193,2211,85,7597.5,84,"エアロ","舞愛",500,"",0,8103,105,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/109.png"],[274,"御影 紬",7028,4245,8112,111,7468.7,154,"","",100,"",0,6918,6069,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mikage_Tsumugi.png"],[18,"松本 楓",9891,6133,11003,133,10665.7,35,"三花","舞愛",500,"",0,9044,10333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/111.png"],[275,"新夜 音夢",9812,5768,7773,126,9445.4,53,"","",500,"",0,11114,6079,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Niiya_Nemu.png"],[276,"御影 夜々香",6688,5963,4404,109,7370.3,83,"","",200,"",0,5769,9015,""],[56,"松本 穂莉",9950,7890,8400,159,11356.3,29,"舞愛","ブルテ",500,"",0,8814,14331,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/114.png"],[277,"青遠 彩琉",4500,6014,3338,104,6228.7,149,"","",200,"",0,8319,5456,""],[64,"天夜 蒼菜",14112,13827,8587,156,15327.2,23,"御卦原","エアロ",3100,"",0,6997,8014,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Aona.png"],[75,"青広 夢南",5686,4892,828,122,5215,150,"ブルテ","舞愛",100,"",0,2101,5323,""],[52,"三屋 五月",5557,6013,5740,101,7291.5,105,"三花","御卦原",200,"",0,7743,7505,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/118.png"],[19,"河原 真穂",9075,7335,6031,94,8932.6,88,"三花","御卦原",200,"",0,3013,4332,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/119.png"],[20,"藤森 愛莉",9504,8843,7404,102,10147.9,43,"三花","御卦原",500,"",0,5501,713,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/120.png"],[40,"水屋 佐澄",8831,7413,7304,163,10006.4,44,"三花","御卦原",500,"",0,9014,8731,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/121.png"],[49,"湊 砂和",3713,4418,6013,98,5446,219,"三花","御卦原",100,"",0,2013,4913,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/122.png"],[50,"羽坂 咲花",7313,5922,206,117,6204.1,127,"三花","御卦原",200,"",0,5036,3374,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/123.png"],[41,"松崎 秋穂",7031,3994,6012,94,6418.8,147,"三花","御卦原",200,"",0,2418,3431,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/124.png"],[46,"師川 明菜",2458,6403,945,81,4422.4,259,"三花","御卦原",100,"",0,176,1337,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/125.png"],[47,"風崎 澪",5731,6132,9715,155,8410.8,117,"三花","御卦原",200,"",0,815,9370,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/126.png"],[51,"三沢 みのり",1312,3194,3105,89,3226.8,300,"三花","御卦原",100,"",0,6931,337,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/127.png"],[90,"松本 亜紀",7014,5813,2883,109,7035.5,110,"三花","エアロ",200,"",0,6019,8754,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/128.png"],[76,"織坂 七星",9803,3394,5963,116,7539,130,"御卦原","舞愛",200,"",0,8794,4059,""],[278,"天夜 御卦",8734,6001,4212,87,7713.9,93,"","",200,"",0,6722,1127,""],[59,"松本 実依菜",9823,9623,9023,170,12055.5,36,"三花","御卦原",1500,"",0,9223,9923,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/131.png"],[279,"天空 心菜",5233,4029,8829,95,6611.9,185,"","",100,"",0,6637,2020,""],[280,"桃撒 羽読",4894,5353,323,82,4778,224,"","",100,"",0,3230,586,""],[281,"鳴宮 二来",8880,7774,4089,121,8973.5,32,"","",500,"",0,5666,7453,""],[595,"二地 星奈",9868,7869,8190,168,11221.2,0,"","",100,"",1,9873,12441,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/135.png"],[89,"桃川 愛",3719,5944,943,80,4991.8,237,"ブルテ","三花",100,"",0,7433,444,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/136.png"],[84,"富谷 夜乃華",5316,4448,7133,91,6455.3,201,"三花","御卦原",100,"",0,5013,4481,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/137.png"],[83,"富谷 朝華",8022,2942,5021,88,6354.5,202,"三花","御卦原",100,"",0,7038,6094,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/138.png"],[282,"水時 数羽",9092,5956,3333,106,7986.3,48,"","",200,"",0,6692,8132,""],[88,"松本 椿",4410,2713,8441,92,5567.3,280,"エアロ","舞愛",100,"",0,3473,5937,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/140.png"],[283,"赤町 琴音",9933,7479,8014,140,10776.7,34,"","",1500,"",0,12342,9882,""],[284,"天夜 実季",305,777,9011,127,3627.2,306,"","",100,"",0,7270,8001,""],[285,"天夜 きらら",7777,3649,3986,119,6517.8,133,"","",200,"",0,5968,8102,""],[77,"神楽 静来",5089,9230,8888,119,9585.8,64,"御卦原","舞愛",500,"",0,9645,6019,""],[79,"松本 沙奈",1957,2533,5137,120,3980,308,"檸檬","エアロ",100,"",0,3310,8831,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/145.png"],[286,"ミル フロート",2246,3636,4394,96,4298.3,262,"","",100,"",0,7326,3610,""],[287,"十八 海里",2245,3207,4934,97,4042.5,292,"","",100,"",0,3354,4040,""],[82,"松宮 萌奈",10574,13331,10839,129,14045.7,20,"ブルテ","",3000,"",0,129,10833,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/148.png"],[288,"天幻 雨菜",8872,7760,8081,88,9652,77,"","",500,"",0,6739,1995,""],[87,"松本 美桜",8373,6013,573,104,6596.7,85,"三花","舞愛",500,"",0,1553,4412,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/150.png"],[85,"松本 日依",4109,8936,2333,95,6904.3,106,"舞愛","ブルテ",200,"",0,5948,310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/151.png"],[91,"雲蜜 怜音",2983,5013,4481,115,5205.4,238,"檸檬","エアロ",100,"",0,5884,2884,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/152.png"],[289,"水時 彩咲",6667,5435,7012,135,7915.2,59,"","",200,"",0,9334,7080,""],[86,"坂屋 舞愛",7350,3398,5983,108,6651.9,163,"舞愛","エアロ",200,"",0,7136,6372,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/154.png"],[290,"十八 流音",4405,5679,9119,112,7637.3,181,"","",100,"",0,7345,8910,""],[92,"松本 莉珠",8245,5894,12441,145,10121,49,"三花","エアロ",500,"",0,5846,9374,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/156.png"],[291,"新夜 彩楽",8998,6020,5124,133,8578.4,74,"","",500,"",0,7701,7942,""],[292,"海浜 七葉",4050,8193,6604,98,7799.7,118,"","",200,"",0,7948,2777,""],[293,"社 深綸",1000,2033,617,109,1769.9,310,"","",100,"",0,88,4033,""],[81,"松本 莉奈",13116,12819,11508,130,15297.9,16,"三花","御卦原",3500,"",0,6984,11441,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/160.png"],[294,"奈園 伊緒",5069,9001,4556,132,8410.2,52,"","",500,"",0,8013,7109,""],[80,"高杉 春咲",5930,8013,9058,127,9247,31,"三花","御卦原",1500,"[2 1 0 2 5 2 100 100 0 0 0 0]",0,5773,7301,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/162.png"],[295,"舞坂 姫乃",9960,8920,7110,132,11179.6,40,"","",500,"",0,7993,12234,""],[57,"松本 花菜",18215,10300,14786,173,17596,12,"三花","檸檬",3500,"",0,10700,15999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/164.png"],[596,"天夜 時雨",10001,10005,14243,164,13849.6,0,"","",100,"",1,13499,10500,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Shigure.png"],[63,"天夜 夢香",13345,18129,6902,171,18028.9,5,"御卦原","檸檬",5200,"",0,13220,18404,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Yumeka.png"],[132,"藍川 玲華",1543,57,9846,85,3451.6,319,"檸檬","エアロ",100,"",0,4839,3319,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/167.png"],[103,"星野 二菜",3736,5913,2795,77,5583.8,189,"","",100,"",0,3739,8847,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/168.png"],[122,"静山 梨紗",5938,5313,116,102,5321.6,192,"","",100,"",0,2635,5443,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/169.png"],[296,"早名 梨心",6602,2011,1344,91,4391.7,262,"","",100,"",0,5629,6440,""],[135,"赤崎 紅花",312,433,3913,105,1804.7,317,"エアロ","ブルテ",100,"",0,8931,883,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/171.png"],[105,"折川 真菜",2281,937,8216,96,3853.5,311,"","",100,"",0,5931,3731,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/172.png"],[117,"深宮 瑠花",2888,1002,5316,144,4436.4,289,"","",100,"",0,4013,18372,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/173.png"],[297,"神楽 木葉",2008,3954,4312,108,4560.9,271,"","",100,"",0,7114,7356,""],[298,"十八 水希",6908,4511,7810,121,7774.9,97,"","",200,"",0,8638,9000,""],[58,"三屋 一花",12837,10028,16393,167,15073.5,21,"三花","エアロ",1500,"",0,1354,12930,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/176.png"],[299,"上狭 実鈴",9848,9112,5323,99,10117.1,34,"","",1500,"",0,9638,1120,""],[78,"彩月 夢乃",2706,1920,4992,122,3658,272,"御卦原","エアロ",100,"",0,6118,2120,""],[70,"水角 美代子",401,853,49,64,596.9,316,"御卦原","三花",100,"",0,79,118,""],[597,"青夜 水奈",13201,9240,13456,157,14498.5,0,"","",100,"",1,4307,17182,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Seiya_Mizuna.png"],[300,"神楽 和奏",3221,4592,7770,119,6212.1,206,"","",100,"",0,4568,9030,""],[301,"神楽 茉白",2006,1204,5543,107,3414.2,302,"","",100,"",0,8023,5103,""],[302,"水時 心愛",5706,4920,4292,99,6203.1,155,"","",100,"",0,5618,5040,""],[109,"清里 瑠璃菜",3714,4013,8319,101,5715.9,261,"","",100,"",0,1736,2972,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/184.png"],[303,"赤花 紫乃",6706,4220,9093,95,7234.4,148,"","",200,"",0,4617,2222,""],[14,"贒閒 毬奈",206,90,592,150,1579.9,319,"御卦原","三花",100,"",0,28,17443,""],[120,"境 楓花",7130,8300,3319,132,8797,42,"三花","御卦原",500,"",0,6736,12222,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/187.png"],[139,"神柵 桃紗",8830,6483,1037,86,7001.3,118,"","",200,"",0,3353,504,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/188.png"],[108,"白川 清凪",4516,5516,3516,97,5778.3,132,"三花","エアロ",100,"",0,6516,2516,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/189.png"],[125,"塩野 千穂",9930,3310,1316,90,5952.1,148,"三花","ブルテ",100,"",0,1723,3516,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/190.png"],[140,"松沢 桜奈",4530,7310,4116,95,6430.8,103,"三花","エアロ",200,"",0,783,188,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/191.png"],[114,"中葉 豊花",2514,6331,1363,83,4547,252,"三花","御卦原",100,"",0,1379,700,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/192.png"],[304,"青広 舞衣",7329,4569,8029,152,8564.5,116,"","",200,"",0,7832,14905,""],[305,"国街 底奈",401,323,71,73,332,318,"","",100,"",0,41,8,""],[130,"松本 萌",14550,18700,3315,128,16087.3,9,"舞愛","エアロ",3700,"",0,1583,5831,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/195.png"],[98,"松本 潮葉",358,3,9150,116,3396.6,0,"","",2500,"",1,4583,12831,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/196.png"],[306,"湊 琉希",5358,7053,4548,119,7422.3,103,"","",200,"",0,7023,6695,""],[112,"㻳﨑 蒼花",504,93,4999,152,2907.2,318,"舞愛","ブルテ",100,"",0,3504,16404,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/198.png"],[128,"山越 高穂",349,2303,85,158,2717,296,"","",100,"",0,4410,15100,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/199.png"],[60,"松本 三花",6387,10387,11030,170,12865.5,46,"三花","御卦原",500,"",0,16387,20000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/200.png"],[118,"空咲 宮古",14999,9310,1363,144,11259.6,28,"","",1500,"",0,7021,4003,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/201.png"],[307,"湊 伊莉",2786,6217,3244,93,5503.4,246,"","",100,"",0,7568,3457,""],[134,"坂屋 スフィア",8130,4103,6244,122,7266.2,107,"舞愛","ブルテ",200,"",0,3001,7457,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/203.png"],[308,"上狭 舞羽",9349,3586,2283,125,6350,125,"","",200,"",0,1039,6855,""],[104,"河原 早夜",7349,8586,303,159,8417.1,56,"三花","ブルテ",500,"",0,839,15730,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/205.png"],[309,"青広 優珠",3595,6856,8347,115,7683.4,161,"","",100,"",0,8483,6894,""],[310,"赤町 紗楽",4039,6949,8302,115,7853.7,173,"","",100,"",0,8909,5976,""],[311,"右広 茉緒",6947,7843,5903,107,8568,62,"","",500,"",0,9992,1234,""],[24,"松本 舞花",14200,17999,3938,152,15549,4,"三花","舞愛",6250,"",0,4310,322,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/209.png"],[598,"神楽 絃香",15210,13029,3689,160,14739.8,0,"","",100,"",1,14210,11110,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kagura_Itoka.png"],[65,"青橋 映梨",13025,19129,1015,162,16455.3,6,"ブルテ","舞愛",4200,"",0,12210,14101,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aohashi_Eri.png"],[66,"レイ フロート",2079,2920,20000,166,9069,293,"舞愛","ブルテ",100,"",0,19995,9996,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ray_Float.png"],[312,"鶴瀬 わかば",5230,7019,4918,101,7181.4,122,"","",200,"",0,3237,6322,""],[313,"天夜 六葉",9928,3049,7038,125,7729,111,"","",200,"",0,1939,10001,""],[16,"松本 風都",13300,19500,4412,161,15982.6,4,"三花","エアロ",5950,"",0,2698,90,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/215.png"],[314,"金瀨 映南",8039,3020,12412,111,8392.6,180,"","",100,"",0,4698,9550,""],[113,"松本 桜",5310,3139,9312,133,6876.5,214,"三花","エアロ",100,"",0,7130,9493,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/217.png"],[315,"青橋 花蓮",9992,8495,10412,131,11935.4,38,"","",500,"",0,6198,15695,""],[121,"莉坂 美都",8832,3932,13332,132,9288.3,80,"舞愛","ブルテ",500,"",0,4132,7132,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/219.png"],[141,"松本 穂希",6833,81,7730,165,6245,311,"","",100,"",0,2132,19431,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/220.png"],[13,"北国 結愛",16992,12495,9227,152,16145.3,13,"舞愛","三花",3600,"",0,1834,14834,""],[111,"松本 双葉",2922,7312,9992,135,8071.2,150,"","",200,"",0,7232,6812,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/222.png"],[126,"安部 莉愛",2424,3131,1818,128,3417,290,"","",100,"",0,8080,1313,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/223.png"],[143,"藍川 真莉",9927,8248,5312,142,10251.2,33,"","",500,"",0,8312,9310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/224.png"],[316,"神楽 玲来",8883,5543,2345,134,7647,81,"","",200,"",0,7095,9005,""],[97,"松本 菜乃葉",7424,1032,5310,149,5637.2,233,"","",100,"",0,6310,9318,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/228.png"],[599,"黒葉 本香",9005,7059,8019,135,9863.8,0,"","",100,"",1,10000,6707,""],[600,"黒久 優奈",2039,1359,2904,82,2484.9,0,"","",100,"",1,5393,1101,""],[601,"花川 来夢",5043,3036,7755,107,5938.4,0,"","",100,"",1,8233,3343,""],[602,"川水 奈海",5209,8001,999,99,6753.9,0,"","",100,"",1,4023,7054,""],[317,"黒葉 たま",6068,7191,4374,105,7589.9,89,"","",500,"",0,6666,5563,""],[318,"黒葉 瑞奈",6059,5553,8849,114,8123.7,113,"","",200,"",0,6676,9282,""],[319,"黒葉 佳菜",2068,1329,4848,103,3499,309,"","",100,"",0,7772,8901,""],[320,"黒葉 円香",8676,8523,5645,91,9516.3,48,"","",500,"",0,9997,1983,""],[603,"中浜 和咲",7938,6008,7049,106,8464.2,0,"","",100,"",1,5934,8010,""],[604,"青見 亜海",5309,4413,101,95,4651.1,0,"","",100,"",1,394,8605,""],[605,"中浜 絵茉",7444,9108,8203,98,10229.6,0,"","",100,"",1,10393,6402,""],[321,"観都 百奈",6593,7001,3668,95,7277.3,86,"","",200,"",0,3059,4936,""],[606,"水時 乃愛",4005,7058,7019,98,7086.6,0,"","",100,"",1,4053,2007,""],[607,"赤町 環菜",9840,6090,9444,126,10179.7,0,"","",100,"",1,10344,8992,""],[322,"竹早 四葉",9001,4280,5428,127,7965.1,79,"","",500,"",0,10505,8936,""],[323,"青広 蒼楽",4433,2007,2006,99,3814.9,278,"","",100,"",0,3059,9991,""],[21,"坂屋 澪愛",1422,2401,5420,114,3890.4,295,"舞愛","ブルテ",100,"",0,12441,3150,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/245.png"],[131,"岩海 清花",8312,5431,2103,156,7954.8,73,"三花","エアロ",200,"",0,9313,14499,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/246.png"],[100,"松本 海莉",1210,2103,9130,140,5119.5,314,"","",100,"",0,14999,8311,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/247.png"],[119,"山崎 六花",7310,8827,6139,149,9707.5,55,"","",500,"",0,2193,12192,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/248.png"],[324,"広野 安菜",6223,3001,8668,98,6801.4,210,"","",100,"",0,13128,2936,""],[325,"雨津路 空乃",8089,6854,1100,123,7657.2,62,"","",500,"",0,2525,12936,""],[326,"砂浜 瑞咲",9202,8706,8685,98,10748.6,47,"","",500,"",0,14525,966,""],[133,"松南 遥",5913,3319,1206,122,4649.7,205,"","",100,"",0,8201,1005,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/252.png"],[102,"花枝 三葉",8637,5002,1213,134,6584.5,102,"ブルテ","エアロ",200,"",0,1033,7310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/253.png"],[123,"日野森 二乃",3381,3025,7310,132,4935.3,250,"","",100,"",0,5881,505,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/254.png"],[137,"篠川 欅",6399,8333,5394,151,9155.7,61,"","",500,"",0,1333,15555,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/255.png"],[327,"金宮 三希",5050,7777,10292,114,9027.5,75,"","",500,"",0,9992,3029,""],[328,"アクア ソリル",2334,1918,7059,130,4827.3,299,"","",100,"",0,11112,10349,""],[106,"神綿 彩葉",2000,5133,2466,87,4367.8,296,"","",100,"",0,5313,3888,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/258.png"],[329,"駆見 ミルル",5956,3333,5859,94,5761.1,203,"","",100,"",0,2213,6079,""],[22,"藍川 綾",1888,7461,10300,161,8256.5,211,"ブルテ","檸檬",100,"",0,3394,13333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/260.png"],[138,"梯 㻳々",3504,1407,5594,126,4216.9,264,"三花","舞愛",100,"",0,4825,8883,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/261.png"],[6,"有愛 実織",3202,4706,1685,84,4261,226,"エアロ","御卦原",100,"",0,4986,873,""],[107,"ローズ トピア",8940,4333,8594,122,8435.1,70,"三花","御卦原",200,"",0,6433,7310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/263.png"],[124,"村花 水海",8394,3304,1394,103,5268.6,161,"","",200,"",0,1333,1043,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/264.png"],[142,"神崎 三友里",3330,7311,4519,140,7152.9,170,"エアロ","御卦原",100,"",0,8388,9993,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/265.png"],[110,"長峰 青葉",7314,5603,9384,116,8452.7,115,"","",200,"",0,2394,7634,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/266.png"],[127,"莉里 朝海",2593,5444,1031,120,4705.6,194,"","",100,"",0,7833,6031,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/267.png"],[330,"御卦原 羽莉",5928,2222,3010,96,4631.2,249,"","",100,"",0,7069,3984,""],[144,"綾崎 佐友紀",1013,3714,731,124,2557.5,305,"","",100,"",0,92,2149,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/269.png"],[115,"剗﨑 茜",4431,3719,6137,122,5949.7,226,"エアロ","御卦原",100,"",0,8931,7341,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/270.png"],[12,"塩崎 えむ",8004,1508,3946,165,5952.5,221,"舞愛","ブルテ",100,"",0,6051,11005,""],[331,"アイビー ナイト",7605,2342,6958,103,6437.3,235,"","",100,"",0,7777,5554,""],[332,"南国 未来",12292,9605,9079,128,12434.4,40,"","",1500,"",0,3444,9069,""],[333,"百堂 なずな",9606,3201,4023,160,8070.6,85,"","",200,"",0,13051,15119,""],[334,"桃瀬 小雪",8004,208,105,136,3819,306,"","",100,"",0,222,9943,""],[129,"梶崎 りら",8022,6555,4100,121,7803.9,65,"","",500,"",0,2444,6132,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/276.png"],[1,"黒川 怜衣",8710,6052,5737,131,8634.5,75,"ブルテ","三花",500,"",0,6314,9042,""],[2,"中陸 那々",6536,4977,3721,102,6247.2,153,"ブルテ","舞愛",200,"",0,2988,4471,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/nakariku-nana.png"],[3,"湊 絓㩜",7011,3547,3310,127,6146.7,76,"舞愛","エアロ",500,"[1 1 2 2 0 0 0 100 1 0 0 0]",0,5224,10321,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/minato%20karan.png"],[4,"白木 花",5102,5534,4667,114,6695.1,123,"ブルテ","檸檬",200,"",0,7724,8103,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki%20hana.png"],[7,"エリン ルビート",5733,6215,5733,107,7024.1,38,"エアロ","舞愛",1500,"[1 1 2 2 0 0 0 100 0 0 0 1][2 1 0 0 0 0 5000 100 0 0 0 1]",0,1897,4461,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/elin%20rubyt.png"],[5,"鐘島 和音",7210,5443,4972,126,7377,50,"御卦原","エアロ",200,"[3 0 1 0 0 0 100 100 1 0 0 0][3 0 2 0 0 0 0 100 1 0 0 0]",0,3427,8530,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kaneshima%20waon.png"],[8,"西浜 光里",4421,3523,4681,105,5108.5,258,"エアロ","舞愛",100,"",0,5421,4721,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/nishihama-hikari.png"],[9,"森浜 あかり",4608,3310,4492,112,5046.7,223,"御卦原","ブルテ",100,"",0,5732,4537,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/morihama%20akari.png"],[61,"松本 舞咲",16349,15000,20139,187,21473.3,4,"","",5450,"",0,15013,22000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/285.png"],[608,"青広 明奈",808,1669,2011,99,2126.7,0,"","",100,"",1,3000,6796,""],[335,"天夜 あまね",4894,3238,6666,119,5819.9,236,"","",100,"",0,1000,10910,""],[99,"松本 愛咲",6312,2931,18350,158,9824.9,156,"","",100,"",0,7031,13333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/288.png"],[116,"礒坂 智鶴",14888,15222,3300,110,14181.2,8,"","",3500,"",0,2141,1003,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/289.png"],[136,"梯 楽々",1943,3349,9310,131,5678.8,257,"三花","舞愛",100,"",0,8310,8133,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/290.png"],[101,"深崎 みい花",3300,2481,5533,118,4414,277,"","",100,"",0,2429,7310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/291.png"],[609,"天夜 蘭舞",9002,3006,16243,169,11241.2,0,"","",100,"",1,21021,14800,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Ramu.png"],[336,"風神 御春",13204,11991,3869,106,12530.3,30,"","",1500,"",0,6958,5059,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Miharu.png"],[337,"龍神 優華",8822,18000,8039,137,14889.3,31,"","",2700,"",0,6493,3600,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ryuujin_Yuuka.png"],[338,"風神 有咲",5049,6042,3018,90,6219.8,177,"","",100,"",0,9918,1223,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Arisa.png"],[339,"風神 柚々",5444,6060,3039,144,7343.6,108,"","",200,"",0,9223,14600,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Yuyu.png"],[610,"風神 水香",7500,3233,1029,95,4741.8,0,"","",100,"",1,533,609,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Mizuka.png"],[340,"風神 こより",13226,10260,1239,109,10929.2,35,"","",1500,"",0,9999,546,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Koyori.png"],[152,"中野 ほくと",7300,4384,5931,130,6959.9,100,"三花","エアロ",200,"",0,1444,7315,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M108.png"],[341,"神楽 美玖",9039,8494,139,129,8228.6,44,"","",500,"",0,2026,7069,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kagura_Miku.png"],[342,"紙端 茉希",6051,1959,11111,117,6740.5,263,"","",100,"",0,9069,4456,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Shibata_Maki.png"],[158,"宮瀬 優沙",2841,6081,339,122,4652.1,245,"","",100,"",0,3845,4413,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M109.png"],[145,"雨浜 美真",8391,5599,2017,97,6843.4,102,"","",200,"",0,7731,133,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M110.png"],[611,"祖方 玲",202,667,9999,107,3402.8,0,"","",100,"",1,4013,5480,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sogata_Rei.png"],[612,"練面 二愛",9203,8049,313,88,7640.5,0,"","",100,"",1,1119,698,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Nerizura_Nia.png"],[149,"桐窪 柚莉杏",2984,3318,7831,153,5956.4,294,"","",100,"",0,4013,13333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M111.png"],[613,"御葉 のぞみ",13394,14999,5049,113,14235.2,0,"","",100,"",1,7778,1093,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Goyo_Nozomi.png"],[148,"磯渕 かなみ",5666,3945,4581,100,5732.8,179,"","",100,"",0,5993,3813,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M112.png"],[147,"中之院 藍乃",9313,8311,4414,134,9664.2,61,"","",500,"",0,7399,8103,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M113.png"],[614,"風神 来海",7049,3777,6494,100,6874.9,0,"","",100,"",1,8058,6333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Kurumi.png"],[67,"彩月 結恋",7504,8003,15001,155,11869.2,54,"御卦原","エアロ",500,"",0,18309,5006,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ayatsuki_Yuko.png"],[343,"二地 唯",3019,6641,5461,131,7158.1,171,"","",100,"",0,14610,9309,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Futachi_Yui.png"],[615,"水時 ちはる",9090,1560,2201,110,5420.4,0,"","",100,"",1,3938,8809,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mizutoki_Chiharu.png"],[616,"琴宮 音緒",5049,2029,9670,117,5677.2,0,"","",100,"",1,5333,1456,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomiya_Neo.png"],[617,"琴宮 有夢",6069,3110,1432,134,4673.9,0,"","",100,"",1,8222,1103,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomiya_Arumu.png"],[68,"青広 蒼音",16000,19999,4243,184,19966,4,"ブルテ","舞愛",4650,"",0,18002,21800,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aohiro_Aone.png"],[69,"百堂 桃音",5001,4003,20000,170,11767.8,160,"舞愛","ブルテ",200,"",0,22000,21070,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Hyakudo_Momone.png"],[344,"渡部 心海",6697,8059,7777,96,8634.2,95,"","",200,"",0,1029,2033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Watabe_Kokomi.png"],[345,"清澄 澪々",7060,5566,4444,107,6961.5,96,"","",200,"",0,7455,884,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kiyosumi_Rere.png"],[346,"花宮 来姫",8607,1010,8079,117,6321,275,"","",100,"",0,5593,4939,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Hanamiya_Raki.png"],[347,"黒咲 ゆめ",586,5686,53,122,4027.6,303,"","",100,"",0,3230,12953,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kurosaki_Yume.png"],[161,"桜坂 深里",8368,6849,9283,116,9137,49,"三花","御卦原",500,"",0,4920,133,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M114.png"],[154,"坂屋 彗惺",15730,8847,4739,142,12544,22,"舞愛","ブルテ",1500,"",0,7293,9470,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M115.png"],[155,"松本 蘭",7948,5622,18488,156,12214.8,73,"","",500,"",0,12018,15390,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M116.png"],[348,"彩月 莉羽",7222,4444,5634,104,6758.4,130,"","",200,"",0,6545,1777,""],[349,"葛須 未雨",1919,4545,6161,85,4675.8,268,"","",100,"",0,2345,616,""],[350,"風神 ゆかり",6856,7777,5553,112,8145.1,74,"","",500,"",0,2412,3156,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Yukari.png"],[351,"小桜 花緒",6907,4903,3039,102,6378.1,107,"","",200,"",0,7845,3618,""],[352,"初坂 玲乃",6039,1112,3445,108,4289.6,279,"","",100,"",0,6724,5029,""],[353,"初坂 佳乃",5086,563,2222,104,3352.1,276,"","",100,"",0,9018,3019,""],[62,"松本 友花",20948,18746,26483,148,26632.6,1,"三花","御卦原",22450,"[1 0 1 2 0 0 2.5 100 1 0 0 3][[1 0 2 2 0 0 2.5 100 1 0 0 3]1 0 3 2 0 0 2.5 100 1 0 0 3][1 0 4 2 0 0 2.5 100 1 0 0 3][3 0 1 0 0 0 100 100 1 0 0 3]",0,15001,27477,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M117.png"],[157,"坂井 檸古",12948,19999,4918,122,16383.9,308,"","",100,"",0,5018,795,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M118.png"],[354,"薪堀 明愛",10004,8079,3209,143,9582.2,42,"","",1500,"",0,12052,5403,""],[355,"緑原 千弦",7887,4405,7807,128,7822.3,105,"","",200,"",0,1034,10293,""],[356,"樞嶋 澪蘭",2019,10298,9945,131,9181.8,188,"","",100,"",0,2039,10496,""],[357,"樞嶋 曈葵",4222,8000,3004,137,7672.8,125,"","",200,"",0,8504,13333,""],[358,"水時 雪奈",3441,2344,3088,97,3968.8,286,"","",100,"",0,12710,2039,""],[359,"箋 稀凛",5052,3605,8230,110,6762.9,160,"","",100,"",0,10019,9227,""],[11,"松師 莉茶",12038,2069,16292,123,10382.5,110,"御卦原","ブルテ",200,"",0,9028,5030,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matouji_Reisa.png"],[360,"御空 雨芽",2938,7777,4545,85,6480,224,"","",100,"",0,1919,6060,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Misora_Amame.png"],[361,"桐窪 玲燈",3029,3021,3302,150,4680.5,273,"","",100,"",0,1049,15415,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kirikubo_Reto.png"],[160,"村花 あきら",8666,7930,5837,111,9470.1,58,"エアロ","ブルテ",500,"",0,8830,6390,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M119.png"],[362,"桐窪 深月",5039,1721,6050,121,4370.2,273,"","",100,"",0,806,1112,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kirikubo_Mitsuki.png"],[146,"潮海 実菜穂",8930,3391,18488,157,10910.7,121,"","",200,"",0,2991,13948,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M120.png"],[15,"神綿 篠愛",17380,13948,8837,93,16161.8,15,"三花","エアロ",1500,"",0,5669,3820,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M121.png"],[153,"桐嶋 藍奈",3455,8370,19874,164,12572.3,133,"","",200,"",0,18847,14400,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M122.png"],[23,"村花 穂乃花",9938,15030,10290,160,15470.6,27,"三花","エアロ",1500,"",0,1948,19487,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M123.png"],[363,"桜葉 瑞乃",18303,17442,10000,151,18904.2,6,"","",6100,"",0,8004,5555,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sakuraba_Mizuno.png"],[364,"松宮 希衣",7003,4049,6483,144,8104.8,122,"","",200,"",0,8022,19893,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matsumiya_Kii.png"],[365,"実原 霞",9009,12948,9020,136,13040,7,"","",5500,"",0,5049,10002,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sanehara_Kasumi.png"],[366,"神水 心音",2019,3020,204,100,3167.1,310,"","",100,"",0,9028,7951,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kannomi_Kokone.png"],[367,"十五瀬 凛花",6056,7000,2039,97,6754.1,99,"","",200,"",0,4030,5606,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mochinoze_Rinka.png"],[368,"青橋 雨香",8999,7060,9014,123,10088.1,50,"","",500,"",0,5069,11000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aohashi_Uka.png"],[369,"北城 千秋",7029,1344,3545,89,4850.7,272,"","",100,"",0,6666,7264,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kitajo_Chiaki.png"],[370,"虹鉢 杏珠",4404,6969,11094,129,9079.8,163,"","",100,"",0,13035,8040,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Nijihachi_Anzu.png"],[371,"瀬能 雨楽",6860,3455,3788,158,6699.5,167,"","",100,"",0,1076,17705,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Zeno_Amara.png"],[150,"藍川 瑞希",12932,12945,6839,145,14009,26,"檸檬","御卦原",1500,"",0,3394,11139,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M124.png"],[372,"キャンディ キングス",7005,4309,2022,93,6096.9,194,"","",100,"",0,14059,2303,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Candy_Kings.png"],[373,"風神 まつり",5050,4030,7049,101,6461.6,166,"","",100,"",0,9080,6666,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Matsuri.png"],[151,"総原 姫花",3314,5398,3944,111,5708.2,223,"","",100,"",0,8813,6122,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M125.png"],[156,"松宮 晴奈",16388,11115,8811,120,14071.5,23,"檸檬","御卦原",1500,"",0,2289,855,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M126.png"],[618,"藍川 桃海",3303,2719,533,165,4194.4,0,"","",100,"",1,6130,14018,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/360.png"],[159,"藍川 㻳䓩",8103,5530,13301,169,11003.9,58,"","",500,"",0,4913,19283,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M127.png"],[374,"祖方 紙織",2030,7777,3111,106,5938.5,234,"","",100,"",0,8066,2033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sogata_Shiori.png"],[375,"頼橋 あさひ",3035,4056,7027,120,5942.1,277,"","",100,"",0,8345,10033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Yorihashi_Asahi.png"],[376,"岩海 琉楽",5039,6029,8077,106,7186,156,"","",100,"",0,2020,3049,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Iwaumi_Rura.png"],[377,"村花 あずき",8014,9046,3010,91,8802.5,57,"","",200,"",0,8605,2011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Murahana_Azuki.png"],[378,"風神 凛那",3033,8404,3039,93,6593.7,178,"","",100,"",0,5553,4666,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Rinna.png"],[379,"アイビー モノリス",10184,9030,9015,112,11392.1,43,"","",500,"",0,7049,8069,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ivy_Monolith.png"],[380,"竹早 綾音",7471,2929,1290,104,5261.1,181,"","",100,"",0,9202,4085,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Takehaya_Ayane.png"],[381,"松本 梓咲",12830,3344,10635,116,9689.1,79,"","",500,"",0,3067,6789,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matsumoto_Azusa.png"],[162,"桐巉 𣶶花",8410,1840,19487,171,10433.9,231,"舞愛","エアロ",100,"",0,5810,14010,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/370.png"],[163,"松本 花南",4915,19948,1940,135,13255.7,37,"ブルテ","エアロ",500,"",0,8488,7840,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/371.png"],[164,"中花 莉里乃",4481,3918,2019,166,6212.3,217,"","",100,"",0,8000,20098,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/372.png"],[165,"篠川 真花",17461,8173,1049,158,12265.5,29,"檸檬","御卦原",1500,"",0,6531,13194,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/373.png"],[166,"藍川 桃瑚",21985,21999,20895,185,28024.7,1,"","",17300,"[3 0 4 0 0 0 5000 66.6 1 0 0 0]",0,21533,26815,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/374.png"],[10,"スイセイ ソラ",15213,10315,7040,133,13013.1,13,"エアロ","舞愛",3300,"[2 1 0 2 0 2 0.5 100 0 0 0 1]",0,4032,2844,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/suisei%20sora.png"],[382,"樞嶋 宙蘭",11069,9999,8003,147,11697.8,32,"","",1500,"",0,2039,6050,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kanamejima_Sorara.png"],[619,"松師 香楽",6506,3545,6767,96,6275.5,0,"","",100,"",1,5503,2007,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matouji_Kara.png"],[620,"箋 茉夜",12019,3334,5563,99,8348.5,0,"","",100,"",1,8010,7740,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Harihuda_Maya.png"],[95,"白木 翠",20134,23421,25221,167,28237.1,1,"ブルテ","御卦原",17500,"[3 0 0 0 0 0 100 100 0 0 0 1][3 0 1 0 0 0 100 100 0 0 0 1][1 1 2 2 0 0 0 100 0 0 0 1][2 1 0 2 7 2 0.8 100 0 0 0 1][2 1 0 1 0 0 0.25 100 0 0 0 1]",0,19834,20113,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki-midori.png"],[96,"スイセイ ネオン",17814,15976,13745,152,20029.4,2,"エアロ","舞愛",12650,"[3 0 4 0 6 2 2000 50 1 0 0 0][4 0 1 0 0 0 (3) 0 0 0 0 0][1 0 1 2 0 0 1.2 100 1 0 0 0]",0,16118,14724,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/suisei-neon.png"],[167,"白木 梓",8897,6972,4033,108,8243.3,82,"ブルテ","御卦原",500,"",0,3688,4227,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki-azusa.png"],[168,"湊 灔羽",75,90,25000,104,6763.5,312,"舞愛","エアロ",100,"[3 0 0 0 0 0 99 100 1 0 0 0]",0,4436,4203,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/minato-namiha.png"],[171,"彩月 夢音",24029,25306,20666,186,28213.9,1,"舞愛","御卦原",22900,"[3 0 4 0 0 0 10000 29 1 0 0 0]",0,21966,3067,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ayatsuki_Yunon.png"],[621,"桐窪 㓍杏",5000,3004,2049,153,5365.8,0,"","",100,"",1,8080,14020,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kirikubo_Rua.png"],[622,"十八 羅珠",6950,3455,8010,94,7128.9,0,"","",100,"",1,8080,8270,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Towa_Razu.png"],[172,"蒲嶋 莉嘉瑚",5981,6794,8233,97,8246,81,"","",200,"",0,4438,6721,""],[169,"鐘島 るる",13838,14733,6972,157,15383.2,14,"エアロ","ブルテ",3200,"[2 0 0 0 0 0 2000 100 0 0 0 1][3 1 0 0 0 0 0 100 0 0 0 1][2 1 0 0 0 0 10000 100 0 0 0 1]",0,6737,9523,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kaneshima-ruru.png"],[170,"白木 優月",18332,20136,7896,172,21360.9,2,"ブルテ","舞愛",12450,"[3 0 0 4 5 3 3 100 1 0 0 0][2 1 0 0 0 0 999999 0.3 1 0 0 0]",0,14721,19864,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki-yuzuki.png"],[173,"白木 娃菜",8595,9324,8212,125,10089,59,"","",500,"",0,1318,1360,""],[174,"白木 水姫",7619,7751,3206,87,7903.7,53,"","",500,"",0,4644,3159,""],[175,"白木 娃鐘",2751,3423,1580,138,3410.3,243,"","",100,"",0,1059,3177,""],[176,"白木 娃梨沙",1443,4739,1940,110,3914.3,297,"","",100,"",0,8194,1982,""],[177,"鐘島 実南",13325,10632,6844,148,13151.9,19,"","",3100,"",0,11278,7623,""],[178,"白木 青海",8592,4300,5953,120,7405.1,112,"","",200,"",0,6029,4056,""],[179,"白木 新茶",9868,6226,6639,137,9061.7,54,"","",500,"",0,2571,6714,""],[180,"白木 海紅",9491,5075,5346,126,8070.8,60,"","",500,"",0,5985,5372,""],[181,"白木 紫音",1744,9356,6370,89,7559.4,254,"","",100,"",0,7240,6133,""],[182,"白木 実柑",9100,9806,4839,127,10457.2,37,"","",500,"",0,9263,7382,""],[183,"北国 友季",14326,15132,10113,151,16083.1,5,"","",6700,"",0,4326,5302,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kitaguni-yuki.png"],[184,"白木 海彩",9650,7999,2632,137,8857.8,45,"","",500,"",0,1949,7067,""],[185,"白木 水瑚",5936,4876,7033,116,7111.7,151,"","",200,"",0,4092,8359,""],[186,"赤国 舞奈",16672,15324,4827,155,16253.2,2,"エアロ","檸檬",14850,"[4 1 0 1 18000 0 () 0 0 0 0 0][1 0 1 2 0 0 2.5 100 1 0 0 0]",0,10682,7720,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/akaguni-mana.png"],[187,"森浜 奏音",6016,1149,8730,122,5614.9,253,"","",100,"",0,9874,1773,""],[188,"スイセイ エミ",3882,6993,7815,114,7196.6,155,"","",200,"",0,3153,2332,""],[594,"白木 潮莉",19036,18981,13732,170,21710,72,"","",200,"",0,9956,13532,""],[387,"藍川 楓奈",20198,20180,5130,164,20000,2,"檸檬","御卦原",11400,"[4 0 0 0 10000 3 () 0 0 0 0 0][1 0 2 2 0 0 50 100 1 0 0 0]",0,5310,9607,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/aikawafuuna.png"],[388,"立木 春音",8103,21093,20198,133,18946.5,22,"舞愛","三花",3000,"[4 0 2 0 0 0 (56,57,58,59,60,61,62,63,64,65,66,67,68,69,95,96,166,170,171,594) 0 0 0 0 0][1 0 1 2 0 0 5 100 0 0 0 0]",0,1847,3301,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/tachigiharune.png"],[623,"長津 つくし",235,2020,2135,83,1925.9,0,"","",100,"",1,5394,586,""],[585,"桐窪 㻳杏㩜",314,65,1333,178,3164.7,0,"舞愛","三花",100,"",1,1830,29098,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kirikuboriara.png"],[586,"㻳﨑 胡鈴",5816,4631,7641,150,8004.2,128,"舞愛","エアロ",200,"",0,5488,17641,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/rinozakikosuzu.png"],[624,"御葉 四空",3940,7120,1111,97,5589.3,0,"","",100,"",1,17,5633,""],[587,"藝鎧 組子",7722,4487,6894,137,7483.4,98,"","",200,"[2 1 0 2 1 2 0.2 77 1 0 0 0][2 1 0 2 2 2 0.2 77 1 0 0 0][2 1 0 2 3 2 0.2 77 1 0 0 0][2 1 0 2 4 2 0.2 77 1 0 0 0][2 1 0 2 5 2 50 77 1 0 0 0]",0,5721,4885,""],[588,"天夜 銀輝",6983,7256,9572,115,9332.8,70,"","",500,"",0,8265,4869,""],[589,"桜緒 室",5927,6018,7205,124,7714.8,126,"","",200,"",0,4694,7214,""],[590,"白木 鰆湊",18527,21315,4332,161,19463.6,19,"","",1500,"",0,5381,6291,""],[591,"鐘島 宙",11323,9612,5317,150,11229.5,30,"","",500,"",0,7320,6428,""],[592,"藝鎧 痧織",4024,6829,4322,121,7820.4,212,"","",100,"[2 1 0 2 3 2 2 100 0 0 0 1]",0,29997,5232,""],[593,"安心 林",10732,13324,8218,109,13295.8,96,"","",200,"",0,4294,6241,""],[625,"丘市 玖葵",19001,20007,9101,180,22297,0,"","",100,"",1,19999,21032,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Okaichi_Kuki.png"],[626,"チャーリー ラプター",5605,9011,2435,102,7659,0,"","",100,"",1,6363,2445,""],[627,"霞沢 深春",5103,3746,7993,122,6757.5,0,"","",100,"",1,3746,12874,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/421.png"],[628,"藍川 紗夜花",851,589,6514,115,2979.1,0,"","",100,"",1,3384,9875,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/422.png"],[629,"藍川 京花",4918,3384,918,120,4676.7,0,"","",100,"",1,8837,7819,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/423.png"],[630,"藍川 玖鷹",8817,7610,13339,160,12290.8,0,"","",100,"",1,8710,17615,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/424.png"],[631,"藍川 実葉",988,791,8999,127,4056.1,0,"","",100,"",1,3029,13999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/425.png"],[632,"巉毚蓮 瀺澟珱",18500,16444,10044,144,18439,0,"","",100,"",1,3851,7999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/426.png"],[633,"岩原 綾花",9987,17499,21039,157,19187.7,0,"","",100,"",1,7645,13390,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/427.png"],[634,"堽壑 珱鉚",7059,4355,6255,93,6955.3,0,"","",100,"",1,8445,3111,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Okatani_Eru.png"],[635,"中野 潮里",13333,10000,6378,170,13800.3,0,"","",100,"",1,5019,23000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/429.png"],[636,"南帳 緋乃",16666,7631,4986,95,11720.1,0,"","",100,"",1,3398,5019,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/430.png"],[637,"河原 由希",15100,8199,7918,133,12692.2,0,"","",100,"",1,18109,680,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/431.png"],[638,"澪川 珱花",27199,27777,12904,160,28614.1,0,"","",100,"",1,10000,10000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/432.png"],[639,"松本 澪那",7331,5891,9991,145,10006.8,0,"","",100,"",1,7310,19985,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/433.png"],[640,"実島 真緒",5194,13300,8999,159,13025.8,0,"","",100,"",1,5489,23948,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/434.png"],[641,"𰘛川 𭳈菜",27999,2095,20009,185,19300.2,0,"","",100,"",1,2290,28501,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/435.png"],[642,"松本 春実",4899,3385,23333,177,12269.5,0,"","",100,"",1,7988,28330,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/436.png"],[643,"河原 七瑠",8170,144,8850,77,5577.8,0,"","",100,"",1,4449,185,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kawahara_Naru.png"],[644,"河原 春菜",7395,95,6519,76,4824.4,0,"","",100,"",1,7300,238,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kawahara_Haruna.png"],[645,"河原 紗子",4869,3319,10398,72,6237.6,0,"","",100,"",1,2994,84,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kawahara_Sako.png"],[646,"風神 来香",10963,9904,9744,122,12848.9,0,"","",100,"",1,10002,13929,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Raika.png"],[647,"笛宮 深奈",13059,16222,10204,117,16247.9,0,"","",100,"",1,9049,4039,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuemiya_Mina.png"],[648,"風神 御悠",18050,13442,12203,156,18617.9,0,"","",100,"",1,14706,17206,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Miyuu.png"],[649,"堽壑 彁椰",3011,2225,1000,83,3256.2,0,"","",100,"",1,10387,5908,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Okatani_Kaya.png"],[650,"星陽 珱羽",29999,29999,29999,199,38233.7,0,"","",100,"[3 0 1 0 0 0 100 100 0 0 0 0][3 0 3 2 0 0 5 100 0 0 0 0]",1,29999,29999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/444.png"],[651,"初菓 フルリーア",15600,16500,14300,117,18626.2,0,"","",100,"",1,12800,5320,""],[652,"若隈奈 サフラン",22260,10780,6475,100,16016.8,0,"","",100,"",1,8720,4490,""],[653,"白木 浪海",11567,8261,7462,135,11410.8,0,"","",100,"",1,9271,9090,""],[654,"城山 桜",7234,7521,6313,117,8705.1,0,"","",100,"",1,5723,6281,""],[655,"長海 沙羅零",22034,18772,16527,159,23661.8,0,"","",100,"[2 1 0 1 6 2 30 50 2 0 30 1]",1,13274,15316,""],[656,"御川 あずま",17512,13714,15284,154,18744,0,"御卦原","舞愛",100,"",1,13632,10615,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/mikawa-azuma.png"],[657,"白風 直九",21016,24315,10511,178,25373,0,"御卦原","檸檬",100,"[1 0 1 2 0 0 3 100 2 0 50 0][3 0 4 0 0 0 6000 100 2 0 10 0]",1,18326,20117,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shirakaze-naoko.png"],[658,"御川 赤金",1890,3100,3235,84,3258.7,0,"","",100,"",1,3732,110,""],[659,"長海 あくあ",7456,8271,3872,102,8324.6,0,"","",100,"",1,5462,2981,""]];
+const DATA=[[1,"葛西 鐘歌",1323,3325,2328,115,2795.9,275,"","",100,"",0,513,515,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kasai_Shoka.png"],[2,"千江 葉紗奈",4005,3206,6008,105,4888.3,294,"","",100,"",0,3022,2483,""],[3,"青部 葵",3032,6612,4213,111,6109.7,180,"","",100,"",0,5463,6131,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aobe_Aoi_V4.png"],[4,"天夜 博音",885,2025,3445,97,2729.5,307,"","",100,"",0,4012,6666,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/6_Hirone.png"],[5,"松本 三咲",4995,7104,8109,103,8182.7,68,"三花","檸檬",200,"[1 1 1 2 0 0 0.5 100 1 0 0 0]",0,9433,5022,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/4.png"],[6,"松本 沙織",5517,8018,5900,101,8312,78,"三花","檸檬",200,"",0,10263,4871,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/5.png"],[7,"松本 深紅",7038,2015,7084,97,6209.7,239,"エアロ","舞愛",100,"",0,13710,2195,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/6.png"],[8,"天夜 葉月",1948,9804,840,90,6007.9,248,"御卦原","エアロ",100,"",0,153,3505,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Hazuki_2.png"],[9,"松本 白乃",9851,1942,6104,116,6943.6,174,"三花","エアロ",100,"",0,6914,7014,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/8.png"],[10,"高杉 ひな",7014,6812,4168,108,8049.3,18,"三花","御卦原",2900,"[1 0 1 2 0 0 30 15 1 0 0 0]",0,9074,9581,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/9.png"],[11,"松本 海",9313,9804,6100,104,10359.5,28,"舞愛","エアロ",500,"",0,2916,5661,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/10.png"],[12,"天夜 菜琉",7890,3428,4109,108,6318.8,117,"","",200,"",0,8176,3889,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Naru_V2.png"],[13,"天夜 青香",8034,3392,7032,124,7511,159,"","",200,"",0,9128,9482,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Seika_V3.png"],[14,"天夜 葉那",9420,1895,6830,117,6801.4,213,"","",100,"",0,4031,7049,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/16_Hana.png"],[15,"天夜 みどり",2932,6280,5001,97,6037.3,207,"","",100,"",0,4161,6999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Midori_V3.png"],[16,"赤井 風流",3828,5244,3332,95,5379.4,142,"","",200,"",0,6091,3882,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akai_Furu_V3.png"],[17,"天夜 紅葉",3495,8583,7012,109,8112.1,104,"","",200,"",0,9806,4893,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Momiji_V4.png"],[18,"赤井 詩音",4839,6060,3213,98,6291.4,168,"","",100,"",0,5999,7012,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akai_Shion_V2.png"],[19,"坂井 朱音",2910,2009,3316,115,3436.8,305,"","",100,"",0,2169,7019,""],[20,"天夜 佳鈴",6093,7772,4021,101,7679.7,69,"","",500,"",0,4895,5126,""],[21,"天夜 海羽",9286,11283,5693,116,11420,33,"","",1500,"",0,9302,7033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Umiha_V3.png"],[22,"青部 瑠々",7958,3211,8453,113,7467.9,129,"","",200,"",0,4912,9192,""],[23,"青部 虹々",5078,4029,7979,105,6347.5,190,"","",100,"",0,2214,6158,""],[24,"天夜 心紗",7123,3503,4682,103,6396.8,152,"","",100,"",0,9016,6852,""],[25,"天夜 心来",6013,5813,4048,89,6375.2,165,"","",100,"",0,3292,836,""],[26,"天夜 沙夜",9823,2921,3862,96,6583.3,157,"","",100,"",0,5556,4080,""],[27,"桃園 美歌",8519,6108,1085,122,7361.9,68,"三花","舞愛",200,"",0,7081,8000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/26.png"],[28,"高杉 小春",7084,5518,6881,125,7753.4,87,"","",200,"",0,5079,5819,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Takasugi_Koharu_V3.png"],[29,"安藤 友奈",934,6914,441,69,3926,204,"三花","エアロ",100,"[2 1 0 1 0 0 3 100 0 0 0 1][1 0 0 2 0 0 0.5 100 0 0 0 1]",0,118,75,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/28.png"],[30,"御影 さくら",8773,7302,3832,119,8735.8,65,"","",500,"",0,6132,8913,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mikage_Sakura_V2(1).png"],[31,"松本 桃花",3816,1048,9105,113,5186,302,"舞愛","エアロ",100,"",0,8814,9099,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/30.png"],[32,"赤井 瑠菜",8383,3414,9981,120,8157.2,146,"","",200,"",0,7652,7146,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akai_Runa_V2.png"],[33,"御影 晴南",6413,3923,3526,84,5481.3,216,"","",100,"",0,3058,1917,""],[34,"松本 沙紀",8471,308,8047,138,6034,41,"エアロ","御卦原",1500,"[1 0 0 0 0 0 999999 15 1 0 0 0][1 0 1 2 0 0 30 100 0 0 0 0][1 0 3 2 0 0 200 100 1 0 0 0]",0,1094,9231,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/33.png"],[35,"松本 白穂",10731,7989,6199,127,10294.8,24,"三花","舞愛",500,"",0,3100,8999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/34.png"],[36,"松本 綾乃",4014,5088,2094,151,5362,187,"舞愛","エアロ",100,"",0,2960,8494,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/35.png"],[37,"上狭 海衣",7718,4035,1235,103,5780.4,137,"ブルテ","舞愛",100,"",0,5004,6013,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kazusa_Mi_V2.png"],[38,"早野 愛衣",3049,5132,9832,112,6696.6,217,"","",100,"",0,4928,5050,""],[39,"玉島 実米",912,5542,1527,118,3555.2,283,"","",100,"",0,480,617,""],[40,"天夜 彩矢",3767,5812,8213,99,7206.5,192,"","",100,"",0,8773,7999,""],[41,"天夜 二夜",6673,4228,5068,108,6587.8,113,"","",200,"",0,7727,5890,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Niya_V2.png"],[42,"黒葉 萌香",6829,3813,1829,104,5327.1,134,"","",100,"",0,2821,5028,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kuroha_Moka_V2.png"],[43,"天夜 帆歌",6020,4092,3688,114,5762.9,111,"","",200,"",0,5682,4444,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/51_Honoka.png"],[44,"天夜 柚芽",5024,4342,2392,107,5266.9,172,"","",100,"",0,5123,6686,""],[45,"天夜 実夜",571,603,4123,97,1960.8,315,"","",100,"",0,5050,3339,""],[46,"天夜 いろは",2688,6168,7882,113,6894.4,182,"","",100,"",0,8728,7000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Iroha_V2.png"],[47,"天夜 菜虹",4586,9019,3992,117,7889.7,104,"","",200,"",0,4022,7887,""],[48,"御空 彩音",7234,4824,1227,102,6156.6,147,"","",200,"",0,6221,8118,""],[49,"赤花 千夏",2048,4726,7912,114,5922.8,309,"","",100,"",0,8281,7014,""],[50,"松本 智花",741,147,6184,101,2550.9,317,"エアロ","舞愛",100,"",0,7000,6010,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/49.png"],[51,"松本 柚乃",6610,5888,4041,141,7106.8,90,"舞愛","エアロ",200,"",0,5000,6011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/50.png"],[52,"松本 凪",814,333,8133,110,3187.2,314,"舞愛","ブルテ",100,"",0,5089,7777,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/51.png"],[53,"天夜 海侑",6060,4932,7832,101,7003.2,158,"","",200,"",0,5069,1055,""],[54,"松本 莉花",6100,4099,5011,112,6523.1,179,"舞愛","エアロ",100,"",0,8800,8810,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/53.png"],[55,"清澄 奈々",5040,6610,4392,126,7133,94,"","",500,"",0,5551,8928,""],[56,"天夜 海菜",5038,4928,6038,100,6552,170,"","",200,"",0,7772,6012,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Mina_V2.png"],[57,"小町 愛名",4013,5002,4984,94,5750.2,247,"","",100,"",0,9111,910,""],[58,"水瀬 凛",3556,9013,7853,117,8415.8,109,"","",200,"",0,2023,8742,""],[59,"紫屋 花音",3968,8906,5232,113,7822.8,119,"","",200,"",0,3405,7143,""],[60,"赤月 瑞羽",8940,3232,830,101,5558.8,151,"","",100,"",0,2099,5501,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Akatsuki_Mizuha.png"],[61,"鶴瀬 瑞帆",891,3928,2223,101,3342.6,316,"","",100,"",0,3039,6669,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Tsuruse_Mizuho_V2.png"],[62,"松本 海香",11345,16310,4914,93,13778.9,14,"三花","檸檬",1500,"",0,20,3011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/61.png"],[63,"天夜 鈴珠",4323,3394,5853,95,5360.3,231,"","",100,"",0,6781,5050,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Suzu.png"],[64,"青部 藍",7070,5021,8811,106,7593.8,124,"","",200,"",0,2111,2334,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aobe_Ai.png"],[65,"緑野 唯月",4129,4234,5555,98,5682.5,203,"","",100,"",0,6677,6010,""],[66,"空風 三琴",1555,3233,3302,86,3388.1,292,"","",100,"",0,2039,6070,""],[67,"松本 赤穂",11100,9133,6199,116,11185.1,11,"エアロ","ブルテ",1500,"",0,8841,8005,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/66.png"],[68,"夜山 夢羽",9637,3879,7111,115,7820.7,115,"","",200,"",0,6090,3218,""],[69,"清澄 日葵",5055,8717,7772,109,9038.7,71,"","",200,"",0,7013,9007,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kiyosumi_Himari_V2.png"],[70,"小竹 瀬奈",6876,7777,7889,99,9151.4,78,"","",500,"",0,9301,4991,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotake_Sena_V2.png"],[71,"青宮 結希",7819,5392,5682,110,7934.6,101,"","",200,"",0,7821,8999,""],[72,"永海 あやめ",98,101,4109,108,1733.3,313,"舞愛","ブルテ",100,"",0,8176,3889,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/71.png"],[73,"汐入 優月",6789,7016,6849,131,9011.4,86,"","",200,"",0,8958,12173,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Shioiri_Yuzuki_V2.png"],[74,"小町 愛花",7928,3334,4889,107,6323.8,97,"","",200,"",0,6781,2289,""],[75,"長津 詩奈",2116,4450,7871,108,5646.6,255,"","",100,"",0,4556,8011,""],[76,"元宮 深空",8772,3125,4498,123,6929.9,134,"","",200,"",0,8099,8918,""],[77,"元宮 小夏",8712,6894,7079,134,9243.1,52,"御卦原","檸檬",500,"",0,3701,8572,""],[78,"天夜 風香",3445,6038,7382,103,6840.4,195,"","",100,"",0,8703,4832,""],[79,"天夜 咲月",5213,4847,4957,107,6396,140,"","",200,"",0,6058,8888,""],[80,"美桃 来蘭",6054,4938,2413,103,6024.3,138,"","",200,"",0,7776,5690,""],[81,"御空 瑠璃",9732,3489,4488,101,7144.5,91,"","",200,"",0,5757,6745,""],[82,"線破 奈希",4444,8666,5353,122,7738,77,"","",500,"",0,4040,3250,""],[83,"松本 百合",8730,9635,6500,111,10416.9,46,"エアロ","舞愛",500,"",0,3012,9910,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/82.png"],[84,"東雲 珠衣",3021,6362,4049,105,6128.7,193,"","",100,"",0,6726,8881,""],[85,"三黒 夜菜",3214,6742,10888,121,8233.4,174,"","",100,"",0,9965,7222,""],[86,"青広 彩来",5784,6392,9481,148,8930.8,83,"","",500,"",0,9180,9953,""],[87,"緑野 椎奈",9028,9531,5059,111,10246.7,39,"","",1500,"",0,9872,6079,""],[88,"天夜 明日香",7896,5394,5775,117,7843.2,55,"","",500,"",0,3232,9912,""],[89,"御影 環希",9015,4081,3929,106,6955.1,121,"","",200,"",0,4556,6111,""],[90,"粉撒 緋南",3238,5686,4894,100,5670.7,218,"","",100,"",0,4545,3253,""],[91,"雪矢 二夢",5101,6051,3112,97,6250.9,164,"","",100,"",0,8619,2135,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Yukiya_Nimu.png"],[92,"上狭 由蘭",9013,7439,8200,113,10001,51,"","",500,"",0,8585,7475,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kazusa_Yuran.png"],[93,"松本 美愛",9014,6013,5011,114,8339.1,72,"檸檬","舞愛",500,"",0,6010,7001,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/92.png"],[94,"天夜 深瀬",8392,4748,5821,112,7771.8,66,"","",200,"",0,7588,7432,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Mirai.png"],[95,"天夜 音羽",7124,5324,6928,119,7786.9,106,"","",200,"",0,7819,5553,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Otoha.png"],[96,"琴見 里音",6012,5739,8003,109,7796.7,127,"","",200,"",0,5129,7623,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomi_Rio.png"],[97,"琴見 彩夢",6214,5501,5672,106,7173.8,108,"","",200,"",0,6069,7011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomi_Amu.png"],[98,"松本 穂南",9715,140,6910,88,5762.3,304,"エアロ","ブルテ",100,"",0,1919,5131,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/97.png"],[99,"古守 光葉",9207,8902,3910,83,9253,71,"","",500,"",0,7098,409,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Komori_Mitsuba.png"],[100,"古守 灯",1039,586,7862,119,3415.8,315,"","",100,"",0,6321,7591,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Komori_Akari.png"],[101,"天夜 える",4687,9422,7018,120,8870,69,"","",500,"",0,7860,4231,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Eru.png"],[102,"天夜 莉乃",9598,7867,8918,130,11006.5,45,"","",1500,"",0,9684,11693,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Rino.png"],[103,"天夜 美園",5906,4045,3728,103,5853.5,189,"","",100,"",0,5678,7774,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Misono.png"],[104,"清澄 百々",6223,7914,6058,117,8452.1,64,"","",500,"",0,8191,4058,""],[105,"黒矢 奈音",9523,4838,8133,104,8698.9,84,"","",200,"",0,7768,5521,""],[106,"水浜 彩奈",8080,4545,1919,104,6124.6,120,"三花","舞愛",200,"",0,5454,1340,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mizuhama_Ayana.png"],[107,"火燈 彩花",8888,6666,3201,96,7798.6,47,"","",500,"",0,1202,5672,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Hitoboshi_Ayaka.png"],[108,"晄音 怜花",4700,3300,4500,125,4995,239,"","",100,"",0,4900,3400,""],[109,"湊 美玲",5406,3456,3710,95,5154.8,235,"","",100,"",0,3000,6781,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Minato_Mirei.png"],[110,"松本 菫",8103,7193,2211,85,7597.5,84,"エアロ","舞愛",500,"",0,8103,105,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/109.png"],[111,"御影 紬",7028,4245,8112,111,7468.7,154,"","",100,"",0,6918,6069,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mikage_Tsumugi.png"],[112,"松本 楓",9891,6133,11003,133,10665.7,35,"三花","舞愛",500,"",0,9044,10333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/111.png"],[113,"新夜 音夢",9812,5768,7773,126,9445.4,53,"","",500,"",0,11114,6079,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Niiya_Nemu.png"],[114,"御影 夜々香",6688,5963,4404,109,7370.3,83,"","",200,"",0,5769,9015,""],[115,"松本 穂莉",9950,7890,8400,159,11356.3,29,"舞愛","ブルテ",500,"",0,8814,14331,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/114.png"],[116,"青遠 彩琉",4500,6014,3338,104,6228.7,149,"","",200,"",0,8319,5456,""],[117,"天夜 蒼菜",14112,13827,8587,156,15327.2,23,"御卦原","エアロ",3100,"",0,6997,8014,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Aona.png"],[118,"青広 夢南",5686,4892,828,122,5215,150,"ブルテ","舞愛",100,"",0,2101,5323,""],[119,"三屋 五月",5557,6013,5740,101,7291.5,105,"三花","御卦原",200,"",0,7743,7505,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/118.png"],[120,"河原 真穂",9075,7335,6031,94,8932.6,88,"三花","御卦原",200,"",0,3013,4332,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/119.png"],[121,"藤森 愛莉",9504,8843,7404,102,10147.9,43,"三花","御卦原",500,"",0,5501,713,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/120.png"],[122,"水屋 佐澄",8831,7413,7304,163,10006.4,44,"三花","御卦原",500,"",0,9014,8731,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/121.png"],[123,"湊 砂和",3713,4418,6013,98,5446,219,"三花","御卦原",100,"",0,2013,4913,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/122.png"],[124,"羽坂 咲花",7313,5922,206,117,6204.1,127,"三花","御卦原",200,"",0,5036,3374,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/123.png"],[125,"松崎 秋穂",7031,3994,6012,94,6418.8,147,"三花","御卦原",200,"",0,2418,3431,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/124.png"],[126,"師川 明菜",2458,6403,945,81,4422.4,259,"三花","御卦原",100,"",0,176,1337,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/125.png"],[127,"風崎 澪",5731,6132,9715,155,8410.8,117,"三花","御卦原",200,"",0,815,9370,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/126.png"],[128,"三沢 みのり",1312,3194,3105,89,3226.8,300,"三花","御卦原",100,"",0,6931,337,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/127.png"],[129,"松本 亜紀",7014,5813,2883,109,7035.5,110,"三花","エアロ",200,"",0,6019,8754,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/128.png"],[130,"織坂 七星",9803,3394,5963,116,7539,130,"御卦原","舞愛",200,"",0,8794,4059,""],[131,"天夜 御卦",8734,6001,4212,87,7713.9,93,"","",200,"",0,6722,1127,""],[132,"松本 実依菜",9823,9623,9023,170,12055.5,36,"三花","御卦原",1500,"",0,9223,9923,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/131.png"],[133,"天空 心菜",5233,4029,8829,95,6611.9,185,"","",100,"",0,6637,2020,""],[134,"桃撒 羽読",4894,5353,323,82,4778,224,"","",100,"",0,3230,586,""],[135,"鳴宮 二来",8880,7774,4089,121,8973.5,32,"","",500,"",0,5666,7453,""],[136,"二地 星奈",9868,7869,8190,168,11221.2,0,"","",100,"",1,9873,12441,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/135.png"],[137,"桃川 愛",3719,5944,943,80,4991.8,237,"ブルテ","三花",100,"",0,7433,444,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/136.png"],[138,"富谷 夜乃華",5316,4448,7133,91,6455.3,201,"三花","御卦原",100,"",0,5013,4481,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/137.png"],[139,"富谷 朝華",8022,2942,5021,88,6354.5,202,"三花","御卦原",100,"",0,7038,6094,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/138.png"],[140,"水時 数羽",9092,5956,3333,106,7986.3,48,"","",200,"",0,6692,8132,""],[141,"松本 椿",4410,2713,8441,92,5567.3,280,"エアロ","舞愛",100,"",0,3473,5937,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/140.png"],[142,"赤町 琴音",9933,7479,8014,140,10776.7,34,"","",1500,"",0,12342,9882,""],[143,"天夜 実季",305,777,9011,127,3627.2,306,"","",100,"",0,7270,8001,""],[144,"天夜 きらら",7777,3649,3986,119,6517.8,133,"","",200,"",0,5968,8102,""],[145,"神楽 静来",5089,9230,8888,119,9585.8,64,"御卦原","舞愛",500,"",0,9645,6019,""],[146,"松本 沙奈",1957,2533,5137,120,3980,308,"檸檬","エアロ",100,"",0,3310,8831,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/145.png"],[147,"ミル フロート",2246,3636,4394,96,4298.3,262,"","",100,"",0,7326,3610,""],[148,"十八 海里",2245,3207,4934,97,4042.5,292,"","",100,"",0,3354,4040,""],[149,"松宮 萌奈",10574,13331,10839,129,14045.7,20,"ブルテ","",3000,"",0,129,10833,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/148.png"],[150,"天幻 雨菜",8872,7760,8081,88,9652,77,"","",500,"",0,6739,1995,""],[151,"松本 美桜",8373,6013,573,104,6596.7,85,"三花","舞愛",500,"",0,1553,4412,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/150.png"],[152,"松本 日依",4109,8936,2333,95,6904.3,106,"舞愛","ブルテ",200,"",0,5948,310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/151.png"],[153,"雲蜜 怜音",2983,5013,4481,115,5205.4,238,"檸檬","エアロ",100,"",0,5884,2884,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/152.png"],[154,"水時 彩咲",6667,5435,7012,135,7915.2,59,"","",200,"",0,9334,7080,""],[155,"坂屋 舞愛",7350,3398,5983,108,6651.9,163,"舞愛","エアロ",200,"",0,7136,6372,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/154.png"],[156,"十八 流音",4405,5679,9119,112,7637.3,181,"","",100,"",0,7345,8910,""],[157,"松本 莉珠",8245,5894,12441,145,10121,49,"三花","エアロ",500,"",0,5846,9374,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/156.png"],[158,"新夜 彩楽",8998,6020,5124,133,8578.4,74,"","",500,"",0,7701,7942,""],[159,"海浜 七葉",4050,8193,6604,98,7799.7,118,"","",200,"",0,7948,2777,""],[160,"社 深綸",1000,2033,617,109,1769.9,310,"","",100,"",0,88,4033,""],[161,"松本 莉奈",13116,12819,11508,130,15297.9,16,"三花","御卦原",3500,"",0,6984,11441,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/160.png"],[162,"奈園 伊緒",5069,9001,4556,132,8410.2,52,"","",500,"",0,8013,7109,""],[163,"高杉 春咲",5930,8013,9058,127,9247,31,"三花","御卦原",1500,"[2 1 0 2 5 2 100 100 0 0 0 0]",0,5773,7301,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/162.png"],[164,"舞坂 姫乃",9960,8920,7110,132,11179.6,40,"","",500,"",0,7993,12234,""],[165,"松本 花菜",18215,10300,14786,173,17596,12,"三花","檸檬",3500,"",0,10700,15999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/164.png"],[166,"天夜 時雨",10001,10005,14243,164,13849.6,0,"","",100,"",1,13499,10500,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Shigure.png"],[167,"天夜 夢香",13345,18129,6902,171,18028.9,5,"御卦原","檸檬",5200,"",0,13220,18404,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Yumeka.png"],[168,"藍川 玲華",1543,57,9846,85,3451.6,319,"檸檬","エアロ",100,"",0,4839,3319,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/167.png"],[169,"星野 二菜",3736,5913,2795,77,5583.8,189,"","",100,"",0,3739,8847,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/168.png"],[170,"静山 梨紗",5938,5313,116,102,5321.6,192,"","",100,"",0,2635,5443,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/169.png"],[171,"早名 梨心",6602,2011,1344,91,4391.7,262,"","",100,"",0,5629,6440,""],[172,"赤崎 紅花",312,433,3913,105,1804.7,317,"エアロ","ブルテ",100,"",0,8931,883,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/171.png"],[173,"折川 真菜",2281,937,8216,96,3853.5,311,"","",100,"",0,5931,3731,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/172.png"],[174,"深宮 瑠花",2888,1002,5316,144,4436.4,289,"","",100,"",0,4013,18372,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/173.png"],[175,"神楽 木葉",2008,3954,4312,108,4560.9,271,"","",100,"",0,7114,7356,""],[176,"十八 水希",6908,4511,7810,121,7774.9,97,"","",200,"",0,8638,9000,""],[177,"三屋 一花",12837,10028,16393,167,15073.5,21,"三花","エアロ",1500,"",0,1354,12930,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/176.png"],[178,"上狭 実鈴",9848,9112,5323,99,10117.1,34,"","",1500,"",0,9638,1120,""],[179,"彩月 夢乃",2706,1920,4992,122,3658,272,"御卦原","エアロ",100,"",0,6118,2120,""],[180,"水角 美代子",401,853,49,64,596.9,316,"御卦原","三花",100,"",0,79,118,""],[181,"青夜 水奈",13201,9240,13456,157,14498.5,0,"","",100,"",1,4307,17182,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Seiya_Mizuna.png"],[182,"神楽 和奏",3221,4592,7770,119,6212.1,206,"","",100,"",0,4568,9030,""],[183,"神楽 茉白",2006,1204,5543,107,3414.2,302,"","",100,"",0,8023,5103,""],[184,"水時 心愛",5706,4920,4292,99,6203.1,155,"","",100,"",0,5618,5040,""],[185,"清里 瑠璃菜",3714,4013,8319,101,5715.9,261,"","",100,"",0,1736,2972,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/184.png"],[186,"赤花 紫乃",6706,4220,9093,95,7234.4,148,"","",200,"",0,4617,2222,""],[187,"贒閒 毬奈",206,90,592,150,1579.9,319,"御卦原","三花",100,"",0,28,17443,""],[188,"境 楓花",7130,8300,3319,132,8797,42,"三花","御卦原",500,"",0,6736,12222,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/187.png"],[189,"神柵 桃紗",8830,6483,1037,86,7001.3,118,"","",200,"",0,3353,504,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/188.png"],[190,"白川 清凪",4516,5516,3516,97,5778.3,132,"三花","エアロ",100,"",0,6516,2516,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/189.png"],[191,"塩野 千穂",9930,3310,1316,90,5952.1,148,"三花","ブルテ",100,"",0,1723,3516,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/190.png"],[192,"松沢 桜奈",4530,7310,4116,95,6430.8,103,"三花","エアロ",200,"",0,783,188,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/191.png"],[193,"中葉 豊花",2514,6331,1363,83,4547,252,"三花","御卦原",100,"",0,1379,700,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/192.png"],[194,"青広 舞衣",7329,4569,8029,152,8564.5,116,"","",200,"",0,7832,14905,""],[195,"国街 底奈",401,323,71,73,332,318,"","",100,"",0,41,8,""],[196,"松本 萌",14550,18700,3315,128,16087.3,9,"舞愛","エアロ",3700,"",0,1583,5831,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/195.png"],[197,"松本 潮葉",358,3,9150,116,3396.6,0,"","",2500,"",1,4583,12831,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/196.png"],[198,"湊 琉希",5358,7053,4548,119,7422.3,103,"","",200,"",0,7023,6695,""],[199,"㻳﨑 蒼花",504,93,4999,152,2907.2,318,"舞愛","ブルテ",100,"",0,3504,16404,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/198.png"],[200,"山越 高穂",349,2303,85,158,2717,296,"","",100,"",0,4410,15100,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/199.png"],[201,"松本 三花",6387,10387,11030,170,12865.5,46,"三花","御卦原",500,"",0,16387,20000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/200.png"],[202,"空咲 宮古",14999,9310,1363,144,11259.6,28,"","",1500,"",0,7021,4003,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/201.png"],[203,"湊 伊莉",2786,6217,3244,93,5503.4,246,"","",100,"",0,7568,3457,""],[204,"坂屋 スフィア",8130,4103,6244,122,7266.2,107,"舞愛","ブルテ",200,"",0,3001,7457,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/203.png"],[205,"上狭 舞羽",9349,3586,2283,125,6350,125,"","",200,"",0,1039,6855,""],[206,"河原 早夜",7349,8586,303,159,8417.1,56,"三花","ブルテ",500,"",0,839,15730,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/205.png"],[207,"青広 優珠",3595,6856,8347,115,7683.4,161,"","",100,"",0,8483,6894,""],[208,"赤町 紗楽",4039,6949,8302,115,7853.7,173,"","",100,"",0,8909,5976,""],[209,"右広 茉緒",6947,7843,5903,107,8568,62,"","",500,"",0,9992,1234,""],[210,"松本 舞花",14200,17999,3938,152,15549,4,"三花","舞愛",6250,"",0,4310,322,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/209.png"],[211,"神楽 絃香",15210,13029,3689,160,14739.8,0,"","",100,"",1,14210,11110,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kagura_Itoka.png"],[212,"青橋 映梨",13025,19129,1015,162,16455.3,6,"ブルテ","舞愛",4200,"",0,12210,14101,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aohashi_Eri.png"],[213,"レイ フロート",2079,2920,20000,166,9069,293,"舞愛","ブルテ",100,"",0,19995,9996,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ray_Float.png"],[214,"鶴瀬 わかば",5230,7019,4918,101,7181.4,122,"","",200,"",0,3237,6322,""],[215,"天夜 六葉",9928,3049,7038,125,7729,111,"","",200,"",0,1939,10001,""],[216,"松本 風都",13300,19500,4412,161,15982.6,4,"三花","エアロ",5950,"",0,2698,90,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/215.png"],[217,"金瀨 映南",8039,3020,12412,111,8392.6,180,"","",100,"",0,4698,9550,""],[218,"松本 桜",5310,3139,9312,133,6876.5,214,"三花","エアロ",100,"",0,7130,9493,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/217.png"],[219,"青橋 花蓮",9992,8495,10412,131,11935.4,38,"","",500,"",0,6198,15695,""],[220,"莉坂 美都",8832,3932,13332,132,9288.3,80,"舞愛","ブルテ",500,"",0,4132,7132,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/219.png"],[221,"松本 穂希",6833,81,7730,165,6245,311,"","",100,"",0,2132,19431,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/220.png"],[222,"北国 結愛",16992,12495,9227,152,16145.3,13,"舞愛","三花",3600,"",0,1834,14834,""],[223,"松本 双葉",2922,7312,9992,135,8071.2,150,"","",200,"",0,7232,6812,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/222.png"],[224,"安部 莉愛",2424,3131,1818,128,3417,290,"","",100,"",0,8080,1313,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/223.png"],[225,"藍川 真莉",9927,8248,5312,142,10251.2,33,"","",500,"",0,8312,9310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/224.png"],[226,"神楽 玲来",8883,5543,2345,134,7647,81,"","",200,"",0,7095,9005,""],[227,"松本 菜乃葉",7424,1032,5310,149,5637.2,233,"","",100,"",0,6310,9318,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/228.png"],[228,"黒葉 本香",9005,7059,8019,135,9863.8,0,"","",100,"",1,10000,6707,""],[229,"黒久 優奈",2039,1359,2904,82,2484.9,0,"","",100,"",1,5393,1101,""],[230,"花川 来夢",5043,3036,7755,107,5938.4,0,"","",100,"",1,8233,3343,""],[231,"川水 奈海",5209,8001,999,99,6753.9,0,"","",100,"",1,4023,7054,""],[232,"黒葉 たま",6068,7191,4374,105,7589.9,89,"","",500,"",0,6666,5563,""],[233,"黒葉 瑞奈",6059,5553,8849,114,8123.7,113,"","",200,"",0,6676,9282,""],[234,"黒葉 佳菜",2068,1329,4848,103,3499,309,"","",100,"",0,7772,8901,""],[235,"黒葉 円香",8676,8523,5645,91,9516.3,48,"","",500,"",0,9997,1983,""],[236,"中浜 和咲",7938,6008,7049,106,8464.2,0,"","",100,"",1,5934,8010,""],[237,"青見 亜海",5309,4413,101,95,4651.1,0,"","",100,"",1,394,8605,""],[238,"中浜 絵茉",7444,9108,8203,98,10229.6,0,"","",100,"",1,10393,6402,""],[239,"観都 百奈",6593,7001,3668,95,7277.3,86,"","",200,"",0,3059,4936,""],[240,"水時 乃愛",4005,7058,7019,98,7086.6,0,"","",100,"",1,4053,2007,""],[241,"赤町 環菜",9840,6090,9444,126,10179.7,0,"","",100,"",1,10344,8992,""],[242,"竹早 四葉",9001,4280,5428,127,7965.1,79,"","",500,"",0,10505,8936,""],[243,"青広 蒼楽",4433,2007,2006,99,3814.9,278,"","",100,"",0,3059,9991,""],[244,"坂屋 澪愛",1422,2401,5420,114,3890.4,295,"舞愛","ブルテ",100,"",0,12441,3150,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/245.png"],[245,"岩海 清花",8312,5431,2103,156,7954.8,73,"三花","エアロ",200,"",0,9313,14499,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/246.png"],[246,"松本 海莉",1210,2103,9130,140,5119.5,314,"","",100,"",0,14999,8311,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/247.png"],[247,"山崎 六花",7310,8827,6139,149,9707.5,55,"","",500,"",0,2193,12192,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/248.png"],[248,"広野 安菜",6223,3001,8668,98,6801.4,210,"","",100,"",0,13128,2936,""],[249,"雨津路 空乃",8089,6854,1100,123,7657.2,62,"","",500,"",0,2525,12936,""],[250,"砂浜 瑞咲",9202,8706,8685,98,10748.6,47,"","",500,"",0,14525,966,""],[251,"松南 遥",5913,3319,1206,122,4649.7,205,"","",100,"",0,8201,1005,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/252.png"],[252,"花枝 三葉",8637,5002,1213,134,6584.5,102,"ブルテ","エアロ",200,"",0,1033,7310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/253.png"],[253,"日野森 二乃",3381,3025,7310,132,4935.3,250,"","",100,"",0,5881,505,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/254.png"],[254,"篠川 欅",6399,8333,5394,151,9155.7,61,"","",500,"",0,1333,15555,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/255.png"],[255,"金宮 三希",5050,7777,10292,114,9027.5,75,"","",500,"",0,9992,3029,""],[256,"アクア ソリル",2334,1918,7059,130,4827.3,299,"","",100,"",0,11112,10349,""],[257,"神綿 彩葉",2000,5133,2466,87,4367.8,296,"","",100,"",0,5313,3888,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/258.png"],[258,"駆見 ミルル",5956,3333,5859,94,5761.1,203,"","",100,"",0,2213,6079,""],[259,"藍川 綾",1888,7461,10300,161,8256.5,211,"ブルテ","檸檬",100,"",0,3394,13333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/260.png"],[260,"梯 㻳々",3504,1407,5594,126,4216.9,264,"三花","舞愛",100,"",0,4825,8883,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/261.png"],[261,"有愛 実織",3202,4706,1685,84,4261,226,"エアロ","御卦原",100,"",0,4986,873,""],[262,"ローズ トピア",8940,4333,8594,122,8435.1,70,"三花","御卦原",200,"",0,6433,7310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/263.png"],[263,"村花 水海",8394,3304,1394,103,5268.6,161,"","",200,"",0,1333,1043,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/264.png"],[264,"神崎 三友里",3330,7311,4519,140,7152.9,170,"エアロ","御卦原",100,"",0,8388,9993,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/265.png"],[265,"長峰 青葉",7314,5603,9384,116,8452.7,115,"","",200,"",0,2394,7634,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/266.png"],[266,"莉里 朝海",2593,5444,1031,120,4705.6,194,"","",100,"",0,7833,6031,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/267.png"],[267,"御卦原 羽莉",5928,2222,3010,96,4631.2,249,"","",100,"",0,7069,3984,""],[268,"綾崎 佐友紀",1013,3714,731,124,2557.5,305,"","",100,"",0,92,2149,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/269.png"],[269,"剗﨑 茜",4431,3719,6137,122,5949.7,226,"エアロ","御卦原",100,"",0,8931,7341,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/270.png"],[270,"塩崎 えむ",8004,1508,3946,165,5952.5,221,"舞愛","ブルテ",100,"",0,6051,11005,""],[271,"アイビー ナイト",7605,2342,6958,103,6437.3,235,"","",100,"",0,7777,5554,""],[272,"南国 未来",12292,9605,9079,128,12434.4,40,"","",1500,"",0,3444,9069,""],[273,"百堂 なずな",9606,3201,4023,160,8070.6,85,"","",200,"",0,13051,15119,""],[274,"桃瀬 小雪",8004,208,105,136,3819,306,"","",100,"",0,222,9943,""],[275,"梶崎 りら",8022,6555,4100,121,7803.9,65,"","",500,"",0,2444,6132,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/276.png"],[276,"黒川 怜衣",8710,6052,5737,131,8634.5,75,"ブルテ","三花",500,"",0,6314,9042,""],[277,"中陸 那々",6536,4977,3721,102,6247.2,153,"ブルテ","舞愛",200,"",0,2988,4471,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/nakariku-nana.png"],[278,"湊 絓㩜",7011,3547,3310,127,6146.7,76,"舞愛","エアロ",500,"[1 1 2 2 0 0 0 100 1 0 0 0]",0,5224,10321,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/minato%20karan.png"],[279,"白木 花",5102,5534,4667,114,6695.1,123,"ブルテ","檸檬",200,"",0,7724,8103,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki%20hana.png"],[280,"エリン ルビート",5733,6215,5733,107,7024.1,38,"エアロ","舞愛",1500,"[1 1 2 2 0 0 0 100 0 0 0 1][2 1 0 0 0 0 5000 100 0 0 0 1]",0,1897,4461,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/elin%20rubyt.png"],[281,"鐘島 和音",7210,5443,4972,126,7377,50,"御卦原","エアロ",200,"[3 0 1 0 0 0 100 100 1 0 0 0][3 0 2 0 0 0 0 100 1 0 0 0]",0,3427,8530,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kaneshima%20waon.png"],[282,"西浜 光里",4421,3523,4681,105,5108.5,258,"エアロ","舞愛",100,"",0,5421,4721,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/nishihama-hikari.png"],[283,"森浜 あかり",4608,3310,4492,112,5046.7,223,"御卦原","ブルテ",100,"",0,5732,4537,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/morihama%20akari.png"],[284,"松本 舞咲",16349,15000,20139,187,21473.3,4,"","",5450,"",0,15013,22000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/285.png"],[285,"青広 明奈",808,1669,2011,99,2126.7,0,"","",100,"",1,3000,6796,""],[286,"天夜 あまね",4894,3238,6666,119,5819.9,236,"","",100,"",0,1000,10910,""],[287,"松本 愛咲",6312,2931,18350,158,9824.9,156,"","",100,"",0,7031,13333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/288.png"],[288,"礒坂 智鶴",14888,15222,3300,110,14181.2,8,"","",3500,"",0,2141,1003,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/289.png"],[289,"梯 楽々",1943,3349,9310,131,5678.8,257,"三花","舞愛",100,"",0,8310,8133,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/290.png"],[290,"深崎 みい花",3300,2481,5533,118,4414,277,"","",100,"",0,2429,7310,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/291.png"],[291,"天夜 蘭舞",9002,3006,16243,169,11241.2,0,"","",100,"",1,21021,14800,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Amaya_Ramu.png"],[292,"風神 御春",13204,11991,3869,106,12530.3,30,"","",1500,"",0,6958,5059,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Miharu.png"],[293,"龍神 優華",8822,18000,8039,137,14889.3,31,"","",2700,"",0,6493,3600,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ryuujin_Yuuka.png"],[294,"風神 有咲",5049,6042,3018,90,6219.8,177,"","",100,"",0,9918,1223,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Arisa.png"],[295,"風神 柚々",5444,6060,3039,144,7343.6,108,"","",200,"",0,9223,14600,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Yuyu.png"],[296,"風神 水香",7500,3233,1029,95,4741.8,0,"","",100,"",1,533,609,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Mizuka.png"],[297,"風神 こより",13226,10260,1239,109,10929.2,35,"","",1500,"",0,9999,546,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Koyori.png"],[298,"中野 ほくと",7300,4384,5931,130,6959.9,100,"三花","エアロ",200,"",0,1444,7315,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M108.png"],[299,"神楽 美玖",9039,8494,139,129,8228.6,44,"","",500,"",0,2026,7069,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kagura_Miku.png"],[300,"紙端 茉希",6051,1959,11111,117,6740.5,263,"","",100,"",0,9069,4456,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Shibata_Maki.png"],[301,"宮瀬 優沙",2841,6081,339,122,4652.1,245,"","",100,"",0,3845,4413,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M109.png"],[302,"雨浜 美真",8391,5599,2017,97,6843.4,102,"","",200,"",0,7731,133,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M110.png"],[303,"祖方 玲",202,667,9999,107,3402.8,0,"","",100,"",1,4013,5480,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sogata_Rei.png"],[304,"練面 二愛",9203,8049,313,88,7640.5,0,"","",100,"",1,1119,698,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Nerizura_Nia.png"],[305,"桐窪 柚莉杏",2984,3318,7831,153,5956.4,294,"","",100,"",0,4013,13333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M111.png"],[306,"御葉 のぞみ",13394,14999,5049,113,14235.2,0,"","",100,"",1,7778,1093,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Goyo_Nozomi.png"],[307,"磯渕 かなみ",5666,3945,4581,100,5732.8,179,"","",100,"",0,5993,3813,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M112.png"],[308,"中之院 藍乃",9313,8311,4414,134,9664.2,61,"","",500,"",0,7399,8103,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M113.png"],[309,"風神 来海",7049,3777,6494,100,6874.9,0,"","",100,"",1,8058,6333,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Kurumi.png"],[310,"彩月 結恋",7504,8003,15001,155,11869.2,54,"御卦原","エアロ",500,"",0,18309,5006,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ayatsuki_Yuko.png"],[311,"二地 唯",3019,6641,5461,131,7158.1,171,"","",100,"",0,14610,9309,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Futachi_Yui.png"],[312,"水時 ちはる",9090,1560,2201,110,5420.4,0,"","",100,"",1,3938,8809,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mizutoki_Chiharu.png"],[313,"琴宮 音緒",5049,2029,9670,117,5677.2,0,"","",100,"",1,5333,1456,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomiya_Neo.png"],[314,"琴宮 有夢",6069,3110,1432,134,4673.9,0,"","",100,"",1,8222,1103,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kotomiya_Arumu.png"],[315,"青広 蒼音",16000,19999,4243,184,19966,4,"ブルテ","舞愛",4650,"",0,18002,21800,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aohiro_Aone.png"],[316,"百堂 桃音",5001,4003,20000,170,11767.8,160,"舞愛","ブルテ",200,"",0,22000,21070,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Hyakudo_Momone.png"],[317,"渡部 心海",6697,8059,7777,96,8634.2,95,"","",200,"",0,1029,2033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Watabe_Kokomi.png"],[318,"清澄 澪々",7060,5566,4444,107,6961.5,96,"","",200,"",0,7455,884,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kiyosumi_Rere.png"],[319,"花宮 来姫",8607,1010,8079,117,6321,275,"","",100,"",0,5593,4939,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Hanamiya_Raki.png"],[320,"黒咲 ゆめ",586,5686,53,122,4027.6,303,"","",100,"",0,3230,12953,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kurosaki_Yume.png"],[321,"桜坂 深里",8368,6849,9283,116,9137,49,"三花","御卦原",500,"",0,4920,133,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M114.png"],[322,"坂屋 彗惺",15730,8847,4739,142,12544,22,"舞愛","ブルテ",1500,"",0,7293,9470,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M115.png"],[323,"松本 蘭",7948,5622,18488,156,12214.8,73,"","",500,"",0,12018,15390,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M116.png"],[324,"彩月 莉羽",7222,4444,5634,104,6758.4,130,"","",200,"",0,6545,1777,""],[325,"葛須 未雨",1919,4545,6161,85,4675.8,268,"","",100,"",0,2345,616,""],[326,"風神 ゆかり",6856,7777,5553,112,8145.1,74,"","",500,"",0,2412,3156,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Yukari.png"],[327,"小桜 花緒",6907,4903,3039,102,6378.1,107,"","",200,"",0,7845,3618,""],[328,"初坂 玲乃",6039,1112,3445,108,4289.6,279,"","",100,"",0,6724,5029,""],[329,"初坂 佳乃",5086,563,2222,104,3352.1,276,"","",100,"",0,9018,3019,""],[330,"松本 友花",20948,18746,26483,148,26632.6,1,"三花","御卦原",22450,"[1 0 1 2 0 0 2.5 100 1 0 0 3][[1 0 2 2 0 0 2.5 100 1 0 0 3]1 0 3 2 0 0 2.5 100 1 0 0 3][1 0 4 2 0 0 2.5 100 1 0 0 3][3 0 1 0 0 0 100 100 1 0 0 3]",0,15001,27477,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M117.png"],[331,"坂井 檸古",12948,19999,4918,122,16383.9,308,"","",100,"",0,5018,795,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M118.png"],[332,"薪堀 明愛",10004,8079,3209,143,9582.2,42,"","",1500,"",0,12052,5403,""],[333,"緑原 千弦",7887,4405,7807,128,7822.3,105,"","",200,"",0,1034,10293,""],[334,"樞嶋 澪蘭",2019,10298,9945,131,9181.8,188,"","",100,"",0,2039,10496,""],[335,"樞嶋 曈葵",4222,8000,3004,137,7672.8,125,"","",200,"",0,8504,13333,""],[336,"水時 雪奈",3441,2344,3088,97,3968.8,286,"","",100,"",0,12710,2039,""],[337,"箋 稀凛",5052,3605,8230,110,6762.9,160,"","",100,"",0,10019,9227,""],[338,"松師 莉茶",12038,2069,16292,123,10382.5,110,"御卦原","ブルテ",200,"",0,9028,5030,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matouji_Reisa.png"],[339,"御空 雨芽",2938,7777,4545,85,6480,224,"","",100,"",0,1919,6060,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Misora_Amame.png"],[340,"桐窪 玲燈",3029,3021,3302,150,4680.5,273,"","",100,"",0,1049,15415,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kirikubo_Reto.png"],[341,"村花 あきら",8666,7930,5837,111,9470.1,58,"エアロ","ブルテ",500,"",0,8830,6390,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M119.png"],[342,"桐窪 深月",5039,1721,6050,121,4370.2,273,"","",100,"",0,806,1112,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kirikubo_Mitsuki.png"],[343,"潮海 実菜穂",8930,3391,18488,157,10910.7,121,"","",200,"",0,2991,13948,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M120.png"],[344,"神綿 篠愛",17380,13948,8837,93,16161.8,15,"三花","エアロ",1500,"",0,5669,3820,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M121.png"],[345,"桐嶋 藍奈",3455,8370,19874,164,12572.3,133,"","",200,"",0,18847,14400,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M122.png"],[346,"村花 穂乃花",9938,15030,10290,160,15470.6,27,"三花","エアロ",1500,"",0,1948,19487,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M123.png"],[347,"桜葉 瑞乃",18303,17442,10000,151,18904.2,6,"","",6100,"",0,8004,5555,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sakuraba_Mizuno.png"],[348,"松宮 希衣",7003,4049,6483,144,8104.8,122,"","",200,"",0,8022,19893,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matsumiya_Kii.png"],[349,"実原 霞",9009,12948,9020,136,13040,7,"","",5500,"",0,5049,10002,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sanehara_Kasumi.png"],[350,"神水 心音",2019,3020,204,100,3167.1,310,"","",100,"",0,9028,7951,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kannomi_Kokone.png"],[351,"十五瀬 凛花",6056,7000,2039,97,6754.1,99,"","",200,"",0,4030,5606,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Mochinoze_Rinka.png"],[352,"青橋 雨香",8999,7060,9014,123,10088.1,50,"","",500,"",0,5069,11000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Aohashi_Uka.png"],[353,"北城 千秋",7029,1344,3545,89,4850.7,272,"","",100,"",0,6666,7264,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kitajo_Chiaki.png"],[354,"虹鉢 杏珠",4404,6969,11094,129,9079.8,163,"","",100,"",0,13035,8040,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Nijihachi_Anzu.png"],[355,"瀬能 雨楽",6860,3455,3788,158,6699.5,167,"","",100,"",0,1076,17705,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Zeno_Amara.png"],[356,"藍川 瑞希",12932,12945,6839,145,14009,26,"檸檬","御卦原",1500,"",0,3394,11139,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M124.png"],[357,"キャンディ キングス",7005,4309,2022,93,6096.9,194,"","",100,"",0,14059,2303,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Candy_Kings.png"],[358,"風神 まつり",5050,4030,7049,101,6461.6,166,"","",100,"",0,9080,6666,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Matsuri.png"],[359,"総原 姫花",3314,5398,3944,111,5708.2,223,"","",100,"",0,8813,6122,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M125.png"],[360,"松宮 晴奈",16388,11115,8811,120,14071.5,23,"檸檬","御卦原",1500,"",0,2289,855,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M126.png"],[361,"藍川 桃海",3303,2719,533,165,4194.4,0,"","",100,"",1,6130,14018,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/360.png"],[362,"藍川 㻳䓩",8103,5530,13301,169,11003.9,58,"","",500,"",0,4913,19283,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/M127.png"],[363,"祖方 紙織",2030,7777,3111,106,5938.5,234,"","",100,"",0,8066,2033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Sogata_Shiori.png"],[364,"頼橋 あさひ",3035,4056,7027,120,5942.1,277,"","",100,"",0,8345,10033,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Yorihashi_Asahi.png"],[365,"岩海 琉楽",5039,6029,8077,106,7186,156,"","",100,"",0,2020,3049,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Iwaumi_Rura.png"],[366,"村花 あずき",8014,9046,3010,91,8802.5,57,"","",200,"",0,8605,2011,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Murahana_Azuki.png"],[367,"風神 凛那",3033,8404,3039,93,6593.7,178,"","",100,"",0,5553,4666,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Rinna.png"],[368,"アイビー モノリス",10184,9030,9015,112,11392.1,43,"","",500,"",0,7049,8069,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ivy_Monolith.png"],[369,"竹早 綾音",7471,2929,1290,104,5261.1,181,"","",100,"",0,9202,4085,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Takehaya_Ayane.png"],[370,"松本 梓咲",12830,3344,10635,116,9689.1,79,"","",500,"",0,3067,6789,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matsumoto_Azusa.png"],[371,"桐巉 𣶶花",8410,1840,19487,171,10433.9,231,"舞愛","エアロ",100,"",0,5810,14010,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/370.png"],[372,"松本 花南",4915,19948,1940,135,13255.7,37,"ブルテ","エアロ",500,"",0,8488,7840,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/371.png"],[373,"中花 莉里乃",4481,3918,2019,166,6212.3,217,"","",100,"",0,8000,20098,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/372.png"],[374,"篠川 真花",17461,8173,1049,158,12265.5,29,"檸檬","御卦原",1500,"",0,6531,13194,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/373.png"],[375,"藍川 桃瑚",21985,21999,20895,185,28024.7,1,"","",17300,"[3 0 4 0 0 0 5000 66.6 1 0 0 0]",0,21533,26815,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/374.png"],[376,"スイセイ ソラ",15213,10315,7040,133,13013.1,13,"エアロ","舞愛",3300,"[2 1 0 2 0 2 0.5 100 0 0 0 1]",0,4032,2844,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/suisei%20sora.png"],[377,"樞嶋 宙蘭",11069,9999,8003,147,11697.8,32,"","",1500,"",0,2039,6050,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kanamejima_Sorara.png"],[378,"松師 香楽",6506,3545,6767,96,6275.5,0,"","",100,"",1,5503,2007,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Matouji_Kara.png"],[379,"箋 茉夜",12019,3334,5563,99,8348.5,0,"","",100,"",1,8010,7740,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Harihuda_Maya.png"],[380,"白木 翠",20134,23421,25221,167,28237.1,1,"ブルテ","御卦原",17500,"[3 0 0 0 0 0 100 100 0 0 0 1][3 0 1 0 0 0 100 100 0 0 0 1][1 1 2 2 0 0 0 100 0 0 0 1][2 1 0 2 7 2 0.8 100 0 0 0 1][2 1 0 1 0 0 0.25 100 0 0 0 1]",0,19834,20113,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki-midori.png"],[381,"スイセイ ネオン",17814,15976,13745,152,20029.4,2,"エアロ","舞愛",12650,"[3 0 4 0 6 2 2000 50 1 0 0 0][4 0 1 0 0 0 (3) 0 0 0 0 0][1 0 1 2 0 0 1.2 100 1 0 0 0]",0,16118,14724,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/suisei-neon.png"],[382,"白木 梓",8897,6972,4033,108,8243.3,82,"ブルテ","御卦原",500,"",0,3688,4227,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki-azusa.png"],[383,"湊 灔羽",75,90,25000,104,6763.5,312,"舞愛","エアロ",100,"[3 0 0 0 0 0 99 100 1 0 0 0]",0,4436,4203,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/minato-namiha.png"],[384,"彩月 夢音",24029,25306,20666,186,28213.9,1,"舞愛","御卦原",22900,"[3 0 4 0 0 0 10000 29 1 0 0 0]",0,21966,3067,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Ayatsuki_Yunon.png"],[385,"桐窪 㓍杏",5000,3004,2049,153,5365.8,0,"","",100,"",1,8080,14020,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kirikubo_Rua.png"],[386,"十八 羅珠",6950,3455,8010,94,7128.9,0,"","",100,"",1,8080,8270,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Towa_Razu.png"],[387,"蒲嶋 莉嘉瑚",5981,6794,8233,97,8246,81,"","",200,"",0,4438,6721,""],[388,"鐘島 るる",13838,14733,6972,157,15383.2,14,"エアロ","ブルテ",3200,"[2 0 0 0 0 0 2000 100 0 0 0 1][3 1 0 0 0 0 0 100 0 0 0 1][2 1 0 0 0 0 10000 100 0 0 0 1]",0,6737,9523,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kaneshima-ruru.png"],[389,"白木 優月",18332,20136,7896,172,21360.9,2,"ブルテ","舞愛",12450,"[3 0 0 4 5 3 3 100 1 0 0 0][2 1 0 0 0 0 999999 0.3 1 0 0 0]",0,14721,19864,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shiroki-yuzuki.png"],[390,"白木 娃菜",8595,9324,8212,125,10089,59,"","",500,"",0,1318,1360,""],[391,"白木 水姫",7619,7751,3206,87,7903.7,53,"","",500,"",0,4644,3159,""],[392,"白木 娃鐘",2751,3423,1580,138,3410.3,243,"","",100,"",0,1059,3177,""],[393,"白木 娃梨沙",1443,4739,1940,110,3914.3,297,"","",100,"",0,8194,1982,""],[394,"鐘島 実南",13325,10632,6844,148,13151.9,19,"","",3100,"",0,11278,7623,""],[395,"白木 青海",8592,4300,5953,120,7405.1,112,"","",200,"",0,6029,4056,""],[396,"白木 新茶",9868,6226,6639,137,9061.7,54,"","",500,"",0,2571,6714,""],[397,"白木 海紅",9491,5075,5346,126,8070.8,60,"","",500,"",0,5985,5372,""],[398,"白木 紫音",1744,9356,6370,89,7559.4,254,"","",100,"",0,7240,6133,""],[399,"白木 実柑",9100,9806,4839,127,10457.2,37,"","",500,"",0,9263,7382,""],[400,"北国 友季",14326,15132,10113,151,16083.1,5,"","",6700,"",0,4326,5302,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kitaguni-yuki.png"],[401,"白木 海彩",9650,7999,2632,137,8857.8,45,"","",500,"",0,1949,7067,""],[402,"白木 水瑚",5936,4876,7033,116,7111.7,151,"","",200,"",0,4092,8359,""],[403,"赤国 舞奈",16672,15324,4827,155,16253.2,2,"エアロ","檸檬",14850,"[4 1 0 1 18000 0 () 0 0 0 0 0][1 0 1 2 0 0 2.5 100 1 0 0 0]",0,10682,7720,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/akaguni-mana.png"],[404,"森浜 奏音",6016,1149,8730,122,5614.9,253,"","",100,"",0,9874,1773,""],[405,"スイセイ エミ",3882,6993,7815,114,7196.6,155,"","",200,"",0,3153,2332,""],[406,"白木 潮莉",19036,18981,13732,170,21710,72,"","",200,"",0,9956,13532,""],[407,"藍川 楓奈",20198,20180,5130,164,20000,2,"檸檬","御卦原",11400,"[4 0 0 0 10000 3 () 0 0 0 0 0][1 0 2 2 0 0 50 100 1 0 0 0]",0,5310,9607,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/aikawafuuna.png"],[408,"立木 春音",8103,21093,20198,133,18946.5,22,"舞愛","三花",3000,"[4 0 2 0 0 0 (56,57,58,59,60,61,62,63,64,65,66,67,68,69,95,96,166,170,171,594) 0 0 0 0 0][1 0 1 2 0 0 5 100 0 0 0 0]",0,1847,3301,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/tachigiharune.png"],[409,"長津 つくし",235,2020,2135,83,1925.9,0,"","",100,"",1,5394,586,""],[410,"桐窪 㻳杏㩜",314,65,1333,178,3164.7,0,"舞愛","三花",100,"",1,1830,29098,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/kirikuboriara.png"],[411,"㻳﨑 胡鈴",5816,4631,7641,150,8004.2,128,"舞愛","エアロ",200,"",0,5488,17641,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/rinozakikosuzu.png"],[412,"御葉 四空",3940,7120,1111,97,5589.3,0,"","",100,"",1,17,5633,""],[413,"藝鎧 組子",7722,4487,6894,137,7483.4,98,"","",200,"[2 1 0 2 1 2 0.2 77 1 0 0 0][2 1 0 2 2 2 0.2 77 1 0 0 0][2 1 0 2 3 2 0.2 77 1 0 0 0][2 1 0 2 4 2 0.2 77 1 0 0 0][2 1 0 2 5 2 50 77 1 0 0 0]",0,5721,4885,""],[414,"天夜 銀輝",6983,7256,9572,115,9332.8,70,"","",500,"",0,8265,4869,""],[415,"桜緒 室",5927,6018,7205,124,7714.8,126,"","",200,"",0,4694,7214,""],[416,"白木 鰆湊",18527,21315,4332,161,19463.6,19,"","",1500,"",0,5381,6291,""],[417,"鐘島 宙",11323,9612,5317,150,11229.5,30,"","",500,"",0,7320,6428,""],[418,"藝鎧 痧織",4024,6829,4322,121,7820.4,212,"","",100,"[2 1 0 2 3 2 2 100 0 0 0 1]",0,29997,5232,""],[419,"安心 林",10732,13324,8218,109,13295.8,96,"","",200,"",0,4294,6241,""],[420,"丘市 玖葵",19001,20007,9101,180,22297,0,"","",100,"",1,19999,21032,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Okaichi_Kuki.png"],[421,"チャーリー ラプター",5605,9011,2435,102,7659,0,"","",100,"",1,6363,2445,""],[422,"霞沢 深春",5103,3746,7993,122,6757.5,0,"","",100,"",1,3746,12874,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/421.png"],[423,"藍川 紗夜花",851,589,6514,115,2979.1,0,"","",100,"",1,3384,9875,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/422.png"],[424,"藍川 京花",4918,3384,918,120,4676.7,0,"","",100,"",1,8837,7819,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/423.png"],[425,"藍川 玖鷹",8817,7610,13339,160,12290.8,0,"","",100,"",1,8710,17615,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/424.png"],[426,"藍川 実葉",988,791,8999,127,4056.1,0,"","",100,"",1,3029,13999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/425.png"],[427,"巉毚蓮 瀺澟珱",18500,16444,10044,144,18439,0,"","",100,"",1,3851,7999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/426.png"],[428,"岩原 綾花",9987,17499,21039,157,19187.7,0,"","",100,"",1,7645,13390,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/427.png"],[429,"堽壑 珱鉚",7059,4355,6255,93,6955.3,0,"","",100,"",1,8445,3111,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Okatani_Eru.png"],[430,"中野 潮里",13333,10000,6378,170,13800.3,0,"","",100,"",1,5019,23000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/429.png"],[431,"南帳 緋乃",16666,7631,4986,95,11720.1,0,"","",100,"",1,3398,5019,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/430.png"],[432,"河原 由希",15100,8199,7918,133,12692.2,0,"","",100,"",1,18109,680,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/431.png"],[433,"澪川 珱花",27199,27777,12904,160,28614.1,0,"","",100,"",1,10000,10000,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/432.png"],[434,"松本 澪那",7331,5891,9991,145,10006.8,0,"","",100,"",1,7310,19985,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/433.png"],[435,"実島 真緒",5194,13300,8999,159,13025.8,0,"","",100,"",1,5489,23948,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/434.png"],[436,"𰘛川 𭳈菜",27999,2095,20009,185,19300.2,0,"","",100,"",1,2290,28501,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/435.png"],[437,"松本 春実",4899,3385,23333,177,12269.5,0,"","",100,"",1,7988,28330,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/436.png"],[438,"河原 七瑠",8170,144,8850,77,5577.8,0,"","",100,"",1,4449,185,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kawahara_Naru.png"],[439,"河原 春菜",7395,95,6519,76,4824.4,0,"","",100,"",1,7300,238,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kawahara_Haruna.png"],[440,"河原 紗子",4869,3319,10398,72,6237.6,0,"","",100,"",1,2994,84,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Kawahara_Sako.png"],[441,"風神 来香",10963,9904,9744,122,12848.9,0,"","",100,"",1,10002,13929,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Raika.png"],[442,"笛宮 深奈",13059,16222,10204,117,16247.9,0,"","",100,"",1,9049,4039,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuemiya_Mina.png"],[443,"風神 御悠",18050,13442,12203,156,18617.9,0,"","",100,"",1,14706,17206,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Fuujin_Miyuu.png"],[444,"堽壑 彁椰",3011,2225,1000,83,3256.2,0,"","",100,"",1,10387,5908,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/Okatani_Kaya.png"],[445,"星陽 珱羽",29999,29999,29999,199,38233.7,0,"","",100,"[3 0 1 0 0 0 100 100 0 0 0 0][3 0 3 2 0 0 5 100 0 0 0 0]",1,29999,29999,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/444.png"],[446,"初菓 フルリーア",15600,16500,14300,117,18626.2,0,"","",100,"",1,12800,5320,""],[447,"若隈奈 サフラン",22260,10780,6475,100,16016.8,0,"","",100,"",1,8720,4490,""],[448,"白木 浪海",11567,8261,7462,135,11410.8,0,"","",100,"",1,9271,9090,""],[449,"城山 桜",7234,7521,6313,117,8705.1,0,"","",100,"",1,5723,6281,""],[450,"長海 沙羅零",22034,18772,16527,159,23661.8,0,"","",100,"[2 1 0 1 6 2 30 50 2 0 30 1]",1,13274,15316,""],[451,"御川 あずま",17512,13714,15284,154,18744,0,"御卦原","舞愛",100,"",1,13632,10615,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/mikawa-azuma.png"],[452,"白風 直九",21016,24315,10511,178,25373,0,"御卦原","檸檬",100,"[1 0 1 2 0 0 3 100 2 0 50 0][3 0 4 0 0 0 6000 100 2 0 10 0]",1,18326,20117,"https://github.com/shirotetsu-shiojima/Game_Images/blob/main/shirakaze-naoko.png"],[453,"御川 赤金",1890,3100,3235,84,3258.7,0,"","",100,"",1,3732,110,""],[454,"長海 あくあ",7456,8271,3872,102,8324.6,0,"","",100,"",1,5462,2981,""]];
 
 /* =====================================================================
    エンジン部(画面に依存しない)
@@ -439,20 +446,12 @@ function initPeople(rows){
   S.history=[];S.logs=[];
   startBasho(1);
 }
-/* 番付・優勝記録などの変動データを手動でリセットする。
-   全員を上等兵以下に落とし、能力評価値(大きい順)に上等兵1から順に埋める。
-   キャラクターのデータ・設定・観戦リストは変更しない。 */
-function resetProgress(){
-  const list=S.people.slice().sort((a,b)=>b.ab-a.ab||a.id-b.id);
-  list.forEach(p=>{
-    p.pre=false;p.demoted=false;p.tsuna=false;
-    p.w=0;p.l=0;p.met=[];p.res=[];p.rec=[];p.titles=[];
-  });
-  layout(list,'上等兵');
-  S.people.forEach(p=>p.pk=p.slot);
-  S.history=[];S.logs=[];S.aiai={};
-  startBasho(1);
-  L(`番付・記録をリセット: ${list.length}人を能力評価値順に上等兵1から配置`);
+/* 成績クリア: 累計の勝敗(大会ごとの記録)と優勝歴を0に戻す。
+   番付の位置・大会の進行・キャラクターデータ・設定は変えない(番付サーバーとずれないように)。 */
+function clearCareer(){
+  S.people.forEach(p=>{p.rec=[];p.titles=[];});
+  S.history=[];
+  L('成績をクリアしました(累計勝敗・優勝回数を0に戻しました)');
 }
 function nameKey(s){return String(s).replace(/[\s\u3000]/g,'');}
 function pname(id){const p=S.byId.get(id);return p?p.name:(S.retired[id]||'(不明)');}
@@ -460,10 +459,9 @@ function pname(id){const p=S.byId.get(id);return p?p.name:(S.retired[id]||'(不�
    rows: [id,名前,体力,パワー,ガード,IQ,能力評価値,初期番付,得意,苦手,収入,特殊能力,前相撲] */
 function applyRoster(rows){
   const B=S.basho;
-  const byKey=new Map(S.people.map(p=>[nameKey(p.name),p]));
   const keep=new Set(),added=[],removed=[];
   for(const r of rows){
-    const p=byKey.get(nameKey(r[1]));
+    const p=S.byId.get(r[0]);   // IDで照合(IDはスプレッドシートのID列が正)
     if(p){
       keep.add(p);
       p.name=r[1];p.hp=r[2];p.pw=r[3];p.gd=r[4];p.iq=r[5];p.ab=r[6];
@@ -539,24 +537,6 @@ function ensureOrd(){
   }
   S.people.forEach(p=>{if(p.div==='前相撲'&&!Number.isFinite(p.ord))p.ord=0;});
   normalizeTopOrd();
-}
-/* 大会後の並び替え(大将〜旗頭)。
-   1) その番付に留まった人: 今大会の成績(勝ち数が多い順、同じなら負けが少ない順)。それも同じなら前回上にいた人が上。
-      ただし総合優勝して番付が変わらなかった人は、必ず先頭(最上段の東)。
-   2) その番付に新しく入った人(昇進直後など)は、留まった人の下。新しく入った人どうしも成績順。 */
-function orderTops(prev,champId){
-  const pv=p=>prev.get(p.id)||{div:'',slot:9999,ord:9999};
-  const po=x=>Number.isFinite(x)?x:9999;
-  const byRec=(a,b)=>b.w-a.w||a.l-b.l;
-  for(const div of TOP_DIVS){
-    const mem=S.people.filter(p=>p.div===div);
-    const stay=mem.filter(p=>pv(p).div===div),arr=mem.filter(p=>pv(p).div!==div);
-    stay.sort((a,b)=>byRec(a,b)||po(pv(a).ord)-po(pv(b).ord)||b.ab-a.ab||a.id-b.id);
-    const ci=stay.findIndex(p=>p.id===champId);
-    if(ci>0)stay.unshift(stay.splice(ci,1)[0]);
-    arr.sort((a,b)=>byRec(a,b)||pv(a).slot-pv(b).slot||po(pv(a).ord)-po(pv(b).ord)||b.ab-a.ab||a.id-b.id);
-    [...stay,...arr].forEach((p,i)=>{p.ord=i;});
-  }
 }
 function rankLabel(p){
   if(p.div==='前相撲')return '前相撲';
@@ -912,6 +892,7 @@ function applyResult(m,res){
   win.w++;lose.l++;
   win.met.push(lose.id);lose.met.push(win.id);
   (win.res=win.res||[]).push({o:lose.id,w:1});(lose.res=lose.res||[]).push({o:win.id,w:0});
+  sbRecord(m,res);        // 大会結果送信用に、取組ごとのIDを控えるだけ(ここでは通信しない)
 }
 function playNextFast(){
   const B=S.basho;if(B.mi>=B.matches.length)return null;
@@ -968,83 +949,282 @@ function playoffDrain(){   // 残りの決定戦を演出なしで一気に消�
 }
 
 /* ---------- 番付編成 ---------- */
-function promote(p,div){p.div=div;p.slot=TOP_DIVS.indexOf(div)+1;p.pre=false;p.demoted=false;}
-function rebalance(){
-  const B=S.basho;
-  const prev=new Map(S.people.map(p=>[p.id,{div:p.div,slot:p.slot,ord:p.ord}]));   // 編成前の番付と並び順(大将〜旗頭の並び替えに使う)
-  S.people.forEach(p=>{p.rec.push({b:B.no,div:rankLabel(p),w:p.w,l:p.l});if(p.rec.length>40)p.rec.shift();p.pk=rankSortKey(p);});
-  const changes=[];
-  const tops=[],movers=[];
-  for(const p of S.people){
-    const prevW=p.rec.length>1?p.rec[p.rec.length-2].w:0;
-    const sum3=p.rec.slice(-3).reduce((s,r)=>s+r.w,0);
-    const before=rankLabel(p);
-    if(p.div==='大将'){tops.push(p);continue;}
-    if(p.div==='副将'){
-      if(p.w===7){
-        if(p.tsuna){promote(p,'大将');p.tsuna=false;changes.push(`${p.name}:副将→大将(2大会連続7勝)`);}
-        else p.tsuna=true;
-        tops.push(p);
-      }else{
-        p.tsuna=false;
-        if(p.w>3||prevW>3)tops.push(p);
-        else{promote(p,'先鋒');tops.push(p);changes.push(`${p.name}:副将→先鋒`);}
-      }
-      continue;
-    }
-    if(p.div==='先鋒'){
-      if(sum3>14){promote(p,'副将');changes.push(`${p.name}:先鋒→副将`);tops.push(p);}
-      else if(p.w>3)tops.push(p);
-      else if(p.w>2){promote(p,'旗頭');tops.push(p);changes.push(`${p.name}:先鋒→旗頭`);}
-      else{p.demoted=true;p.div='戦士';p.slot=5;movers.push(p);changes.push(`${p.name}:先鋒→降下`);}
-      continue;
-    }
-    if(p.div==='旗頭'){
-      if(p.w>3){promote(p,'先鋒');tops.push(p);changes.push(`${p.name}:旗頭→先鋒`);}
-      else if(p.w>2)tops.push(p);
-      else{p.demoted=true;p.div='戦士';p.slot=5;movers.push(p);}
-      continue;
-    }
-    movers.push(p);
-  }
-  // 一般力士の内部スコア
-  const lowN=S.people.filter(p=>p.slot>=LOW_START&&p.div!=='前相撲').length;
-  const cut=Math.floor(lowN/2)+121;
-  const scored=[];
-  for(const p of movers){
-    let s;
-    const wi=(arr)=>arr[Math.min(p.w,arr.length-1)];
-    if(p.div==='前相撲'||p.pre)s=(S.maxSlot||300)-wi(PRE);
-    else{
-      const sl=p.demoted?5:p.slot;
-      if(sl<37){s=sl-wi(HYO);if(s<4)s=4;}
-      else if(sl<67)s=sl-wi(MID);
-      else if(sl<cut)s=sl-wi(LOW);
-      else s=sl-wi(LOWEST);
-    }
-    if(s<=4&&p.div!=='前相撲'&&!p.pre){promote(p,'旗頭');tops.push(p);changes.push(`${p.name}:${p.w}勝${p.l}敗で旗頭へ`);continue;}
-    p._s=s;scored.push(p);
-  }
-  scored.sort((a,b)=>a._s-b._s||b.w-a.w||a.slot-b.slot||b.ab-a.ab||a.id-b.id);
-  layout(scored);
-  scored.forEach(p=>{delete p._s;});
-  orderTops(prev,B.titles&&B.titles['総合']?B.titles['総合'].id:null);
-  B.changes=changes;
-  const hi=changes.filter(c=>/大将|副将|先鋒/.test(c));
-  hi.slice(0,12).forEach(c=>L('番付 '+c));
-  B.phase='done';
-}
 function nextBasho(){
   S.history.push({no:S.basho.no,place:S.basho.place.name,titles:S.basho.titles,playoffs:S.basho.playoffs});
   if(S.history.length>200)S.history.shift();
   startBasho(S.basho.no+1);
 }
-function finishBashoLogic(){ // 日程終了後: 優勝決定→番付編成(決定戦を1番ずつ進めていた場合は、すでに決着済み)
+/* =====================================================================
+   Supabase 大会結果送信
+   大会の日程(と優勝決定戦)が終わったあと、キャラクターごとに submit_tournament_result() を呼んで結果を提出する。
+   全員の提出が済むまで番付の作成(サーバーの finalize)は行わない。通信は取組ごとではなく、大会終了時のみ。
+   url と anonKey が空のあいだは、送信せずこれまで通りの動きになる。
+   ===================================================================== */
+const SUPABASE_CONFIG={
+  url:'https://bkgnagwsmmbvgyjhfulj.supabase.co',   // プロジェクトURL(末尾に /rest/v1/ が付いていても自動で外す)
+  anonKey:'sb_publishable_o5VIg4C1BuMngiwN3EL3gg_wJgS_lti',   // publishable(anon)キー。公開前提のキーなので、HTMLに書いてよい(secretキーは絶対に書かない)
+  tournamentId:null,      // null=大会番号(第N場所→id=N) / 数値=固定(テスト用) / 関数 b=>数値
+  rpc:'submit_tournament_result',
+  params:{tournament:'p_tournament_id',character:'p_character_id',submission:'p_submission_id',results:'p_matches',bye:'p_bye'},   // ★RPCの引数名に合わせる
+  timeoutMs:20000,concurrency:4,
+  testIds:[]              // 空でなければ、このIDのキャラだけ送信(少人数テスト用)
+};
+function sbEnabled(){return !!(SUPABASE_CONFIG.url&&SUPABASE_CONFIG.anonKey);}
+function sbUuid(){
+  if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+  const b=new Uint8Array(16);(window.crypto||{getRandomValues:a=>a.map(()=>Math.random()*256)}).getRandomValues(b);
+  b[6]=b[6]&15|64;b[8]=b[8]&63|128;
+  const h=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+}
+/* B.sb = {tid:大会ID, ev:[[characterA,characterB,勝者ID,client_event_id],…], s:{キャラID:{sid:submission_id, st:状態, msg}}}
+   st: ''=未送信 / 'ok'=成功 / 'net'=通信エラー / 'rej'=受付拒否 */
+function sbState(B){return B.sb||(B.sb={tid:null,ev:[],s:{}});}
+/* 提出先の大会ID(番付サーバーの tournaments.id)。分からなければ null を返す。大会番号を代わりに使うと、別の大会に送ってしまうため使わない */
+function sbTid(B){if(B.sb&&B.sb.tid!=null)return B.sb.tid;const c=SUPABASE_CONFIG.tournamentId;const v=typeof c==='function'?c(B):c;return Number.isInteger(v)?v:null;}
+function sbRecord(m,res){
+  if(!sbEnabled())return;
+  m.clientEventId=m.clientEventId||sbUuid();
+  sbState(S.basho).ev.push([m.a.id,m.b.id,res.winner.id,m.clientEventId]);
+}
+/* 通常の取組の記録が足りないとき(送信機能の導入前から進んでいた大会など)、各人の対戦結果(p.res)から補う */
+function sbSyncEvents(){
+  const sb=sbState(S.basho),have=new Map(),want=new Map();
+  const key=(x,y,w)=>(x<y?x+'-'+y:y+'-'+x)+':'+w;
+  for(const e of sb.ev){const k=key(e[0],e[1],e[2]);have.set(k,(have.get(k)||0)+1);}
+  for(const p of S.people)for(const r of (p.res||[])){if(r.w!==1)continue;const k=key(p.id,r.o,p.id);want.set(k,(want.get(k)||0)+1);}
+  for(const [k,n] of want){
+    for(let i=have.get(k)||0;i<n;i++){const [pr,w]=k.split(':'),[x,y]=pr.split('-').map(Number);sb.ev.push([x,y,+w,sbUuid()]);}
+  }
+}
+function sbTargets(){const t=SUPABASE_CONFIG.testIds;return S.people.filter(p=>!t.length||t.includes(p.id));}
+/* RPCを1回呼ぶ。戻り値 {ok:true} / {ok:false,kind:'net'|'rej',msg} */
+async function sbCall(tid,cid,sid,results,bye){
+  const C=SUPABASE_CONFIG,P=C.params,ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),C.timeoutMs);
+  try{
+    const base=C.url.replace(/\/+$/,'').replace(/\/rest\/v1$/,'');     // 末尾の /rest/v1/ は付いていてもいなくてもよい
+    const headers={'Content-Type':'application/json',apikey:C.anonKey};
+    if(!/^sb_/.test(C.anonKey))headers.Authorization='Bearer '+C.anonKey;   // 新形式(sb_publishable_…)のキーはJWTではないので apikey だけを送る
+    const res=await fetch(`${base}/rest/v1/rpc/${C.rpc}`,{method:'POST',signal:ctl.signal,headers,
+      body:JSON.stringify({[P.tournament]:tid,[P.character]:cid,[P.submission]:sid,[P.results]:results,[P.bye]:bye})});
+    if(res.ok)return {ok:true};
+    let body={};try{body=await res.json();}catch(e){}
+    const msg=[body.message,body.details,body.hint].filter(Boolean).join(' / ')||`HTTP ${res.status}`;
+    if(/already submitted a tournament result/.test(msg))return {ok:true,dup:true};   // 同じキャラの提出が既にサーバーにある(他の人の提出を採用)
+    if(res.status>=500||res.status===429||res.status===408)return {ok:false,kind:'net',msg:`サーバーエラー: ${msg}`};
+    return {ok:false,kind:'rej',msg};
+  }catch(e){return {ok:false,kind:'net',msg:e.name==='AbortError'?'タイムアウト':'通信できませんでした'};}
+  finally{clearTimeout(to);}
+}
+let sbJob=null;
+function sbStart(){if(!sbJob)sbJob=sbRun().finally(()=>{sbJob=null;sbPaint();});return sbJob;}
+const SB_BATCH=40;   // 1回にまとめて送る件数(サーバーの上限は100件)
+/* まとめ送信を1回呼ぶ。戻り値: {ok:true,results:Map(キャラID→{ok,message})} / {ok:false,kind:'net'|'rej',msg} */
+async function sbCallBatch(tid,items){
+  const C=SUPABASE_CONFIG,ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),C.timeoutMs*3);
+  try{
+    const base=C.url.replace(/\/+$/,'').replace(/\/rest\/v1$/,'');
+    const headers={'Content-Type':'application/json',apikey:C.anonKey};
+    if(!/^sb_/.test(C.anonKey))headers.Authorization='Bearer '+C.anonKey;
+    const res=await fetch(`${base}/rest/v1/rpc/submit_tournament_results_batch`,{method:'POST',signal:ctl.signal,headers,
+      body:JSON.stringify({p_tournament_id:tid,p_items:items})});
+    let body={};try{body=await res.json();}catch(e){}
+    if(!res.ok){
+      const msg=[body.message,body.details,body.hint].filter(Boolean).join(' / ')||`HTTP ${res.status}`;
+      if(res.status>=500||res.status===429||res.status===408)return {ok:false,kind:'net',msg:`サーバーエラー: ${msg}`};
+      return {ok:false,kind:'rej',msg};
+    }
+    return {ok:true,results:new Map((body.results||[]).map(x=>[String(x.character_id),x]))};
+  }catch(e){return {ok:false,kind:'net',msg:e.name==='AbortError'?'タイムアウト':'通信できませんでした'};}
+  finally{clearTimeout(to);}
+}
+async function sbRun(){
+  const B=S.basho;if(B.phase!=='submit')return;
+  if(!sbEnabled()){toast('Supabaseの送信設定がありません');return;}
+  const sb=sbState(B);
+  sbSyncEvents();
+  if(sb.tid==null)sb.tid=sbTid(B);
+  if(sb.tid==null){sb.abort='番付サーバーの大会と同期できていません。ページを再読み込みしてから送信してください';toast(sb.abort);saveSoon();sbPaint();return;}
+  delete sb.abort;
+  const idx=new Map();
+  for(const [a,b,w,e] of sb.ev){
+    const r={character_a:a,character_b:b,winner_id:w,client_event_id:e};
+    for(const id of [a,b]){if(!idx.has(id))idx.set(id,[]);idx.get(id).push(r);}
+  }
+  // 取組のclient_event_idは、双方のキャラの提出で同じものを使う。重複していないかを、送る前に確認する
+  const seenE=new Set();
+  for(const e of sb.ev){
+    if(seenE.has(e[3])){sb.abort=`取組のclient_event_idがローカルで重複しています(${e[3]}):送信を中止しました`;toast(sb.abort);saveSoon();return;}
+    seenE.add(e[3]);
+  }
+  // まだ ok でないキャラを用意する。取組数が合わないものは、送る前に拒否扱いにする
+  const items=[];
+  for(const p of sbTargets()){
+    const s=sb.s[p.id];if(s&&s.st==='ok')continue;
+    const sub=sb.s[p.id]||(sb.s[p.id]={sid:sbUuid(),st:'',msg:''});   // submission_idは初回に作って保存し、再送でも同じものを使う
+    const results=idx.get(p.id)||[];
+    if(results.length!==p.w+p.l){sub.st='rej';sub.msg=`取組数が一致しません(記録${results.length}件 / 勝敗${p.w+p.l}戦)`;continue;}
+    items.push({p,s:sub,results});
+  }
+  sbPaint();
+  for(let i=0;i<items.length&&!UI.stop;i+=SB_BATCH){
+    const part=items.slice(i,i+SB_BATCH);
+    const r=await sbCallBatch(sb.tid,part.map(x=>({character_id:x.p.id,submission_id:x.s.sid,matches:x.results,bye:x.results.length===0})));   // 大会を通して1番も取組がなければ完全休場(bye)
+    if(!r.ok){   // 呼び出し自体の失敗(通信・サーバー・関数が無い等)は、受付拒否ではなく「未送信」として止める
+      part.forEach(x=>{x.s.st='net';x.s.msg=r.msg;});
+      sb.abort='送信を中断しました。「送信を再開」で続きから送れます: '+r.msg;
+      sbPaint();saveSoon();break;
+    }else{
+      part.forEach(x=>{
+        const one=r.results.get(String(x.p.id));
+        if(!one){x.s.st='net';x.s.msg='応答に含まれていませんでした';return;}
+        if(one.ok||/already submitted a tournament result/.test(one.message||'')){x.s.st='ok';x.s.msg='';}   // 送信済み(他の人の提出を採用)も成功扱い
+        else{x.s.st='rej';x.s.msg=one.message||'受付拒否';}
+      });
+    }
+    sbPaint();saveSoon();
+  }
+  // 受付拒否のキャラは未提出として扱い、番付を作る。通信エラーなどで未送信の人がいる間は作らない
+  const pendingNet=sbTargets().filter(p=>{const s=sb.s[p.id];return !s||s.st===''||s.st==='net';});
+  const rejected=sbTargets().filter(p=>{const s=sb.s[p.id];return s&&s.st==='rej';});
+  // 大会が既に終了している(他の人が先に次の大会へ進めた)ときは、この端末の結果は送れない。番付も作らず止める
+  const stale=rejected.some(p=>/not active|does not exist/.test(sb.s[p.id].msg||''));
+  if(stale&&!sb.abort){sb.abort='この大会は既に終了しています(他の人が先に進めました)。番付は作らず、この端末の大会結果は送れません。ページを再読み込みすると最新の大会に合わせられます';toast(sb.abort);saveSoon();sbPaint();return;}
+  // 1人も受け付けられていないのに番付を作ると、全員未提出の大会が出来てしまうので作らない
+  const accepted=sbTargets().filter(p=>{const s=sb.s[p.id];return s&&s.st==='ok';});
+  if(!sb.abort&&!UI.stop&&!pendingNet.length&&!accepted.length&&rejected.length){sb.abort='受け付けられた提出が1件もないため、番付は作りません';toast(sb.abort);saveSoon();sbPaint();return;}
+  if(!sb.abort&&!UI.stop&&!pendingNet.length){
+    if(rejected.length)toast(`受付拒否の${rejected.length}人は未提出として番付を作ります`);
+    await sbFinalize();return;
+  }
+  const left=sbTargets().filter(p=>{const s=sb.s[p.id];return !s||s.st!=='ok';});
+  if(!UI.stop)toast(`大会結果の送信が完了していません(${left.length}人)。番付はまだ更新していません`);
+  saveSoon();
+}
+/* 全員の提出が済んだので、既存の番付編成へ進む */
+/* ---------- 番付エンジン(Supabase Edge Function ranking-engine)との通信 ---------- */
+function sbFnUrl(path){const base=SUPABASE_CONFIG.url.replace(/\/+$/,'').replace(/\/rest\/v1$/,'');return `${base}/functions/v1/ranking-engine${path}`;}
+async function sbApi(method,path,body){
+  const C=SUPABASE_CONFIG,headers={'Content-Type':'application/json',apikey:C.anonKey};
+  if(!/^sb_/.test(C.anonKey))headers.Authorization='Bearer '+C.anonKey;
+  let res;
+  try{res=await fetch(sbFnUrl(path),{method,headers,body:body?JSON.stringify(body):undefined});}
+  catch(e){return {ok:false,status:0,error:'通信できませんでした'};}
+  let data={};try{data=await res.json();}catch(e){}
+  if(!res.ok)return {...data,ok:false,status:res.status,error:data.error||`HTTP ${res.status}`};
+  return {...data,ok:true};
+}
+/* 番付エンジンが返した番付(大会の開始時点の位置)を画面の番付に入れる */
+function sbApplyPositions(rows,tno){
+  for(const r of rows){
+    const p=S.byId.get(r.character_id);if(!p)continue;
+    p.div=r.div;p.slot=r.slot;p.ord=r.ord==null?NaN:r.ord;p.tsuna=!!r.tsuna;p.pre=r.div==='前相撲';p.demoted=false;
+    // 番付表の位置(全体の順番)。1大会前の位置は、前の大会に対応していたときだけ残す
+    if(tno!=null&&p.posNo!==tno){const prev=p.posNo===tno-1;p.prevPos=prev?p.pos:null;p.prevLabel=prev?p.label:null;p.posNo=tno;}
+    p.pos=r.rank_position==null?null:r.rank_position;p.label=r.rank||null;   // 番付名+数字(例: 戦士3)
+  }
+  const third=rows.filter(r=>r.div==='三等兵').map(r=>r.slot);
+  if(third.length)S.thirdStart=Math.min(...third);
+  S.people.forEach(p=>{p.pk=rankSortKey(p);});
+}
+/* 大会の終了: 全員の提出が済んでいれば、サーバーに次の大会の番付を作らせ、その結果を画面に反映する */
+async function sbFinalize(){
+  const B=S.basho;if(B.phase!=='submit')return;
+  const sb=B.sb,champ=B.titles&&B.titles['総合']?B.titles['総合'].id:null;
+  const fail=msg=>{if(sb)sb.abort=msg;toast(msg);saveSoon();sbPaint();};
+  const fin=await sbApi('POST','/finalize',{tournament_no:B.no,champion_id:champ});
+  if(!fin.ok&&fin.code==='already_advanced'){await sbAdopt();return;}   // 他の人が先に次の大会へ進めていた
+  if(!fin.ok){
+    const why=fin.error==='not all results submitted'?`未提出のキャラがいます(${fin.missing_count}人)`:fin.error;
+    fail(`番付の作成に失敗しました: ${why}`);return;
+  }
+  const got=await sbApi('GET',`/rankings?tournament_no=${fin.next_tournament_no}`);
+  if(!got.ok){fail('次の番付の取得に失敗しました。もう一度お試しください');return;}
+  // 今大会の記録を履歴に残してから、次の番付を入れる
+  for(const p of S.people){p.rec.push({b:B.no,div:rankLabel(p),w:p.w,l:p.l});if(p.rec.length>40)p.rec.shift();}
+  sbApplyPositions(got.rankings,fin.next_tournament_no);
+  B.changes=(fin.changes||[]).map(c=>c.replace(/#(\d+)/g,(m,id)=>pname(+id)));
+  B.changes.filter(c=>/大将|副将|先鋒/.test(c)).slice(0,12).forEach(c=>L('番付 '+c));
+  B.sb=sb?{tid:sb.tid,ids:Object.keys(sb.s).length}:null;   // 送信用の細かい記録は捨てて、要約だけ残す
+  B.phase='done';
+  saveSoon();
+}
+/* 他の人が先に次の大会へ進めていた場合: 手元の未確定の大会は捨てて、サーバーの進行中の大会に合わせる */
+async function sbAdopt(){
+  toast('他の人がこの大会を先に終えたため、最新の大会に合わせます');
+  const cur=await sbApi('GET','/current');
+  if(!cur.ok||cur.tournament_no==null){toast('最新の大会を取得できませんでした');return;}
+  startBasho(cur.tournament_no);
+  await sbSyncLineup();
+}
+/* 進行中の大会(番付がある最後の大会)をサーバーから取って合わせる。
+   無ければ初期配置を作る。手元が未開始で古い番号なら、サーバーの番号に進める */
+async function sbSyncLineup(){
+  const B0=S.basho;if(!B0||B0.phase!=='ready'||!sbEnabled())return;
+  let cur=await sbApi('GET','/current');
+  if(!cur.ok){toast(`番付サーバーに接続できませんでした(${cur.error||'原因不明'})`);return;}
+  if(cur.tournament_no==null){   // まだ1つも番付が無い: 手元の大会番号で初期配置を作る(同時に作られた場合も含む)
+    const i=await sbApi('POST','/lineup/init',{tournament_no:B0.no});
+    if(!i.ok&&i.code!=='already_started'){toast(`大会${B0.no}の番付を用意できませんでした(${i.error})`);return;}
+    cur=await sbApi('GET','/current');
+    if(!cur.ok||cur.tournament_no==null){toast('番付を取得できませんでした');return;}
+  }
+  if(S.basho!==B0||B0.phase!=='ready')return;
+  if(cur.tournament_no!==B0.no){
+    if(B0.day>0)return;   // 進行中の大会は途中で入れ替えない
+    startBasho(cur.tournament_no);
+  }
+  const B=S.basho;
+  const g=await sbApi('GET',`/rankings?tournament_no=${B.no}`);
+  if(!g.ok||!g.rankings.length){toast(`大会${B.no}の番付を取得できませんでした`);return;}
+  if(S.basho!==B||B.phase!=='ready')return;
+  sbState(B).tid=g.tournament_id;   // 提出先はサーバーの大会ID
+  sbApplyPositions(g.rankings,B.no);
+  renderAll();saveSoon();
+}
+/* 起動時: 送信待ちのまま残っている大会が、番付サーバーの現在の大会と合わないとき(終了済み・番号違い)は、
+   その未送信の状態を取り除いてサーバーの大会に合わせる。送信できない結果を、表示だけ残さないため。 */
+async function sbDropStaleSubmit(){
+  const B=S.basho;if(!B||B.phase!=='submit'||!sbEnabled())return;
+  const cur=await sbApi('GET','/current');
+  if(!cur.ok||cur.tournament_no==null||S.basho!==B)return;
+  const sb=sbState(B);
+  if(cur.tournament_no===B.no&&sb.tid!=null&&sb.tid===cur.tournament_id)return;   // 同じ大会の未送信なら、そのまま残す
+  startBasho(cur.tournament_no);
+  toast(`送信できなかった第${B.no}場所の結果を取り除き、大会${cur.tournament_no}に合わせました`);
+  saveSoon();
+  await sbSyncLineup();
+}
+function sbPaint(){
+  const box=$('sbBox');if(!box)return;
+  const B=S.basho;
+  if(!B||B.phase!=='submit'){box.hidden=true;return;}
+  const sb=sbState(B),T=sbTargets();
+  let ok=0;const bad=[];
+  for(const p of T){const s=sb.s[p.id];if(!s)continue;if(s.st==='ok')ok++;else if(s.st)bad.push([p,s]);}
+  const run=!!sbJob,done=ok,fail=bad.length||sb.abort;
+  const title=run?'🌐 大会結果をSupabaseへ送信中…':fail?'⚠ 大会結果の送信が完了していません(番付はまだ更新されていません)':'大会結果の送信待ち(番付はまだ更新されていません)';
+  box.className='sbx'+(!run&&fail?' err':'');
+  box.hidden=false;
+  box.innerHTML=`<b>${title}</b> <span class="dim">送信済み ${done}/${T.length}人${SUPABASE_CONFIG.testIds.length?'(テストモード)':''}</span>
+  <div class="bar"><i style="width:${T.length?done/T.length*100:0}%"></i></div>
+  ${sb.abort?`<div>${esc(sb.abort)}</div>`:''}
+  ${bad.length?`<ul>${bad.slice(0,6).map(([p,s])=>`<li>${esc(p.name)}:${s.st==='net'?'通信エラー':'受付拒否'} <span class="dim">${esc(s.msg)}</span></li>`).join('')}${bad.length>6?`<li class="dim">…ほか${bad.length-6}人</li>`:''}</ul>`:''}
+  ${run?'':`<div class="row"><button class="primary" id="sbRetry">${done||bad.length?'送信を再開':'送信する'}</button></div>`}`;
+}
+async function sbResumeUI(){
+  if(UI.busy||sbJob)return;
+  UI.busy=true;UI.stop=false;setBusy(true);
+  try{await sbStart();}finally{UI.busy=false;setBusy(false);renderAll();saveSoon();}
+}
+/* 開発用: コンソールから sbTools.rpc(...) で任意の内容を提出して、重複・矛盾・休場の動作を確認できる */
+window.sbTools={rpc:sbCall,uuid:sbUuid,config:SUPABASE_CONFIG,status:()=>S.basho.sb};
+
+function finishBashoLogic(){ // 日程終了後: 優勝決定→(結果をSupabaseへ送信)→番付編成(決定戦を1番ずつ進めていた場合は、すでに決着済み)
   const B=S.basho;
   if(!B.po)playoffInit();
   playoffDrain();
-  B.phase='titled';
-  rebalance();
+  B.phase='submit';   // 送信が全員分成功したあと、sbFinalize() がサーバーで次の番付を作る
 }
 
 /* =====================================================================
@@ -1464,7 +1644,7 @@ function simulate(a,b,place,noSuper){
    - 取得前に差分を表示し、確認してから適用する
    ===================================================================== */
 const GAS_DEFAULT='https://script.google.com/macros/s/AKfycbz5dvjxUvQWo9aTro6vwkj9u6-CtWvt7GQs39bFg_nhYDqPtpeTVOknse19UUupGOWQ/exec';
-const DB_KEY='banzuke_chardb_v1',PEND_KEY='banzuke_pending_v1',URL_KEY='banzuke_gasurl_v1',LAST_KEY='banzuke_lastfetch_v1';
+const DB_KEY='banzuke_chardb_v1',PEND_KEY='banzuke_pending_v1',URL_KEY='banzuke_gasurl_v1',LAST_KEY='banzuke_lastfetch_v1',SBR_KEY='banzuke_sbroster_v1';
 const COOLDOWN_MS=30000, MIN_ROWS=20, TIMEOUT_MS=25000;
 
 function lsGet(k){try{const t=localStorage.getItem(k);return t?JSON.parse(t):null;}catch(e){return null;}}
@@ -1479,6 +1659,8 @@ function dbRows(){
     const by=new Map(DATA.map(r=>[nameKey(r[1]),r]));   // 旧形式のDBにコミュ力・学力を補う
     rows=rows.map(r=>{const o=by.get(nameKey(r[1]));const x=r.slice();x[13]=o?o[13]:0;x[14]=o?o[14]:0;return x;});
   }
+  const idByName=new Map(DATA.map(r=>[nameKey(r[1]),r[0]]));   // 旧版で保存された名簿のIDを、スプレッドシートのIDに名前で読み替える
+  rows=rows.map(r=>{const id=idByName.get(nameKey(r[1]));if(id===undefined||id===r[0])return r;const x=r.slice();x[0]=id;return x;});
   return rows.map(r=>{        // 得意/苦手場所の表記ゆれ(例: みけ原)を御卦原にそろえる
     const f=placeKey(norm(r[8]))||'',b=placeKey(norm(r[9]))||'';
     if(f===r[8]&&b===r[9])return r;
@@ -1598,15 +1780,19 @@ function parseChars(text){
   if(hi<0)throw new UpdateError('ヘッダー行(「名前」列)が見つかりません。','GASが返すCSVの1行目に列名が含まれているか確認してください。');
   const header=rows[hi].map(c=>c.trim());
   const col=n=>header.indexOf(n);
-  const need=['名前','体力','パワー','ガード','IQ','能力評価値'];
+  const need=['ID','名前','体力','パワー','ガード','IQ','能力評価値'];
   const miss=need.filter(n=>col(n)<0);
   if(miss.length)throw new UpdateError('必要な列がありません: '+miss.join('、'),'スプレッドシートの列名(体力・パワー・ガード・IQ・能力評価値)が変わっていないか確認してください。');
   const opt={fav:col('得意場所'),bad:col('苦手場所'),inc:col('場所収入'),cmd:col('特殊能力コマンド'),com:col('コミュ力'),gaku:col('学力'),img:col('画像URL')};
-  const out=[],skipped=[],dups=[],placeWarn=[];const seen=new Set();
+  const out=[],skipped=[],dups=[],placeWarn=[];const seen=new Set(),seenId=new Set();
   for(let i=hi+1;i<rows.length;i++){
     const r=rows[i];
     const name=(r[col('名前')]||'').trim();
     if(!name||name==='名前')continue;   // 空行・ページ先頭の繰り返しヘッダーは無視
+    const idRaw=(r[col('ID')]||'').trim(),id=toNum(idRaw);
+    if(!Number.isInteger(id)||id<=0)throw new UpdateError(`IDが正しくありません: ${name}(「${idRaw}」)`,'スプレッドシートのID列(正の整数)を確認してください。');
+    if(seenId.has(id))throw new UpdateError(`IDが重複しています: ${id}(${name})`,'スプレッドシートのID列で同じ番号が複数あるため、修正してください。');
+    seenId.add(id);
     const v={hp:toNum(r[col('体力')]),pw:toNum(r[col('パワー')]),gd:toNum(r[col('ガード')]),iq:toNum(r[col('IQ')]),ab:toNum(r[col('能力評価値')])};
     if(Object.values(v).some(Number.isNaN)||v.hp<=0){skipped.push(name);continue;}
     const key=nameKey(name);
@@ -1621,7 +1807,7 @@ function parseChars(text){
       return k;
     };
     const cmd=opt.cmd<0?undefined:(r[opt.cmd]||'').trim().replace(/\*+$/,'').trim();   // 末尾の「*」(区切りの印)は取り除く
-    out.push({name,...v,fav:pl(opt.fav,'得意場所'),bad:pl(opt.bad,'苦手場所'),inc:o(opt.inc),cmd,com:nn(opt.com),gaku:nn(opt.gaku),img:o(opt.img)});
+    out.push({id,name,...v,fav:pl(opt.fav,'得意場所'),bad:pl(opt.bad,'苦手場所'),inc:o(opt.inc),cmd,com:nn(opt.com),gaku:nn(opt.gaku),img:o(opt.img)});
   }
   if(out.length<MIN_ROWS)throw new UpdateError(`有効なキャラが${out.length}人しかありません(最低${MIN_ROWS}人)。`,'取得内容がおかしい可能性があるため、データは変更していません。');
   return {chars:out,skipped,dups,placeWarn};
@@ -1631,37 +1817,28 @@ function parseChars(text){
 function buildMerge(text){
   const {chars,skipped,dups,placeWarn}=parseChars(text);
   const oldRows=dbRows();
-  const oldByKey=new Map(oldRows.map(r=>[nameKey(r[1]),r]));
-  const liveByKey=new Map(S.people.map(p=>[nameKey(p.name),p]));
-  let maxId=0;
-  for(const r of oldRows)maxId=Math.max(maxId,r[0]);
-  for(const p of S.people)maxId=Math.max(maxId,p.id);
-  for(const id of Object.keys(S.retired))maxId=Math.max(maxId,+id);
+  const oldById=new Map(oldRows.map(r=>[r[0],r]));
   const rows=[],added=[],changed=[];let same=0;
-  const newKeys=new Set();
-  const usedIds=new Set([...S.people.map(p=>p.id),...Object.keys(S.retired).map(Number)]);   // すでに使われているIDとは重ならないようにする
+  const newIds=new Set();
+  const pick=(v,ov,lv)=>v!==undefined?v:(lv!==undefined?lv:ov);   // 列があれば列の値、無ければ現在の設定を引き継ぐ
   for(const c of chars){
-    const key=nameKey(c.name);newKeys.add(key);
-    const live=liveByKey.get(key),old=oldByKey.get(key);
-    const id=live?live.id:(old&&!usedIds.has(old[0])?old[0]:++maxId);
-    usedIds.add(id);
+    newIds.add(c.id);
+    const live=S.byId.get(c.id),old=oldById.get(c.id);
     const rk=old?old[7]:9999;
-    // 列がある場合は空欄も「なし」として尊重し、列が無い場合は現在の設定を引き継ぐ
-    const pick=(v,ov,lv)=>v!==undefined?v:(lv!==undefined?lv:ov);
     const fav=pick(c.fav,old?old[8]:'',live?live.fav:undefined);
     const bad=pick(c.bad,old?old[9]:'',live?live.bad:undefined);
     const inc=c.inc!==undefined&&c.inc!==''&&!Number.isNaN(toNum(c.inc))?toNum(c.inc):(live?live.inc:(old?old[10]:100));
     const cmd=pick(c.cmd,old?old[11]:'',live?live.cmd:undefined);
     const com=c.com!==undefined?c.com:(live?live.com:(old?(old[13]||0):0));
     const gaku=c.gaku!==undefined?c.gaku:(live?live.gaku:(old?(old[14]||0):0));
-    const img=c.img!==undefined?imgUrl(c.img):(live?(live.img||''):(old?(old[15]||''):''));   // 列があれば空欄も「画像なし」
-    rows.push([id,c.name,c.hp,c.pw,c.gd,c.iq,c.ab,rk,fav||'',bad||'',inc,cmd||'',old?old[12]:0,com,gaku,img]);
+    const img=c.img!==undefined?imgUrl(c.img):(live?(live.img||''):(old?(old[15]||''):''));
+    rows.push([c.id,c.name,c.hp,c.pw,c.gd,c.iq,c.ab,rk,fav||'',bad||'',inc,cmd||'',old?old[12]:0,com,gaku,img]);
     if(!live&&!old)added.push(c.name);
     else if(!live)added.push(c.name+'(再登場)');
-    else if(live.hp!==c.hp||live.pw!==c.pw||live.gd!==c.gd||live.iq!==c.iq||Math.abs(live.ab-c.ab)>0.05||live.com!==com||live.gaku!==gaku||(live.cmd||'')!==(cmd||'')||(live.img||'')!==img||(live.fav||'')!==(fav||'')||(live.bad||'')!==(bad||''))changed.push(c.name);
+    else if(live.name!==c.name||live.hp!==c.hp||live.pw!==c.pw||live.gd!==c.gd||live.iq!==c.iq||Math.abs(live.ab-c.ab)>0.05||live.com!==com||live.gaku!==gaku||(live.cmd||'')!==(cmd||'')||(live.img||'')!==img||(live.fav||'')!==(fav||'')||(live.bad||'')!==(bad||''))changed.push(c.name);
     else same++;
   }
-  const removed=S.people.filter(p=>!newKeys.has(nameKey(p.name)));
+  const removed=S.people.filter(p=>!newIds.has(p.id));
   const topRemoved=removed.filter(p=>['大将','副将','先鋒','旗頭','戦士'].includes(p.div)).map(p=>`${p.name}(${rankLabel(p)})`);
   return {rows,added,changed,same,removed:removed.map(p=>p.name),topRemoved,skipped,dups,placeWarn,total:rows.length,fetchedAt:Date.now()};
 }
@@ -1684,7 +1861,7 @@ function applyPendingIfAny(){
 }
 function goNextBasho(){
   applyPendingIfAny();
-  nextBasho();stage.idle();renderAll();saveSoon();
+  nextBasho();stage.idle();renderAll();saveSoon();sbSyncLineup();
 }
 
 /* ---------- 画面 ---------- */
@@ -1752,7 +1929,7 @@ function showUpdateDialog(m){
     toast('次の大会の開始時にデータを更新します');
   };
 }
-async function checkUpdate(){
+async function checkUpdateGas(){
   if(UI.updating)return;
   if(UI.busy){toast('進行中は更新できません。いったん停止してからお試しください');return;}
   const left=COOLDOWN_MS-(Date.now()-(+localStorage.getItem(LAST_KEY)||0));
@@ -1767,16 +1944,63 @@ async function checkUpdate(){
   }catch(e){showUpdateError(e);}
   finally{UI.updating=false;setUpdBusy(false);}
 }
+/* Supabase の名簿(A〜S列の全部)を、CSVと同じ形の文字列にして返す。公開読み取りのみ */
+async function fetchCharTextSupabase(){
+  const C=SUPABASE_CONFIG,base=C.url.replace(/\/+$/,'').replace(/\/rest\/v1$/,'');
+  const headers={apikey:C.anonKey,Accept:'application/json'};
+  if(!/^sb_/.test(C.anonKey))headers.Authorization='Bearer '+C.anonKey;
+  const get=async path=>{
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),20000);
+    try{
+      const res=await fetch(`${base}/rest/v1/${path}`,{headers,signal:ctl.signal});
+      if(!res.ok)throw new UpdateError(`Supabaseから取得できませんでした(HTTP ${res.status})。`,'ネット接続と、Supabaseの設定を確認してください。');
+      return await res.json();
+    }finally{clearTimeout(to);}
+  };
+  const meta=(await get('master_meta?select=headers,synced_at&id=eq.1'))[0];
+  if(!meta||!Array.isArray(meta.headers)||!meta.headers.length)
+    throw new UpdateError('Supabaseにまだ名簿がありません。','GASの同期(syncCharacters)を一度実行してください。');
+  const rows=(await get('characters?select=id,raw&order=id.asc&limit=5000')).filter(r=>Array.isArray(r.raw));
+  if(!rows.length)throw new UpdateError('Supabaseにキャラクターの全列データがありません。','GASの同期を新しい版にして、一度実行してください。');
+  const q=c=>'"'+String(c==null?'':c).replace(/"/g,'""')+'"';
+  const text=[meta.headers.map(q).join(',')].concat(rows.map(r=>r.raw.map(q).join(','))).join('\n');
+  return {text,syncedAt:meta.synced_at,count:rows.length};
+}
+/* データ更新: Supabase から取得して、名簿との差を確認する */
+async function checkUpdate(){
+  if(UI.updating)return;
+  if(UI.busy){toast('進行中は更新できません。いったん停止してからお試しください');return;}
+  const left=COOLDOWN_MS-(Date.now()-(+localStorage.getItem(LAST_KEY)||0));
+  if(left>0){toast(`続けて更新はできません。あと${Math.ceil(left/1000)}秒お待ちください`);return;}
+  UI.updating=true;setUpdBusy(true);
+  try{
+    try{localStorage.setItem(LAST_KEY,String(Date.now()));}catch(e){}
+    UPD_DIAG='';
+    const got=await fetchCharTextSupabase();
+    lsSet(SBR_KEY,{fetchedAt:Date.now(),syncedAt:got.syncedAt,count:got.count});
+    UPD_DIAG+=`\n取得元: Supabase / 最終同期 ${got.syncedAt||'-'} / ${got.count}人`;
+    showUpdateDialog(buildMerge(got.text));
+  }catch(e){showUpdateError(e);}
+  finally{UI.updating=false;setUpdBusy(false);}
+}
+/* Supabase の取得日時と同期日時を、設定欄に表示する */
+function sbInfoHTML(){
+  const sr=lsGet(SBR_KEY);
+  if(!sr)return '<span class="dim">未取得</span>';
+  return `最終同期 <b>${sr.syncedAt?fmtDate(sr.syncedAt):'-'}</b> ／ 取得 <b>${fmtDate(sr.fetchedAt)}</b> ／ ${sr.count}人`;
+}
 function updateInfoHTML(){
   const db=getDB(),pd=getPending();
   return `<h3>キャラクターデータ</h3>
   <div class="set">現在 <b>${S.people.length}人</b> ／ データ元: <b>${db?'スプレッドシートから更新済み':'組み込みの初期データ'}</b>${db?` ／ 最終取得: ${fmtDate(db.fetchedAt)}`:''}</div>
   ${pd?`<div class="set" style="color:var(--accent2)">適用待ち: 追加${pd.sum?pd.sum.a:'?'}人・整理${pd.sum?pd.sum.r:'?'}人・能力変更${pd.sum?pd.sum.c:'?'}人(次の大会の開始時に反映) <button id="oPendDel">破棄</button></div>`:''}
-  <div class="set"><button id="oUpd" class="primary">⟳ 最新データに更新</button> <small class="dim">押したときだけ取得します。起動時の自動取得はしません(連続更新は30秒あける必要があります)。</small></div>
+  <div class="set"><button id="oUpd" class="primary">⟳ 最新データに更新</button> <button id="oGas">GASから直接取得(予備)</button> <small class="dim">押したときだけ取得します。起動時の自動取得はしません(連続更新は30秒あける必要があります)。</small></div>
+  <div class="set">Supabase: ${sbInfoHTML()} <small class="dim">(スプレッドシートの変更は5分ごとにSupabaseへ反映されます)</small></div>
   <div class="set"><label>取得先URL<input type="text" id="oUrl" value="${esc(getGasUrl())}" spellcheck="false"></label> <button id="oUrlReset">初期値に戻す</button></div>`;
 }
 function bindUpdateInfo(){
   $('oUpd').onclick=checkUpdate;
+  $('oGas').onclick=checkUpdateGas;
   const pd=$('oPendDel');if(pd)pd.onclick=()=>{lsDel(PEND_KEY);renderStatus();renderSettings();};
   $('oUrl').onchange=e=>{
     const v=e.target.value.trim();
@@ -1793,7 +2017,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const fmt=n=>Math.round(n).toLocaleString('ja-JP');
-const SAVE_KEY='banzuke_battle_2_save_v1';
+const SAVE_KEY='banzuke_battle_2_save_v2';   // v2: キャラIDをスプレッドシートのIDに統一したため、v1の保存データは使わない
 
 const UI={tab:'matches',mode:'anim',speed:3,scope:'top',busy:false,stop:false,skip:false,auto:false,
   mFilter:'all',bFilter:'all',sFilter:'総合',watch:new Set(),last:null,autoNext:true};
@@ -1804,9 +2028,9 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
-    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted})),
+    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
-      byes:B.byes.map(p=>p.id),
+      byes:B.byes.map(p=>p.id),sb:B.sb||null,
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
 }
 function restore(d){
@@ -1823,7 +2047,7 @@ function restore(d){
   if(d.ui){UI.mode=d.ui.mode||UI.mode;UI.speed=d.ui.speed||UI.speed;UI.scope=d.ui.scope||UI.scope;if(d.ui.autoNext!=null)UI.autoNext=d.ui.autoNext;}
   const b=d.basho;
   S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,
-    playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),
+    playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),sb:b.sb||null,
     matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0,dbg:r[9]||null}))};
   if(S.basho.mi>S.basho.matches.length)S.basho.mi=S.basho.matches.length;
 }
@@ -2204,7 +2428,7 @@ function finishBasho(){
 async function playMatch(animate,quiet){
   const B=S.basho;
   bgm.sync();
-  if(B.phase==='done')return 'done';
+  if(B.phase==='done'||B.phase==='submit')return 'done';
   if(B.phase==='playoff')return playPlayoff(animate,quiet);
   if(B.day===0||dayDone()){
     if(B.day>=maxDays()&&dayDone())return afterDays();
@@ -2247,7 +2471,7 @@ async function playPlayoff(animate,quiet){
 /* 次に行われる取組(通常の取組でも決定戦でも) */
 function nextMatch(){
   const B=S.basho;
-  if(B.phase==='done')return null;
+  if(B.phase==='done'||B.phase==='submit')return null;
   if(B.phase==='playoff'){const pp=playoffPending();return pp?pp.m:null;}
   return (B.day===0||dayDone())?null:B.matches[B.mi];
 }
@@ -2267,6 +2491,7 @@ async function runUntil(kind){
         if(UI.autoNext&&kind==='auto'){await sleep(1500);if(UI.stop)break;goNextBasho();continue;}
         break;
       }
+      if(B.phase==='submit'){await sbStart();renderAll();if(S.basho.phase==='done'&&kind==='auto')continue;break;}   // 送信待ち(再開した場合など)
       const m=nextMatch();
       const anim=UI.mode==='anim'&&!!m&&animTarget(m);
       const r=await playMatch(anim,!anim);
@@ -2275,7 +2500,11 @@ async function runUntil(kind){
         if(kind==='day')break;
         if(UI.mode==='anim')await sleep(250);
       }
-      if(r==='bashoend'){renderAll();if(kind!=='auto')break;}
+      if(r==='bashoend'){
+        if(S.basho.phase==='submit')await sbStart();        // 結果送信が全員成功してから番付編成
+        renderAll();
+        if(kind!=='auto'||S.basho.phase!=='done')break;
+      }
       if(++n%40===0){renderLight();await sleep(0);}
     }
   }finally{
@@ -2298,13 +2527,14 @@ function renderStatus(){
   if(!UI.updating)$('bUpd').textContent=updLabel();
   $('stNo').textContent=`${tName(B.no)}`;
   $('stPlace').textContent=B.place.name;
-  const d=B.phase==='done'?'終了':B.phase==='playoff'?'優勝決定戦':(B.day===0?'開幕前':`${B.day}日目`);
+  const d=B.phase==='done'?'終了':B.phase==='submit'?'結果送信':B.phase==='playoff'?'優勝決定戦':(B.day===0?'開幕前':`${B.day}日目`);
   $('stDay').textContent=d+(B.day&&B.phase!=='playoff'?` / ${maxDays()}日制`:'');
-  $('stLeft').textContent=B.phase==='done'?'-':B.phase==='playoff'?'決定戦中':(B.day?`${B.matches.length-B.mi}/${B.matches.length}`:'-');
+  $('stLeft').textContent=(B.phase==='done'||B.phase==='submit')?'-':B.phase==='playoff'?'決定戦中':(B.day?`${B.matches.length-B.mi}/${B.matches.length}`:'-');
   const n=nextMatch();
-  $('stNext').textContent=n?`${n.playoff?'【決定戦】':''}${n.a.name} vs ${n.b.name}`:(B.phase==='done'?'次の大会へ':'次の日へ');
+  $('stNext').textContent=n?`${n.playoff?'【決定戦】':''}${n.a.name} vs ${n.b.name}`:(B.phase==='done'?'次の大会へ':B.phase==='submit'?'結果の送信待ち':'次の日へ');
   $('bNext').hidden=B.phase!=='done';
-  $('bOne').hidden=$('bDay').hidden=$('bBasho').hidden=(B.phase==='done');
+  $('bOne').hidden=$('bDay').hidden=$('bBasho').hidden=(B.phase==='done'||B.phase==='submit');
+  sbPaint();
   const t=B.titles&&B.titles['総合'];
   $('stChamp').textContent=t?pname(t.id):'-';
 }
@@ -2363,11 +2593,15 @@ function renderMatches(){
   el.innerHTML=html;
   const f=$('mFilter');if(f)f.onchange=()=>{UI.mFilter=f.value;renderMatches();};
 }
+/* 1大会前から「番付名・数字」が変わった人だけ、上がれば▲、下がれば▼。同じ番付・数字の中の東西の移動では出さない */
 function arrow(p){
-  const k=rankSortKey(p);
-  if(p.rec.length===0||p.pk===k)return '<span class="dim">–</span>';
-  if(p.div==='前相撲')return '<span class="dim">新</span>';
-  return k<p.pk?'<span class="up">▲</span>':'<span class="dn">▼</span>';
+  if(p.pos==null||p.prevPos==null){
+    return p.div==='前相撲'&&p.prevPos==null&&p.pos!=null&&p.rec.length?'<span class="dim">新</span>':'<span class="dim">–</span>';
+  }
+  if(p.label===p.prevLabel)return '<span class="dim">–</span>';
+  if(p.pos<p.prevPos)return '<span class="up">▲</span>';
+  if(p.pos>p.prevPos)return '<span class="dn">▼</span>';
+  return '<span class="dim">–</span>';
 }
 function renderBanzuke(){
   const el=$('tab_banzuke');
@@ -2490,9 +2724,9 @@ function renderSettings(){
   <div class="set"><label>アニメ観戦の対象
     <select id="oScope"><option value="top"${UI.scope==='top'?' selected':''}>総合+闘士の取組</option><option value="watch"${UI.scope==='watch'?' selected':''}>観戦リスト(空なら総合のみ)</option><option value="all"${UI.scope==='all'?' selected':''}>全ての取組(とても長い)</option></select></label></div>
   <div class="set"><label><input type="checkbox" id="oAuto" ${UI.autoNext?'checked':''}> 大会が終わったら自動で次の大会へ進む(「自動で進める」使用時)</label></div>
-  <div class="set btns"><button id="oSave">いま保存</button><button id="oExport">ファイルに書き出す</button><label class="btn">読み込む<input type="file" id="oImport" accept=".json" hidden></label><button id="oResetProg" class="danger">番付・記録をリセット</button><button id="oReset" class="danger">最初からやり直す</button></div>
+  <div class="set btns"><button id="oSave">いま保存</button><button id="oExport">ファイルに書き出す</button><label class="btn">読み込む<input type="file" id="oImport" accept=".json" hidden></label><button id="oClearCareer" class="danger">成績クリア</button></div>
   <p class="dim">進行状況は、このブラウザに自動保存されます。</p>
-  <p class="dim">「番付・記録をリセット」: 番付・優勝歴・大会ごとの成績を消し、全員を上等兵以下に落として能力評価値の高い順に上等兵1から並べ直します。「最初からやり直す」はキャラクターデータの更新も含めた完全な初期化です。</p>
+  <p class="dim">「成績クリア」: 累計の勝敗(大会ごとの記録)と優勝歴を0に戻します。番付の位置・大会の進行・キャラクターデータは変わりません。</p>
   <h3>この版の仕様メモ</h3><ul class="memo">
   <li>戦闘式は TurboWarp 版の「対戦処理」を移植(調子5段階(内部のみ・画面には出さない)、得意/苦手場所補正、大会前抽選の超絶好調、IQによる会心・ミス、ガード軽減)。</li>
   <li>番付は「内部スコア=番付−評価点」方式。大将・副将・先鋒・旗頭は独立した昇進ルール。</li>
@@ -2524,17 +2758,11 @@ function renderSettings(){
     try{restore(JSON.parse(await e.target.files[0].text()));saveNow();renderAll();toast('読み込みました');}
     catch(err){toast('読み込みに失敗しました');}
   };
-  $('oResetProg').onclick=()=>{
-    if(UI.busy){toast('進行中です。停止してからリセットしてください');return;}
-    if(!confirm('番付・優勝記録・大会ごとの成績をすべて消します。\n全員が上等兵以下に落ち、能力評価値の高い順に上等兵1から並び直します。\n(キャラクターのデータと設定は変わりません)\nよろしいですか?'))return;
-    UI.stop=true;resetProgress();stage.idle();renderAll();saveNow();
-    toast('番付と記録をリセットしました(1年目1月大会から開始)');
-  };
-  $('oReset').onclick=()=>{
-    if(!confirm('進行状況をすべて消して最初からやり直します。よろしいですか?'))return;
-    UI.stop=true;try{localStorage.removeItem(SAVE_KEY);}catch(e){}
-    const pd=getPending();if(pd){lsSet(DB_KEY,{fetchedAt:pd.fetchedAt,rows:pd.rows});lsDel(PEND_KEY);}
-    UI.watch=new Set();initPeople(dbRows());stage.idle();renderAll();toast('初期状態に戻しました(最新のキャラクターデータで開始)');
+  $('oClearCareer').onclick=()=>{
+    if(UI.busy){toast('進行中です。停止してから成績をクリアしてください');return;}
+    if(!confirm('全員の累計勝敗(大会ごとの記録)と優勝歴をすべて0に戻します。\n番付の位置・大会の進行・キャラクターデータは変わりません。\nよろしいですか?'))return;
+    clearCareer();saveNow();renderAll();
+    toast('成績をクリアしました(累計勝敗・優勝回数を0に戻しました)');
   };
 }
 /* 練習戦タブ用: 指定したキャラの合い口(得意な相手・苦手な相手)と、2人の組み合わせの成績 */
@@ -2673,7 +2901,7 @@ function boot(){
   $('speed').oninput=e=>{UI.speed=+e.target.value;saveSoon();};
   $('bOne').onclick=()=>{
     if(UI.busy)return;UI.busy=true;UI.stop=false;setBusy(true);
-    playMatch(true).finally(()=>{UI.busy=false;setBusy(false);renderAll();saveSoon();});
+    playMatch(true).then(async()=>{if(S.basho.phase==='submit')await sbStart();}).finally(()=>{UI.busy=false;setBusy(false);renderAll();saveSoon();});
   };
   $('bDay').onclick=()=>runUntil('day');
   $('bBasho').onclick=()=>runUntil('basho');
@@ -2681,9 +2909,12 @@ function boot(){
   $('bStop').onclick=()=>{UI.stop=true;UI.skip=true;};
   $('bSkip').onclick=()=>{UI.skip=true;};
   $('bNext').onclick=goNextBasho;
+  $('sbBox').onclick=e=>{if(e.target.closest('#sbRetry'))sbResumeUI();};
   $('bUpd').onclick=checkUpdate;
   $('dlg').addEventListener('click',e=>{if(e.target===$('dlg'))$('dlg').close();});
   renderAll();setBusy(false);
+  sbDropStaleSubmit();
+  sbSyncLineup();
 }
 window.addEventListener('DOMContentLoaded',boot);
 
