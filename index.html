@@ -200,6 +200,11 @@ input[type=search],input[type=text]{width:100%}
 .shop-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .shop-item>div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .shop-prev{align-self:flex-start;display:inline-flex;padding:3px 12px}
+.who .np,.who .nq{font-size:.6em;font-weight:800;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.2);color:#fff8dc;white-space:nowrap}
+.who.pl-silver .np,.who.pl-silver .nq,.who.pl-gold .np,.who.pl-gold .nq{background:rgba(0,0,0,.12);color:inherit}
+.nick-edit{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}
+.nick-edit input{width:9em}
+.nick-prev{width:100%;font-size:13px}
 .fxlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6}
 .fx-canvas{position:absolute;inset:0;width:100%;height:100%}
 .fx-banner{position:absolute;left:0;right:0;top:34%;text-align:center;font-size:clamp(28px,6vw,64px);font-weight:900;color:#ffe27a;text-shadow:0 3px 0 #7a3fb0,0 0 18px #000a;animation:fxBanner 3.2s ease forwards;opacity:0}
@@ -457,7 +462,7 @@ function imgUrl(u){
 function mkPerson(r){
   return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
     fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),
-    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:''};
+    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null};
 }
 function initPeople(rows){
   rows=rows||DATA;
@@ -2136,7 +2141,7 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
-    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||''})),
+    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
       byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
@@ -2178,7 +2183,7 @@ function loadSaved(){
 const STAGE_BG_DIR='images/';                                 // 背景画像を入れるフォルダ(index.html からの相対パス)
 const STAGE_BG_FILE=month=>`${month}月背景.png`;               // 開催月 → ファイル名
 const STAGE_BG_URL='';   // 開催月の画像が無いときの共通背景(例: 'images/共通背景.png')。空ならデフォルトのグラデーション背景
-const SIDE_TPL=`<div class="who"><span class="rk">-</span><span class="nm">-</span><span class="mv"></span></div>
+const SIDE_TPL=`<div class="who"><span class="rk">-</span><span class="np" hidden></span><span class="nm">-</span><span class="nq" hidden></span><span class="mv"></span></div>
 <div class="cond"></div>
 <div class="hpt"></div>
 <div class="bar"><i></i></div>
@@ -2290,6 +2295,8 @@ const stage={
       rk.textContent=m.practice?'(練習戦)':`(${rankLabel(p)})`;
       rk.style.setProperty('--dc',TOP_DIVS.includes(p.div)?'#ffc83d':(DIV_COLOR[p.div]||'#aaa'));
       el.querySelector('.nm').textContent=p.name;
+      const nk=p.nick||{},np=el.querySelector('.np'),nq=el.querySelector('.nq');   // 2つ名(前・後)
+      np.textContent=nk.pre||'';np.hidden=!nk.pre;nq.textContent=nk.post||'';nq.hidden=!nk.post;
       const mv=el.querySelector('.who .mv');   // 矢印: 得意場所=上向き / 苦手場所=下向き
       mv.outerHTML=s.pl==='fav'?'<span class="mv" title="得意場所">⤴</span>':s.pl==='bad'?'<span class="mv dn" title="苦手場所">⤵</span>':'<span class="mv"></span>';
       const tags=[];
@@ -2920,6 +2927,27 @@ function shopBuyEffect(p,id){
   saveSoon();renderShop();
 }
 function shopEquipEffect(p,id){p.effect=id||'';saveSoon();renderShop();}
+/* 2つ名: 前後それぞれ5文字まで。入力は表示前にエスケープする(記号や改行は取り除く) */
+const NICK_PRICE=250000, NICK_MAX=5;
+function nickClean(v){
+  const t=String(v==null?'':v).replace(/[\u0000-\u001f\u007f]/g,'').trim();
+  const arr=Array.from(t);
+  if(arr.length>NICK_MAX){toast(`2つ名は${NICK_MAX}文字までです(超えた分は削除しました)`);}
+  return arr.slice(0,NICK_MAX).join('');
+}
+function shopBuyNick(p){
+  if(p.nick){toast('既に持っています');return;}
+  if((p.money||0)<NICK_PRICE){toast('所持金が足りません');return;}
+  p.money-=NICK_PRICE;p.nick={pre:'',post:''};
+  L(`ショップ: ${p.name} が2つ名を購入(${fmt(NICK_PRICE)}pt)`);
+  saveSoon();renderShop();
+}
+function shopSaveNick(p){
+  const pre=nickClean($('nickPre')?$('nickPre').value:''),post=nickClean($('nickPost')?$('nickPost').value:'');
+  p.nick={pre,post};
+  saveSoon();renderShop();toast('2つ名を保存しました');
+}
+function nickText(p){const n=p.nick;if(!n)return 'なし';return [n.pre,n.post].filter(Boolean).length?`${n.pre||'…'} ${p.name} ${n.post||'…'}`:'(未設定)';}
 function shopBuyDrink(p,id){
   const d=SHOP_DRINKS.find(x=>x.id===id);if(!d)return;
   const no=drinkTargetNo();
@@ -2933,6 +2961,18 @@ function shopBuyDrink(p,id){
 function shopList(){
   const q=UI.shopQ||'';
   return sortRank(S.people.filter(p=>!q||nameKey(p.name).includes(nameKey(q)))).slice(0,300);
+}
+function nickHTML(p,money){
+  if(!p.nick){
+    return `<div class="shop-item"><div><b>2つ名</b> <small class="dim">名前の前後に、5文字ずつの言葉を付けられます</small>
+      <small>${fmt(NICK_PRICE)} pt</small></div><button data-nbuy="1" ${money<NICK_PRICE?'disabled':''}>購入</button></div>`;
+  }
+  const n=p.nick;
+  return `<div class="nick-edit">
+    <label>前 <input id="nickPre" maxlength="12" value="${esc(n.pre)}" placeholder="例: 鋼鉄の"></label>
+    <label>後 <input id="nickPost" maxlength="12" value="${esc(n.post)}" placeholder="例: 山脈"></label>
+    <div class="nick-prev">表示例: <span class="who"><span class="np">${esc(n.pre)}</span><span class="nm">${esc(p.name)}</span><span class="nq">${esc(n.post)}</span></span></div>
+    <button data-nsave="1">保存</button></div>`;
 }
 function shopBodyHTML(p){
   const no=drinkTargetNo(),money=p.money||0;
@@ -2964,7 +3004,8 @@ function shopBodyHTML(p){
     <p>所持金: <b>${fmt(money)} pt</b> ・ 名札: <b>${esc(plateName(p))}</b></p>
     <h4>名札(プレート)</h4>${plates}
     <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}
-    <h4>大将撃破の演出(装備は1種類)</h4>${fxs}`;
+    <h4>大将撃破の演出(装備は1種類)</h4>${fxs}
+    <h4>2つ名(前後それぞれ5文字まで・何度でも編集可)</h4>${nickHTML(p,money)}`;
 }
 function renderShop(){
   const el=$('tab_shop');
@@ -2989,6 +3030,8 @@ function renderShop(){
       else if(b.dataset.ebuy)shopBuyEffect(p,b.dataset.ebuy);
       else if(b.dataset.eequip)shopEquipEffect(p,b.dataset.eequip);
       else if(b.dataset.eunequip)shopEquipEffect(p,'');
+      else if(b.dataset.nbuy)shopBuyNick(p);
+      else if(b.dataset.nsave)shopSaveNick(p);
     };
   }
   $('shopSel').innerHTML=shopOpts();
@@ -3186,6 +3229,7 @@ function openProfile(id){
    <div><small>能力評価値</small><b>${fmt(p.ab)}</b>${bar(p.ab,40000)}</div>
    <div><small>場所収入(大会ごと)</small><b>${fmt(p.inc)}</b></div><div><small>所持金</small><b>${fmt(p.money||0)} pt</b></div>
   </div>
+  <p>2つ名: <b>${esc(nickText(p))}</b></p>
   <p>名札: <b>${esc(plateName(p))}</b> ・ 所持金: <b>${fmt(p.money||0)} pt</b></p>
   <p>得意場所:<b>${esc(placeLabel(p.fav)||'なし')}</b> / 苦手場所:<b>${esc(placeLabel(p.bad)||'なし')}</b>${isSuper(p)?' / <b style="color:#d98a00">⚡ 今大会は超絶好調</b>':''}</p>
   ${cmdHTML(p)}
