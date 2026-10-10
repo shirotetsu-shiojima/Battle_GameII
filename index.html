@@ -942,15 +942,25 @@ function setBounty(m,res){const bi=calcBounty(m,res);m.bountyInfo=bi;m.bounty=bi
 /* 懸賞金を勝者に支払う(全額) */
 function payBounty(winner,m){
   if(!m.bounty)return;
-  winner.money=(winner.money||0)+m.bounty;
-  L(`懸賞金: ${winner.name} が ${fmt(m.bounty)}pt を獲得(${m.a.name} vs ${m.b.name})`);
+  (S.basho.bounties=S.basho.bounties||[]).push([winner.id,m.bounty]);   // 大会の終わりにまとめて支払う
+  L(`懸賞金: ${winner.name} に ${fmt(m.bounty)}pt(${m.a.name} vs ${m.b.name}、大会終了時に支払い)`);
 }
 /* 場所収入: 大会が終わったとき、全員にデータの「場所収入」の額を支払う(大会ごとに1回) */
 function payBashoIncome(){
+  const B=S.basho;
+  if(B.fastUsed){
+    B.bounties=[];
+    L(`${tName(B.no)} 高速モードで進めたため、場所収入・懸賞金はありません`);
+    toast(`${tName(B.no)} 高速モードで進めたため、場所収入・懸賞金はありません`);
+    return;
+  }
   let total=0;
   S.people.forEach(p=>{const v=+p.inc||0;if(v>0){p.money=(p.money||0)+v;total+=v;}});
   L(`${tName(S.basho.no)} 場所収入: 全員に計 ${fmt(total)}pt を支払い`);
   toast(`${tName(S.basho.no)} 場所収入を支払いました(計 ${fmt(total)}pt)`);
+  let bsum=0;(B.bounties||[]).forEach(([id,amt])=>{const w=S.byId.get(id);if(w){w.money=(w.money||0)+amt;bsum+=amt;}});
+  B.bounties=[];
+  if(bsum)L(`${tName(B.no)} 懸賞金: 計 ${fmt(bsum)}pt を支払い`);
 }
 
 function applyResult(m,res){
@@ -1020,7 +1030,7 @@ function playoffApply(G,m,res){
   G.nxt.push(res.winner.id);G.pos+=2;
 }
 function playoffDrain(){   // 残りの決定戦を演出なしで一気に消化
-  for(let pp;(pp=playoffPending());){const res=simulate(pp.m.a,pp.m.b,S.basho.place);playoffApply(pp.G,pp.m,res);}
+  for(let pp;(pp=playoffPending());){const res=simulate(pp.m.a,pp.m.b,S.basho.place);if(UI.mode==='fast')S.basho.fastUsed=true;playoffApply(pp.G,pp.m,res);}
 }
 
 /* ---------- 番付編成 ---------- */
@@ -2115,7 +2125,7 @@ function serialize(){
     retired:S.retired,aiai:S.aiai,
     people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{}})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
-      byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,
+      byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
 }
 function restore(d){
@@ -2131,7 +2141,7 @@ function restore(d){
   UI.watch=new Set((d.watch||[]).filter(id=>S.byId.has(id)));
   if(d.ui){UI.mode=d.ui.mode||UI.mode;UI.speed=d.ui.speed||UI.speed;UI.scope=d.ui.scope||UI.scope;if(d.ui.autoNext!=null)UI.autoNext=d.ui.autoNext;}
   const b=d.basho;
-  S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,incomePaid:!!b.incomePaid,
+  S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,incomePaid:!!b.incomePaid,fastUsed:!!b.fastUsed,bounties:b.bounties||[],
     playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),sb:b.sb||null,
     matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0,dbg:r[9]||null}))};
   if(S.basho.mi>S.basho.matches.length)S.basho.mi=S.basho.matches.length;
@@ -2529,6 +2539,7 @@ async function playMatch(animate,quiet){
   }
   const m=B.matches[B.mi++];
   const res=simulate(m.a,m.b,B.place);
+  if(UI.mode==='fast')B.fastUsed=true;   // 高速で進めた大会は場所収入なし
   applyResult(m,res);
   UI.last={m,res};
   if(!quiet)await showBattle(m,res,animate&&UI.mode==='anim');
@@ -2551,6 +2562,7 @@ async function playPlayoff(animate,quiet){
   if(!pp){finishBasho();return 'bashoend';}
   const {G,m}=pp;
   const res=simulate(m.a,m.b,B.place);
+  if(UI.mode==='fast')B.fastUsed=true;
   setBounty(m,res);                      // GameSet 演出で懸賞金を出すため、先に決めておく
   UI.last={m,res};
   if(!quiet)await showBattle(m,res,animate&&UI.mode==='anim');
@@ -2786,18 +2798,18 @@ function searchResultsHTML(){
    - ドリンク: 買うと、その大会の間ずっと能力が×1.1倍(同じドリンクは1大会1本まで)。
      大会と大会の間に買うと、次の大会から効く */
 const SHOP_PLATES=[
-  {id:'wood',   name:'木目の札',  price:10000, desc:'素朴な木の名札'},
-  {id:'silver', name:'白銀の札',  price:20000, desc:'磨き上げた銀色の名札'},
-  {id:'ruby',   name:'紅蓮の札',  price:30000, desc:'燃えるような深紅の名札'},
-  {id:'gold',   name:'黄金の札',  price:45000, desc:'金箔がきらめく名札'},
-  {id:'rainbow',name:'虹色の札',  price:60000, desc:'虹色の光が流れる名札'},
-  {id:'king',   name:'王者の札',  price:80000, desc:'黒と金の最高級の名札'},
+  {id:'wood',   name:'木目の札',  price:50000, desc:'素朴な木の名札'},
+  {id:'silver', name:'白銀の札',  price:100000, desc:'磨き上げた銀色の名札'},
+  {id:'ruby',   name:'紅蓮の札',  price:150000, desc:'燃えるような深紅の名札'},
+  {id:'gold',   name:'黄金の札',  price:225000, desc:'金箔がきらめく名札'},
+  {id:'rainbow',name:'虹色の札',  price:300000, desc:'虹色の光が流れる名札'},
+  {id:'king',   name:'王者の札',  price:400000, desc:'黒と金の最高級の名札'},
 ];
 const SHOP_DRINKS=[
-  {id:'stamina',stat:'hp',name:'スタミナドリンク',price:1000,desc:'体力を強化'},
-  {id:'power',  stat:'pw',name:'パワードリンク',  price:1500,desc:'パワーを強化'},
-  {id:'guard',  stat:'gd',name:'ガードドリンク',  price:1500,desc:'ガードを強化'},
-  {id:'energy', stat:'iq',name:'エナジードリンク',price:2000,desc:'IQを強化'},
+  {id:'stamina',stat:'hp',name:'スタミナドリンク',price:5000,desc:'体力を強化'},
+  {id:'power',  stat:'pw',name:'パワードリンク',  price:7500,desc:'パワーを強化'},
+  {id:'guard',  stat:'gd',name:'ガードドリンク',  price:7500,desc:'ガードを強化'},
+  {id:'energy', stat:'iq',name:'エナジードリンク',price:10000,desc:'IQを強化'},
 ];
 const DRINK_MUL=1.1;
 const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ'};
