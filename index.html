@@ -200,6 +200,19 @@ input[type=search],input[type=text]{width:100%}
 .shop-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .shop-item>div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .shop-prev{align-self:flex-start;display:inline-flex;padding:3px 12px}
+.fxlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6}
+.fx-canvas{position:absolute;inset:0;width:100%;height:100%}
+.fx-banner{position:absolute;left:0;right:0;top:34%;text-align:center;font-size:clamp(28px,6vw,64px);font-weight:900;color:#ffe27a;text-shadow:0 3px 0 #7a3fb0,0 0 18px #000a;animation:fxBanner 3.2s ease forwards;opacity:0}
+@keyframes fxBanner{0%{opacity:0;transform:scale(1.5)}15%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
+.fx-flash{position:absolute;inset:0;background:#fff;opacity:0;animation:fxFlash 1.2s ease-out 2}
+@keyframes fxFlash{0%{opacity:0}8%{opacity:.85}30%{opacity:0}100%{opacity:0}}
+.fx-bolts{position:absolute;inset:0;width:100%;height:100%}
+.fx-bolt{fill:none;stroke:#fff8c4;stroke-width:1.4;vector-effect:non-scaling-stroke;filter:drop-shadow(0 0 4px #ffe066);opacity:0;animation:fxBolt .9s steps(2) 2}
+@keyframes fxBolt{0%{opacity:0}10%{opacity:1}40%{opacity:.2}60%{opacity:1}100%{opacity:0}}
+.fx-petal{position:absolute;top:-24px;width:12px;height:9px;border-radius:80% 0 80% 0;background:linear-gradient(135deg,#ffe3ec,#f7a8c0);opacity:.95;animation-name:fxPetal;animation-timing-function:linear;animation-fill-mode:both}
+@keyframes fxPetal{0%{transform:translate(0,0) rotate(0)}100%{transform:translate(var(--sw),calc(100vh + 60px)) rotate(var(--rot))}}
+.fx-zab{position:absolute;left:50%;bottom:14%;width:58px;height:58px;margin-left:-29px;border-radius:9px;background:radial-gradient(circle at 40% 35%,#d9432f,#9e1f14 70%);border:3px solid #ffd45c;box-shadow:inset 0 0 0 3px #7a1208,0 4px 10px #0007;opacity:0;animation:fxZab 1.7s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes fxZab{0%{opacity:1;transform:translate(0,0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r))}}
 .gst{font-size:clamp(26px,6vw,56px);font-weight:900;line-height:.95;text-align:center;color:#fff;text-shadow:0 2px 0 #7a3fb0,0 0 14px #0006}
 .feed{margin-top:12px;height:116px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:6px 10px;font-size:12.5px}
 .feed .crit{color:#e08a00;font-weight:700} .feed .miss{color:var(--dim)}
@@ -444,7 +457,7 @@ function imgUrl(u){
 function mkPerson(r){
   return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
     fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),
-    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{}};
+    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:''};
 }
 function initPeople(rows){
   rows=rows||DATA;
@@ -2123,7 +2136,7 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
-    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{}})),
+    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||''})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
       byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
@@ -2337,6 +2350,21 @@ const stage={
     this.el.gs.innerHTML=part(m.a)+'<div class="gst">Game<br>Set!</div>'+part(m.b);
     this.el.gs.hidden=false;
   },
+  /* 大将撃破の演出: 相手が大将で、その大将に勝ったとき(練習戦・高速モードは対象外) */
+  victory(m,res){
+    if(m.practice)return;
+    if(res.loser.div!=='大将')return;
+    const fx=res.winner.effect;
+    if(!fx||!(res.winner.effects||[]).includes(fx)||!FX_VFX[fx])return;
+    if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const host=$('duel');if(!host)return;
+    host.querySelectorAll('.fxlayer').forEach(x=>x.remove());
+    const layer=document.createElement('div');layer.className='fxlayer';
+    layer.innerHTML=`<div class="fx-banner">大将撃破!</div>`;
+    host.appendChild(layer);
+    FX_VFX[fx](layer);
+    setTimeout(()=>layer.remove(),3800);
+  },
   finish(m,res){
     this.hp(this.el.L,res.A.hp,res.A.max);this.hp(this.el.R,res.B.hp,res.B.max);
     const W=res.win==='A'?this.el.L:this.el.R,Lo=res.win==='A'?this.el.R:this.el.L;
@@ -2347,6 +2375,47 @@ const stage={
     this.aiai(m,true,res);
     this.gameset(m,res);
   }
+};
+/* ---- 大将撃破の演出(CSS・Canvas・SVGのみ。外部素材なし) ---- */
+function fxFireworks(c){
+  const ctx=c.getContext('2d');c.width=c.clientWidth;c.height=c.clientHeight;
+  const cols=['#ffd166','#ef476f','#06d6a0','#118ab2','#ffffff','#ff9f1c'];
+  let ps=[],bursts=0;const t0=performance.now();
+  const burst=(x,y)=>{const col=cols[Math.random()*cols.length|0];
+    for(let i=0;i<48;i++){const a=Math.PI*2*i/48,v=2+Math.random()*3;ps.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:1,col});}};
+  const step=now=>{
+    if(!c.isConnected)return;
+    if(bursts<6&&now-t0>bursts*380){burst(c.width*(.15+Math.random()*.7),c.height*(.1+Math.random()*.45));bursts++;}
+    ctx.clearRect(0,0,c.width,c.height);
+    for(const q of ps){q.x+=q.vx;q.y+=q.vy;q.vy+=.05;q.life-=.012;ctx.globalAlpha=Math.max(q.life,0);ctx.fillStyle=q.col;ctx.fillRect(q.x,q.y,3,3);}
+    ctx.globalAlpha=1;
+    ps=ps.filter(q=>q.life>0);
+    if(bursts<6||ps.length)requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+function fxBoltPath(x,y,yEnd,jit){
+  let d=`M${x.toFixed(1)} ${y}`;
+  for(let yy=y+6;yy<yEnd;yy+=6){x+=(Math.random()-.5)*jit;d+=` L${x.toFixed(1)} ${yy}`;}
+  return d;
+}
+const FX_VFX={
+  fireworks(layer){const c=document.createElement('canvas');c.className='fx-canvas';layer.appendChild(c);fxFireworks(c);},
+  lightning(layer){
+    let bolts='';
+    for(let i=0;i<3;i++){bolts+=`<path class="fx-bolt" style="animation-delay:${i*.45}s" d="${fxBoltPath(20+Math.random()*60,0,100,14)}"/>`;}
+    layer.insertAdjacentHTML('beforeend',`<div class="fx-flash"></div><svg class="fx-bolts" viewBox="0 0 100 100" preserveAspectRatio="none">${bolts}</svg>`);
+  },
+  sakura(layer){
+    let h='';
+    for(let i=0;i<46;i++){h+=`<i class="fx-petal" style="left:${(Math.random()*100).toFixed(1)}%;animation-delay:${(Math.random()*1.8).toFixed(2)}s;animation-duration:${(2.6+Math.random()*2).toFixed(2)}s;--sw:${(Math.random()*120-60).toFixed(0)}px;--rot:${(Math.random()*720-360).toFixed(0)}deg"></i>`;}
+    layer.insertAdjacentHTML('beforeend',h);
+  },
+  zabuton(layer){
+    let h='';
+    for(let i=0;i<8;i++){h+=`<i class="fx-zab" style="--x:${(Math.random()*240-120).toFixed(0)}px;--y:${(-(140+Math.random()*160)).toFixed(0)}px;--r:${(Math.random()*720-360).toFixed(0)}deg;animation-delay:${(i*.12).toFixed(2)}s"></i>`;}
+    layer.insertAdjacentHTML('beforeend',h);
+  },
 };
 const DELAY={1:1000,2:650,3:400,4:230,5:110};
 function evClass(e){
@@ -2391,6 +2460,7 @@ async function showBattle(m,res,animate){
   }
   stage.finish(m,res);
   if(!UI.stop)snd.play('gameset');
+  if(!UI.stop)stage.victory(m,res);
   if(!UI.skip&&!UI.stop)await sleep(Math.max(900,DELAY[UI.speed]*2));   // Game Set表示を読める時間
 }
 
@@ -2811,6 +2881,14 @@ const SHOP_DRINKS=[
   {id:'guard',  stat:'gd',name:'ガードドリンク',  price:7500,desc:'ガードを強化'},
   {id:'energy', stat:'iq',name:'エナジードリンク',price:10000,desc:'IQを強化'},
 ];
+/* 大将撃破の演出: 相手が大将で、その大将に勝ったときに再生する(勝者の番付は問わない)。装備は1種類 */
+const SHOP_EFFECTS=[
+  {id:'fireworks',name:'花火',    price:50000, desc:'夜空に大輪の花火が上がる'},
+  {id:'lightning',name:'稲妻',    price:50000, desc:'閃光とともに稲妻が走る'},
+  {id:'sakura',   name:'桜吹雪',  price:100000,desc:'桜の花びらが舞い散る'},
+  {id:'zabuton',  name:'座布団',  price:100000,desc:'座布団が宙を舞う(横綱戦の演出)'},
+];
+function effectOf(id){return SHOP_EFFECTS.find(x=>x.id===id);}
 const DRINK_MUL=1.1;
 const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ'};
 function plateOf(id){return SHOP_PLATES.find(x=>x.id===id);}
@@ -2832,6 +2910,16 @@ function shopBuyPlate(p,id){
   saveSoon();renderShop();
 }
 function shopEquipPlate(p,id){p.plate=id||'';saveSoon();renderShop();}
+function shopBuyEffect(p,id){
+  const x=effectOf(id);if(!x)return;
+  if(!p.effects)p.effects=[];
+  if(p.effects.includes(id)){toast('既に持っています');return;}
+  if((p.money||0)<x.price){toast('所持金が足りません');return;}
+  p.money-=x.price;p.effects.push(id);
+  L(`ショップ: ${p.name} が演出「${x.name}」を購入(${fmt(x.price)}pt)`);
+  saveSoon();renderShop();
+}
+function shopEquipEffect(p,id){p.effect=id||'';saveSoon();renderShop();}
 function shopBuyDrink(p,id){
   const d=SHOP_DRINKS.find(x=>x.id===id);if(!d)return;
   const no=drinkTargetNo();
@@ -2863,10 +2951,20 @@ function shopBodyHTML(p){
     return `<div class="shop-item"><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${DRINK_MUL})</small>
       <small>${fmt(d.price)} pt</small></div>${btn}</div>`;
   }).join('');
+  const fxs=SHOP_EFFECTS.map(x=>{
+    const own=(p.effects||[]).includes(x.id),eq=p.effect===x.id;
+    const btn=own
+      ?(eq?'<button data-eunequip="1">外す</button>':`<button data-eequip="${x.id}">装備する</button>`)
+      :`<button data-ebuy="${x.id}" ${money<x.price?'disabled':''}>購入</button>`;
+    const st=own?(eq?' ・ 装備中':' ・ 所持'):'';
+    return `<div class="shop-item"><div><b>${esc(x.name)}</b> <small class="dim">${esc(x.desc)}</small>
+      <small>${fmt(x.price)} pt${st}</small></div>${btn}</div>`;
+  }).join('');
   return `<h3>${esc(p.name)} <small class="dim">${esc(rankLabel(p))}</small></h3>
     <p>所持金: <b>${fmt(money)} pt</b> ・ 名札: <b>${esc(plateName(p))}</b></p>
     <h4>名札(プレート)</h4>${plates}
-    <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}`;
+    <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}
+    <h4>大将撃破の演出(装備は1種類)</h4>${fxs}`;
 }
 function renderShop(){
   const el=$('tab_shop');
@@ -2888,6 +2986,9 @@ function renderShop(){
       else if(b.dataset.equip)shopEquipPlate(p,b.dataset.equip);
       else if(b.dataset.unequip)shopEquipPlate(p,'');
       else if(b.dataset.dbuy)shopBuyDrink(p,b.dataset.dbuy);
+      else if(b.dataset.ebuy)shopBuyEffect(p,b.dataset.ebuy);
+      else if(b.dataset.eequip)shopEquipEffect(p,b.dataset.eequip);
+      else if(b.dataset.eunequip)shopEquipEffect(p,'');
     };
   }
   $('shopSel').innerHTML=shopOpts();
