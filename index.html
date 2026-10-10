@@ -184,6 +184,22 @@ input[type=search],input[type=text]{width:100%}
 .gsn .n{font-size:clamp(13px,2.6vw,24px);font-weight:800;overflow-wrap:anywhere}
 .gsn .r{font-size:clamp(20px,5vw,44px);font-weight:900;line-height:1.1}
 .gsn.w{color:#ffe27a;text-shadow:0 1px 4px #0006}.gsn.l{color:#c8c8c8}
+.gsb{margin-top:6px;font-size:clamp(12px,2.2vw,18px);font-weight:700;font-variant-numeric:tabular-nums}.gsb b{font-size:1.3em;color:#ffe27a}
+/* 名札(プレート): 対戦画面の名前欄(.who)に装備中のものを反映。豪華なほど派手に */
+.who.pl-wood{background:repeating-linear-gradient(92deg,#8a5a2b 0 9px,#7a4c22 9px 13px,#9a6a35 13px 22px);border:2px solid #4a2c12;color:#fff6e0}
+.who.pl-silver{background:linear-gradient(135deg,#f4f7fb,#b9c2cc 45%,#eef2f7 60%,#9aa5b1);border:2px solid #7d8794;color:#1d2530}
+.who.pl-silver .nm,.who.pl-silver .rk{text-shadow:none}
+.who.pl-ruby{background:linear-gradient(135deg,#7a0a14,#d7263d 50%,#5a0710);border:2px solid #ffb3b3;box-shadow:0 0 12px #ff4d4d88;color:#fff}
+.who.pl-gold{background:linear-gradient(120deg,#8a6a12,#ffd95a 40%,#fff3b0 50%,#c8961e 70%,#7d5a0c);border:2px solid #fff0a0;box-shadow:0 0 14px #ffd95a99;color:#2a1a00}
+.who.pl-gold .nm,.who.pl-gold .rk{text-shadow:none}
+.who.pl-rainbow{background:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#c77dff,#ff6b6b);background-size:300% 100%;animation:plShine 4s linear infinite;border:2px solid #fff;box-shadow:0 0 16px #c77dffaa;color:#1a1030}
+.who.pl-rainbow .nm{text-shadow:0 0 3px #fff}
+.who.pl-king{background:linear-gradient(135deg,#0d0d0d,#2a2a2a 50%,#0d0d0d);border:2px solid #ffd45c;box-shadow:0 0 0 2px #0008,0 0 18px #ffd45c88;color:#ffe27a}
+.who.pl-king .nm,.who.pl-king .rk{color:#ffe27a}
+@keyframes plShine{from{background-position:0% 50%}to{background-position:100% 50%}}
+.shop-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.shop-item>div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.shop-prev{align-self:flex-start;display:inline-flex;padding:3px 12px}
 .gst{font-size:clamp(26px,6vw,56px);font-weight:900;line-height:.95;text-align:center;color:#fff;text-shadow:0 2px 0 #7a3fb0,0 0 14px #0006}
 .feed{margin-top:12px;height:116px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:6px 10px;font-size:12.5px}
 .feed .crit{color:#e08a00;font-weight:700} .feed .miss{color:var(--dim)}
@@ -333,6 +349,7 @@ a.btn{color:var(--ink);text-decoration:none}
     <button data-tab="standings">成績</button>
     <button data-tab="titles">優勝</button>
     <button data-tab="search">検索・観戦</button>
+    <button data-tab="shop">ショップ</button>
     <button data-tab="duel">練習戦</button>
     <button data-tab="log">ログ</button>
     <button data-tab="settings">設定</button>
@@ -342,6 +359,7 @@ a.btn{color:var(--ink);text-decoration:none}
   <div class="pane" id="tab_standings" hidden></div>
   <div class="pane" id="tab_titles" hidden></div>
   <div class="pane" id="tab_search" hidden></div>
+  <div class="pane" id="tab_shop" hidden></div>
   <div class="pane" id="tab_duel" hidden></div>
   <div class="pane" id="tab_log" hidden></div>
   <div class="pane" id="tab_settings" hidden></div>
@@ -426,7 +444,7 @@ function imgUrl(u){
 function mkPerson(r){
   return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
     fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),
-    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false};
+    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{}};
 }
 function initPeople(rows){
   rows=rows||DATA;
@@ -882,14 +900,69 @@ function aiaiLabel(w,l){    // 自分から見た評価
   const d=w-l;if(!d)return '互角';
   return (Math.abs(d)>=AIAI_BIG?(d>0?'得意':'苦手'):(d>0?'やや得意':'やや苦手'));
 }
+/* ---------- 懸賞金・場所収入(通貨: pt) ----------
+   前作の設定を移植。
+   - 場所収入: 大会が終わるたびに、全員がデータの「場所収入」の額を受け取る(大会1回につき1回)
+   - 懸賞金: 戦士(前頭)以上同士の総合の取組だけ発生。勝者が全額もらう(敗者は受け取らない)
+     基礎スコア = 100 × (東のランク + 西のランク) × 格上補正(ランク差2以上なら1.5倍)
+     懸賞金 = 基礎スコア × 期待値倍率(1.0〜5.0倍)
+     期待値倍率 = 1.0 + 全勝同士(+2.0)/1敗同士(+1.0)(4日目以降) + 相星決戦(千秋楽・優勝決定戦 +1.5)
+                      + 大将が絡む注目カード(+1.0)
+   ※ 「因縁カード」の加算は自動判定できないため未実装 */
+const BOUNTY_BASE=100, BOUNTY_GIANT=1.5, BOUNTY_MULT_MAX=5.0, BOUNTY_MIN_DAY=4;
+const BOUNTY_TOP_RANK={大将:6,副将:5,先鋒:4,旗頭:3};   // 番付ランク値(三役以上)
+const BOUNTY_SEN_NEAR_MAX=6;                             // 戦士のうち、この番号以下(旗頭の直下)はランク2、それ以外は1
+function bountyRank(p){
+  if(p.div==='戦士')return p.slot<=BOUNTY_SEN_NEAR_MAX?2:1;
+  return BOUNTY_TOP_RANK[p.div]||0;
+}
+/* 取組の懸賞金を計算する。対象外なら null。記録は取組の前の値で計算する(勝敗を反映する前に呼ぶこと) */
+function calcBounty(m,res){
+  if(m.practice)return null;
+  const ra=bountyRank(m.a),rb=bountyRank(m.b);
+  if(!ra||!rb)return null;
+  const day=S.basho.day,last=maxDays();
+  let base=BOUNTY_BASE*(ra+rb);
+  const giant=Math.abs(ra-rb)>=2;
+  if(giant)base*=BOUNTY_GIANT;
+  let mult=1.0;const why=[];
+  if(!m.playoff&&day>=BOUNTY_MIN_DAY){
+    if(m.a.l===0&&m.b.l===0){mult+=2.0;why.push('全勝同士+2.0');}
+    else if(m.a.l===1&&m.b.l===1){mult+=1.0;why.push('1敗同士+1.0');}
+  }
+  if(m.playoff||(day===last&&m.a.w===m.b.w&&m.a.l===m.b.l)){mult+=1.5;why.push('相星決戦+1.5');}
+  if((ra===6)!==(rb===6)){mult+=1.0;why.push('大将が絡む注目カード+1.0');}
+  mult=Math.min(mult,BOUNTY_MULT_MAX);
+  const amount=Math.round(base*mult);
+  const tip=`基礎 ${fmt(base)}pt${giant?'(格上補正×1.5)':''} × 倍率 ${mult.toFixed(1)}`+(why.length?`(${why.join(' / ')})`:'');
+  return {amount,base:Math.round(base),mult,tip};
+}
+/* 取組の懸賞金額を先に決めて m に入れる(GameSet 演出で使う。支払いはしない) */
+function setBounty(m,res){const bi=calcBounty(m,res);m.bountyInfo=bi;m.bounty=bi?bi.amount:0;}
+/* 懸賞金を勝者に支払う(全額) */
+function payBounty(winner,m){
+  if(!m.bounty)return;
+  winner.money=(winner.money||0)+m.bounty;
+  L(`懸賞金: ${winner.name} が ${fmt(m.bounty)}pt を獲得(${m.a.name} vs ${m.b.name})`);
+}
+/* 場所収入: 大会が終わったとき、全員にデータの「場所収入」の額を支払う(大会ごとに1回) */
+function payBashoIncome(){
+  let total=0;
+  S.people.forEach(p=>{const v=+p.inc||0;if(v>0){p.money=(p.money||0)+v;total+=v;}});
+  L(`${tName(S.basho.no)} 場所収入: 全員に計 ${fmt(total)}pt を支払い`);
+  toast(`${tName(S.basho.no)} 場所収入を支払いました(計 ${fmt(total)}pt)`);
+}
+
 function applyResult(m,res){
   m.aiaiPre=aiaiGet(m.a,m.b)||[0,0];     // この一番の前までの合い口(対戦画面で結果を先に見せないため)
+  setBounty(m,res);                      // 懸賞金は勝敗を反映する前の記録で計算する
   aiaiRecord(res.winner,res.loser);
   m.w=res.winner===m.a?'A':'B';
   m.turns=res.turns;m.sp=res.sp;m.condA=res.A.c;m.condB=res.B.c;
   m.hpA=res.A.hp;m.hpB=res.B.hp;
   const win=res.winner,lose=res.loser;
   win.w++;lose.l++;
+  payBounty(win,m);
   win.met.push(lose.id);lose.met.push(win.id);
   (win.res=win.res||[]).push({o:lose.id,w:1});(lose.res=lose.res||[]).push({o:win.id,w:0});
   sbRecord(m,res);        // 大会結果送信用に、取組ごとのIDを控えるだけ(ここでは通信しない)
@@ -940,6 +1013,8 @@ function playoffPending(){
   return null;
 }
 function playoffApply(G,m,res){
+  if(m.bountyInfo===undefined)setBounty(m,res);
+  payBounty(res.winner,m);
   aiaiRecord(res.winner,res.loser);
   S.basho.playoffs.push({key:G.key,round:G.round,a:m.a.id,b:m.b.id,win:res.winner.id});
   G.nxt.push(res.winner.id);G.pos+=2;
@@ -1401,13 +1476,14 @@ function mkSide(p,place,key,noSuper){
   else if(place.key===p.bad){c*=0.8;pl='bad';}
   const sup=!noSuper&&isSuper(p);
   if(sup)c+=SUPER_BOOST;
-  return {key,p,base,c,sup,pl,hp:p.hp,max:p.hp,maxHp:p.hp,prevBonus:0,meter:0,hasMeter:false,cmds:[],last:0,
+  const mhp=boostedStat(p,'hp');
+  return {key,p,base,c,sup,pl,hp:mhp,max:mhp,maxHp:mhp,prevBonus:0,meter:0,hasMeter:false,cmds:[],last:0,
     v:null,critO:null,missO:null,defO:null,critMult:DEF_CRIT_MULT};
 }
 function resetVars(s){
   const p=s.p;
-  s.v={pw:p.pw,gd:p.gd,iq:p.iq,com:p.com,gaku:p.gaku};
-  s.maxHp=p.hp;s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
+  s.v={pw:boostedStat(p,'pw'),gd:boostedStat(p,'gd'),iq:boostedStat(p,'iq'),com:p.com,gaku:p.gaku};
+  s.maxHp=boostedStat(p,'hp');s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
 }
 /* 体力(最大体力)の増減を現在HPへ反映: 上限を超えた分は切り捨て、増えた分は加算。
    効果が切れても「減らした分」は戻らない */
@@ -2037,9 +2113,9 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
-    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted})),
+    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{}})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
-      byes:B.byes.map(p=>p.id),sb:B.sb||null,
+      byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
 }
 function restore(d){
@@ -2055,7 +2131,7 @@ function restore(d){
   UI.watch=new Set((d.watch||[]).filter(id=>S.byId.has(id)));
   if(d.ui){UI.mode=d.ui.mode||UI.mode;UI.speed=d.ui.speed||UI.speed;UI.scope=d.ui.scope||UI.scope;if(d.ui.autoNext!=null)UI.autoNext=d.ui.autoNext;}
   const b=d.basho;
-  S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,
+  S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,incomePaid:!!b.incomePaid,
     playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),sb:b.sb||null,
     matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0,dbg:r[9]||null}))};
   if(S.basho.mi>S.basho.matches.length)S.basho.mi=S.basho.matches.length;
@@ -2186,6 +2262,7 @@ const stage={
     this.bg(m.place||S.basho.place);     // 練習戦は選んだ開催地、本場所は今大会の開催地
     this.head(m);this.aiai(m,false);
     const put=(el,s,p)=>{
+      el.querySelector('.who').className='who'+(p.plate?' pl-'+p.plate:'');   // 装備中の名札
       const rk=el.querySelector('.rk');
       rk.textContent=m.practice?'(練習戦)':`(${rankLabel(p)})`;
       rk.style.setProperty('--dc',TOP_DIVS.includes(p.div)?'#ffc83d':(DIV_COLOR[p.div]||'#aaa'));
@@ -2243,7 +2320,9 @@ const stage={
     const part=(p)=>{
       const w=res.winner===p;
       const rec=(m.practice||m.playoff)?(w?'WIN':'LOSE'):`${p.w}勝${p.l}敗`;
-      return `<div class="gsn ${w?'w':'l'}"><div class="n">${esc(p.name)}</div><div class="r">${rec}</div></div>`;
+      const bi=m.bountyInfo;   // 懸賞金の対象外の取組(練習戦・闘士以下など)では表示しない
+      const bl=bi?`<div class="gsb" title="${esc(bi.tip)}">懸賞金 ${w?`獲得 <b>${fmt(m.bounty)}</b> pt`:'<span class="dim">なし</span>'}</div>`:'';
+      return `<div class="gsn ${w?'w':'l'}"><div class="n">${esc(p.name)}</div><div class="r">${rec}</div>${bl}</div>`;
     };
     this.el.gs.innerHTML=part(m.a)+'<div class="gst">Game<br>Set!</div>'+part(m.b);
     this.el.gs.hidden=false;
@@ -2427,6 +2506,7 @@ function inScope(m){
 }
 function finishBasho(){
   finishBashoLogic();
+  if(!S.basho.incomePaid){payBashoIncome();S.basho.incomePaid=true;}
   bgm.stop(1800);
   const g=GROUPS.find(g=>S.basho.titles[g.key]);   // 総合が空(リセット直後)なら最上位の優勝者を表示
   if(g){const t=S.basho.titles[g.key];toast(`${tName(S.basho.no)} ${g.label}:${pname(t.id)}(${t.w}勝${t.l}敗)`);}
@@ -2471,6 +2551,7 @@ async function playPlayoff(animate,quiet){
   if(!pp){finishBasho();return 'bashoend';}
   const {G,m}=pp;
   const res=simulate(m.a,m.b,B.place);
+  setBounty(m,res);                      // GameSet 演出で懸賞金を出すため、先に決めておく
   UI.last={m,res};
   if(!quiet)await showBattle(m,res,animate&&UI.mode==='anim');
   playoffApply(G,m,res);                 // 演出が終わってから結果を確定(途中で止めても結果は確定する)
@@ -2699,6 +2780,111 @@ function searchResultsHTML(){
   return res.map(p=>`<div class="m"><span class="r">${rankLabel(p)}</span>${rowName(p)}<span class="dim">${p.cmd?' ✦特殊能力':''}</span></div>`).join('')
     ||(q?'<p class="dim">見つかりません</p>':'<p class="dim">キャラクターを検索して、詳細や観戦登録ができます。</p>');
 }
+/* ---------- ショップ(キャラごとに買い物) ----------
+   代金は、そのキャラの所持金から支払う。
+   - 名札(プレート): 買うと持ち物になる。装備中のものが対戦画面の名前欄の見た目になる
+   - ドリンク: 買うと、その大会の間ずっと能力が×1.1倍(同じドリンクは1大会1本まで)。
+     大会と大会の間に買うと、次の大会から効く */
+const SHOP_PLATES=[
+  {id:'wood',   name:'木目の札',  price:10000, desc:'素朴な木の名札'},
+  {id:'silver', name:'白銀の札',  price:20000, desc:'磨き上げた銀色の名札'},
+  {id:'ruby',   name:'紅蓮の札',  price:30000, desc:'燃えるような深紅の名札'},
+  {id:'gold',   name:'黄金の札',  price:45000, desc:'金箔がきらめく名札'},
+  {id:'rainbow',name:'虹色の札',  price:60000, desc:'虹色の光が流れる名札'},
+  {id:'king',   name:'王者の札',  price:80000, desc:'黒と金の最高級の名札'},
+];
+const SHOP_DRINKS=[
+  {id:'stamina',stat:'hp',name:'スタミナドリンク',price:1000,desc:'体力を強化'},
+  {id:'power',  stat:'pw',name:'パワードリンク',  price:1500,desc:'パワーを強化'},
+  {id:'guard',  stat:'gd',name:'ガードドリンク',  price:1500,desc:'ガードを強化'},
+  {id:'energy', stat:'iq',name:'エナジードリンク',price:2000,desc:'IQを強化'},
+];
+const DRINK_MUL=1.1;
+const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ'};
+function plateOf(id){return SHOP_PLATES.find(x=>x.id===id);}
+function plateName(p){const x=plateOf(p.plate);return x?x.name:'なし';}
+/* 能力の強化値: ドリンクの効果が及ぶ大会の間だけ強化する */
+function boostedStat(p,k){
+  const v=p[k];
+  return (p.boost&&p.boost[k]===S.basho.no)?Math.round(v*DRINK_MUL):v;
+}
+/* ドリンクの効果が及ぶ大会番号: 大会と大会の間(終了後)なら次の大会、それ以外は今の大会 */
+function drinkTargetNo(){const B=S.basho;return (B.phase==='done'||B.phase==='submit')?B.no+1:B.no;}
+function shopBuyPlate(p,id){
+  const x=plateOf(id);if(!x)return;
+  if(!p.plates)p.plates=[];
+  if(p.plates.includes(id)){toast('既に持っています');return;}
+  if((p.money||0)<x.price){toast('所持金が足りません');return;}
+  p.money-=x.price;p.plates.push(id);
+  L(`ショップ: ${p.name} が「${x.name}」を購入(${fmt(x.price)}pt)`);
+  saveSoon();renderShop();
+}
+function shopEquipPlate(p,id){p.plate=id||'';saveSoon();renderShop();}
+function shopBuyDrink(p,id){
+  const d=SHOP_DRINKS.find(x=>x.id===id);if(!d)return;
+  const no=drinkTargetNo();
+  if(!p.boost)p.boost={};
+  if(p.boost[d.stat]===no){toast(`${d.name}は${tName(no)}で効果中です(1大会1本まで)`);return;}
+  if((p.money||0)<d.price){toast('所持金が足りません');return;}
+  p.money-=d.price;p.boost[d.stat]=no;
+  L(`ショップ: ${p.name} が${d.name}を購入(${fmt(d.price)}pt、${tName(no)}で${STAT_LABEL[d.stat]}×${DRINK_MUL})`);
+  saveSoon();renderShop();
+}
+function shopList(){
+  const q=UI.shopQ||'';
+  return sortRank(S.people.filter(p=>!q||nameKey(p.name).includes(nameKey(q)))).slice(0,300);
+}
+function shopBodyHTML(p){
+  const no=drinkTargetNo(),money=p.money||0;
+  const plates=SHOP_PLATES.map(x=>{
+    const own=(p.plates||[]).includes(x.id),eq=p.plate===x.id;
+    const btn=own
+      ?(eq?'<button data-unequip="1">外す</button>':`<button data-equip="${x.id}">装備する</button>`)
+      :`<button data-pbuy="${x.id}" ${money<x.price?'disabled':''}>購入</button>`;
+    const st=own?(eq?' ・ 装備中':' ・ 所持'):'';
+    return `<div class="shop-item"><div><span class="who pl-${x.id} shop-prev"><span class="nm">${esc(x.name)}</span></span>
+      <small class="dim">${esc(x.desc)}</small><small>${fmt(x.price)} pt${st}</small></div>${btn}</div>`;
+  }).join('');
+  const drinks=SHOP_DRINKS.map(d=>{
+    const on=!!(p.boost&&p.boost[d.stat]===no);
+    const btn=on?'<button disabled>効果中</button>':`<button data-dbuy="${d.id}" ${money<d.price?'disabled':''}>購入</button>`;
+    return `<div class="shop-item"><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${DRINK_MUL})</small>
+      <small>${fmt(d.price)} pt</small></div>${btn}</div>`;
+  }).join('');
+  return `<h3>${esc(p.name)} <small class="dim">${esc(rankLabel(p))}</small></h3>
+    <p>所持金: <b>${fmt(money)} pt</b> ・ 名札: <b>${esc(plateName(p))}</b></p>
+    <h4>名札(プレート)</h4>${plates}
+    <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}`;
+}
+function renderShop(){
+  const el=$('tab_shop');
+  if(!el.dataset.built){
+    el.dataset.built='1';
+    el.innerHTML=`<p class="dim">キャラクターごとに買い物ができます。代金は、そのキャラの所持金から支払います。</p>
+      <div class="row"><input id="shopQ" type="search" placeholder="キャラ名で検索(一部でOK)" autocomplete="off"></div>
+      <div class="row"><select id="shopSel" size="8" style="width:100%"></select></div>
+      <div id="shopBody"></div>`;
+    const qi=$('shopQ');
+    const updList=()=>{UI.shopQ=qi.value;$('shopSel').innerHTML=shopOpts();};
+    qi.addEventListener('input',e=>{if(!e.isComposing)updList();});
+    qi.addEventListener('compositionend',updList);
+    $('shopSel').onchange=e=>{UI.shopId=+e.target.value;renderShop();};
+    $('shopBody').onclick=e=>{
+      const b=e.target.closest('button');if(!b||b.disabled)return;
+      const p=UI.shopId&&S.byId.get(UI.shopId);if(!p)return;
+      if(b.dataset.pbuy)shopBuyPlate(p,b.dataset.pbuy);
+      else if(b.dataset.equip)shopEquipPlate(p,b.dataset.equip);
+      else if(b.dataset.unequip)shopEquipPlate(p,'');
+      else if(b.dataset.dbuy)shopBuyDrink(p,b.dataset.dbuy);
+    };
+  }
+  $('shopSel').innerHTML=shopOpts();
+  const cur=UI.shopId&&S.byId.get(UI.shopId);
+  $('shopBody').innerHTML=cur?shopBodyHTML(cur):'<p class="dim">キャラクターを選んでください</p>';
+}
+function shopOpts(){
+  return shopList().map(p=>`<option value="${p.id}" ${UI.shopId===p.id?'selected':''}>${esc(p.name)}(${esc(rankLabel(p))}) ${fmt(p.money||0)}pt</option>`).join('');
+}
 function renderSearch(){
   const el=$('tab_search');
   el.innerHTML=`<div class="row"><input id="q" type="search" placeholder="名前で検索(一部でOK)" value="${esc(UI.q||'')}" autocomplete="off"></div>
@@ -2841,7 +3027,7 @@ function renderDuel(){
   $('dGo').onclick=go;$('dRep').onclick=go;
   showAiai();
 }
-const TABS={duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,log:renderLog,settings:renderSettings};
+const TABS={duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,shop:renderShop,log:renderLog,settings:renderSettings};
 function renderTab(){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===UI.tab));
   document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!=='tab_'+UI.tab);
@@ -2885,8 +3071,9 @@ function openProfile(id){
    <div><small>ガード</small><b>${fmt(p.gd)}</b>${bar(p.gd,27000)}</div>
    <div><small>IQ</small><b>${p.iq}</b>${bar(p.iq,190)}</div>
    <div><small>能力評価値</small><b>${fmt(p.ab)}</b>${bar(p.ab,40000)}</div>
-   <div><small>場所収入</small><b>${fmt(p.inc)}</b></div>
+   <div><small>場所収入(大会ごと)</small><b>${fmt(p.inc)}</b></div><div><small>所持金</small><b>${fmt(p.money||0)} pt</b></div>
   </div>
+  <p>名札: <b>${esc(plateName(p))}</b> ・ 所持金: <b>${fmt(p.money||0)} pt</b></p>
   <p>得意場所:<b>${esc(placeLabel(p.fav)||'なし')}</b> / 苦手場所:<b>${esc(placeLabel(p.bad)||'なし')}</b>${isSuper(p)?' / <b style="color:#d98a00">⚡ 今大会は超絶好調</b>':''}</p>
   ${cmdHTML(p)}
   <p>通算(記録分): ${tw}勝${tl2}敗 ${tl?`<br>優勝歴: ${esc(tl)}`:''}</p>
