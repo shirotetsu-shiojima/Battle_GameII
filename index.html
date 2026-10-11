@@ -1109,6 +1109,9 @@ function playoffDrain(){   // 残りの決定戦を演出なしで一気に消�
 
 /* ---------- 番付編成 ---------- */
 function nextBasho(){
+  // 次の大会へ進むときに、サーバーで作った次の番付を反映する(大会終了直後は、まだ今大会の番付を表示する)
+  const PN=S.basho.pendingNext;
+  if(PN){sbApplyPositions(PN.rows,PN.no);S.basho.pendingNext=null;}
   S.history.push({no:S.basho.no,place:S.basho.place.name,titles:S.basho.titles,playoffs:S.basho.playoffs});
   if(S.history.length>200)S.history.shift();
   startBasho(S.basho.no+1);
@@ -1304,7 +1307,7 @@ async function sbFinalize(){
   if(!got.ok){fail('次の番付の取得に失敗しました。もう一度お試しください');return;}
   // 今大会の記録を履歴に残してから、次の番付を入れる
   for(const p of S.people){p.rec.push({b:B.no,div:rankLabel(p),w:p.w,l:p.l});if(p.rec.length>40)p.rec.shift();}
-  sbApplyPositions(got.rankings,fin.next_tournament_no);
+  B.pendingNext={no:fin.next_tournament_no,rows:got.rankings};   // 次の番付は「次の大会へ」を押したときに反映する
   B.changes=(fin.changes||[]).map(c=>c.replace(/#(\d+)/g,(m,id)=>pname(+id)));
   B.changes.filter(c=>/大将|副将|先鋒/.test(c)).slice(0,12).forEach(c=>L('番付 '+c));
   B.sb=sb?{tid:sb.tid,ids:Object.keys(sb.s).length}:null;   // 送信用の細かい記録は捨てて、要約だけ残す
@@ -2225,7 +2228,7 @@ function serialize(){
     retired:S.retired,aiai:S.aiai,
     people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null,robot:p.robot||null,robotUsed:!!p.robotUsed})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
-      byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
+      byes:B.byes.map(p=>p.id),sb:B.sb||null,pendingNext:B.pendingNext||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
 }
 function restore(d){
@@ -2242,7 +2245,7 @@ function restore(d){
   if(d.ui){UI.mode=d.ui.mode||UI.mode;UI.speed=d.ui.speed||UI.speed;UI.scope=d.ui.scope||UI.scope;if(d.ui.autoNext!=null)UI.autoNext=d.ui.autoNext;}
   const b=d.basho;
   S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,incomePaid:!!b.incomePaid,fastUsed:!!b.fastUsed,bounties:b.bounties||[],
-    playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),sb:b.sb||null,
+    playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),sb:b.sb||null,pendingNext:b.pendingNext||null,
     matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0,dbg:r[9]||null}))};
   if(S.basho.mi>S.basho.matches.length)S.basho.mi=S.basho.matches.length;
 }
