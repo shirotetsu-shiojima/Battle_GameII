@@ -464,12 +464,12 @@ const TOP_DIVS=['大将','副将','先鋒','旗頭'];
 const LAYOUT=[['戦士',5,34],['闘士',22,30],['上等兵',37,80],['一等兵',77,150]]; // [名称,開始番号,定員(2人1枚)]
 const LOW_START=152, THIRD_COUNT=68;
 const GROUPS=[
-  {key:'総合',label:'総合優勝',divs:['大将','副将','先鋒','旗頭','戦士'],days:7},
-  {key:'闘士',label:'闘士優勝',divs:['闘士'],days:7},
-  {key:'上等兵',label:'上等兵優勝',divs:['上等兵'],days:5},
-  {key:'一等兵',label:'一等兵優勝',divs:['一等兵'],days:5},
-  {key:'二等兵',label:'二等兵優勝',divs:['二等兵'],days:5},
-  {key:'三等兵',label:'三等兵優勝',divs:['三等兵','前相撲'],days:5},
+  {key:'総合',label:'総合優勝',divs:['大将','副将','先鋒','旗頭','戦士'],days:15},
+  {key:'闘士',label:'闘士優勝',divs:['闘士'],days:15},
+  {key:'上等兵',label:'上等兵優勝',divs:['上等兵'],days:7},
+  {key:'一等兵',label:'一等兵優勝',divs:['一等兵'],days:7},
+  {key:'二等兵',label:'二等兵優勝',divs:['二等兵'],days:7},
+  {key:'三等兵',label:'三等兵優勝',divs:['三等兵','前相撲'],days:7},
 ];
 const DIV_COLOR={大将:'#b3261e',副将:'#c4551b',先鋒:'#b8892b',旗頭:'#7d6a2c',戦士:'#2457a6',闘士:'#1f7a78',上等兵:'#6a4fa3',一等兵:'#5e6b7a',二等兵:'#85745a',三等兵:'#9a8f80',前相撲:'#a3a3a3'};
 
@@ -626,7 +626,7 @@ function rollSupers(){
   return S.people.filter(()=>Math.random()*100<pr).map(p=>p.id);
 }
 function isSuper(p){const B=S.basho;return !!(B&&B.supers&&B.supers.includes(p.id));}
-function maxDays(){return 7;}
+function maxDays(){return 15;}
 function met(a,b){return a.met.includes(b.id);}
 function ordKey(p){return rankSortKey(p)*10000-p.ab;}   // 小さいほど上位
 function sortRank(list){return list.slice().sort((a,b)=>ordKey(a)-ordKey(b)||a.id-b.id);}
@@ -681,37 +681,51 @@ function topPairKey(a,b){
 }
 
 /* その日・その取組グループの文脈(大将/副将の人数と解禁抽選結果) */
-function mmContext(list,day,notes){
+function mmContext(list,day,notes,days){
   const nT=list.filter(isTaisho).length,nF=list.filter(isFukusho).length;
   const ul={T6:false,F5:false,F6:false,info:[]};
+  const RS=ruleSet(days);
   const lot=(flag,label,key)=>{
     const p=mmProb(key),ok=Math.random()*100<p;ul[flag]=ok;
     const s=`${label} 解禁確率${p}% → ${ok?'解禁':'解禁せず'}`;ul.info.push(s);notes&&notes.push(s);
   };
-  if(nT>=3&&day===6)lot('T6','大将3人以上・6日目','mmT6');
-  if(nF>=3&&day===5)lot('F5','副将3人以上・5日目','mmF5');
-  if(nF>=3&&day===6)lot('F6','副将3人以上・6日目','mmF6');
-  return {nT,nF,unlock:ul};
+  if(days===7&&nT>=3&&day===RS.T6)lot('T6',`大将3人以上・${day}日目`,'mmT6');
+  if(days===7&&nF>=3&&day===RS.F5)lot('F5',`副将3人以上・${day}日目`,'mmF5');
+  if(days===7&&nF>=3&&day===RS.F6)lot('F6',`副将3人以上・${day}日目`,'mmF6');
+  return {nT,nF,unlock:ul,R:RS,days,last:day===days,stage:stageOf(day,days)};
 }
+
+/* 日程ルール(実際の日数)。7日制の組はこれまで通り、15日制の組は実日数で書いた値を使う */
+const R7={sanyaku:3,TT:5,T6:6,FF:4,F5:5,F6:6,TF:4};        // 先鋒以上同士の禁止は3日目まで、大将同士は5日目まで禁止、6日目に解禁抽選…
+const R15={sanyaku:6,TT:11,T6:13,FF:9,F5:11,F6:13,TF:9};   // 15日制: 先鋒以上同士は6日目まで禁止、大将同士は11日目まで禁止、13日目に解禁抽選…
+function ruleSet(days){return days===7?R7:R15;}
+/* 日数に応じた「段階」(1〜7): 重み表・重要対戦ボーナス・階層判定に使う。7日制ではそのままの日数 */
+function stageOf(day,days){return days===7?day:Math.min(7,Math.max(1,Math.round(day*7/days)));}
 
 /* isMatchAllowed の本体: 許可なら null、禁止なら理由の文字列を返す(§12〜§16,§25) */
 function mmHard(a,b,day,ctx){
   const k=topPairKey(a,b);if(!k)return null;            // 先鋒以上同士でなければ制限なし
-  if(day<=3)return '先鋒以上同士は1〜3日目禁止';
+  if(ctx.days===15){                                    // 15日制(総合・闘士): 先鋒以上同士は1〜8日目禁止、副将以上同士は1〜12日目禁止。大将同士は13日目以降
+    if(day<=8)return '先鋒以上同士は1〜8日目禁止';
+    if(day<=12&&(k==='TT'||k==='TF'||k==='FF'))return '副将以上同士は1〜12日目禁止';
+    return null;
+  }
+  const RS=ctx.R;
+  if(day<=RS.sanyaku)return `先鋒以上同士は1〜${RS.sanyaku}日目禁止`;
   if(k==='TT'){
-    if(ctx.nT===2)return day===7?null:'大将2人: 大将同士は7日目に固定(温存)';
-    if(day<=5)return `大将${ctx.nT}人: 大将同士は1〜5日目禁止`;
-    if(day===6)return ctx.unlock.T6?null:`大将${ctx.nT}人: 6日目の解禁抽選に外れ`;
+    if(ctx.nT===2)return ctx.last?null:'大将2人: 大将同士は千秋楽に固定(温存)';
+    if(day<=RS.TT)return `大将${ctx.nT}人: 大将同士は1〜${RS.TT}日目禁止`;
+    if(day===RS.T6)return ctx.unlock.T6?null:`大将${ctx.nT}人: ${RS.T6}日目の解禁抽選に外れ`;
     return null;
   }
   if(k==='FF'){
-    if(ctx.nF===2)return day===7?null:'副将2人: 副将同士は7日目に固定(温存)';
-    if(day<=4)return `副将${ctx.nF}人: 副将同士は1〜4日目禁止`;
-    if(day===5)return ctx.unlock.F5?null:`副将${ctx.nF}人: 5日目の解禁抽選に外れ`;
-    if(day===6)return ctx.unlock.F6?null:`副将${ctx.nF}人: 6日目の解禁抽選に外れ`;
+    if(ctx.nF===2)return ctx.last?null:'副将2人: 副将同士は千秋楽に固定(温存)';
+    if(day<=RS.FF)return `副将${ctx.nF}人: 副将同士は1〜${RS.FF}日目禁止`;
+    if(day===RS.F5)return ctx.unlock.F5?null:`副将${ctx.nF}人: ${RS.F5}日目の解禁抽選に外れ`;
+    if(day===RS.F6)return ctx.unlock.F6?null:`副将${ctx.nF}人: ${RS.F6}日目の解禁抽選に外れ`;
     return null;
   }
-  if(k==='TF')return day<=4?'大将↔副将は1〜4日目禁止':null;
+  if(k==='TF')return day<=RS.TF?`大将↔副将は1〜${RS.TF}日目禁止`:null;
   return null;                                           // 大将/副将/先鋒↔先鋒は4日目から解禁
 }
 function isMatchAllowed(a,b,day,ctx){return mmHard(a,b,day,ctx)===null;}
@@ -723,10 +737,15 @@ function mmEval(a,b,day,ctx){
   if(ca!==cb)rf=Math.abs(ca-cb)===1?MM.ADJ:MM.FAR;
   else{dist=Math.abs(a.slot-b.slot);rf=5;for(const [mx,v] of MM.RANK_FIT)if(dist<=mx){rf=v;break;}}
   const diff=Math.abs(a.w-b.w),cf=MM.REC_FIT[Math.min(diff,MM.REC_FIT.length-1)];
-  const tbl=MM.W[Math.min(ca,cb)],[rw,cw]=tbl[Math.min(day,tbl.length)-1];   // 上位クラス側の表を使う
+  const st=ctx.stage;
+  const tbl=MM.W[Math.min(ca,cb)],[rw,cw]=tbl[Math.min(st,tbl.length)-1];   // 上位クラス側の表を使う(段階で引く)
   const base=(rf*rw+cf*cw)/100;
   const k=topPairKey(a,b);
-  const bonus=(k&&MM.BONUS[k]&&MM.BONUS[k][day])||0;
+  let bonus=(k&&MM.BONUS[k]&&MM.BONUS[k][st])||0;
+  if(ctx.days===15){                                    // 15日制の優先: 13日目は大将↔副将、15日目は大将が絡む対戦
+    if(day===13&&k==='TF')bonus+=200;
+    if(day===15&&k&&k[0]==='T')bonus+=200;
+  }
   const n=a.met.filter(x=>x===b.id).length;
   const rem=n===0?0:n===1?MM.REMATCH1:MM.REMATCH2;
   return {rf,cf,rw,cw,dist,diff,base,bonus,rem,final:base+bonus+rem};
@@ -734,7 +753,7 @@ function mmEval(a,b,day,ctx){
 
 /* 7日目の固定・最優先対戦(§14〜§17,§26,§27) */
 function mmFixed(list,day,ctx){
-  const fx=[];if(day!==7)return fx;
+  const fx=[];if(!ctx.last||ctx.days!==7)return fx;   // 15日制は固定対戦なし(優先ルールで編成)
   const T=list.filter(isTaisho),F=list.filter(isFukusho);
   const best=arr=>{
     let r=null;
@@ -745,10 +764,10 @@ function mmFixed(list,day,ctx){
     }
     return r;
   };
-  if(T.length===2)fx.push({a:T[0],b:T[1],tier:0,why:'大将2人 → 7日目の大将同士は固定(Tier0)'});
-  else if(T.length>=3){const x=best(T);if(x)fx.push({a:x.a,b:x.b,tier:1,why:`大将${T.length}人 → 7日目の大将同士を最優先で1組確保(Tier1)`});}
-  if(F.length===2)fx.push({a:F[0],b:F[1],tier:0,why:'副将2人 → 7日目の副将同士は固定(Tier0)'});
-  else if(F.length>=3){const x=best(F);if(x)fx.push({a:x.a,b:x.b,tier:2,why:`副将${F.length}人 → 7日目の副将同士を高優先で1組確保(Tier2)`});}
+  if(T.length===2)fx.push({a:T[0],b:T[1],tier:0,why:'大将2人 → 千秋楽の大将同士は固定(Tier0)'});
+  else if(T.length>=3){const x=best(T);if(x)fx.push({a:x.a,b:x.b,tier:1,why:`大将${T.length}人 → 千秋楽の大将同士を最優先で1組確保(Tier1)`});}
+  if(F.length===2)fx.push({a:F[0],b:F[1],tier:0,why:'副将2人 → 千秋楽の副将同士は固定(Tier0)'});
+  else if(F.length>=3){const x=best(F);if(x)fx.push({a:x.a,b:x.b,tier:2,why:`副将${F.length}人 → 千秋楽の副将同士を高優先で1組確保(Tier2)`});}
   return fx;
 }
 
@@ -847,7 +866,7 @@ function mmTier(a,b,day,fixedTier){
   const k=topPairKey(a,b);
   if(k==='TT')return 1;
   if(k==='FF')return 2;
-  if(k==='TF'&&day>=5)return 3;
+  if(k==='TF'&&day>=5)return 3;                 // day は段階(1〜7)
   if((k==='TS'||k==='FS'||k==='SS')&&day>=4)return 4;
   return 5;
 }
@@ -869,7 +888,7 @@ function planDay(day){
   }
   const out=[],notes=[];
   for(const {g,gi,list} of pools){
-    const ctx=mmContext(list,day,notes);
+    const ctx=mmContext(list,day,notes,g.days);
     const fixed=mmFixed(list,day,ctx);
     const used=new Set();fixed.forEach(f=>{used.add(f.a);used.add(f.b);});
     const rest=list.filter(p=>!used.has(p));
@@ -895,7 +914,7 @@ function planDay(day){
       if(Math.random()<.5)[a,b]=[b,a];     // 先攻(画面左=a)は編成時にランダム。以前は番付が上の方が先攻だった
       let e,nz=0,tier,why='';
       if(pr.fx){e=mmEval(a,b,day,ctx);tier=pr.fx.tier;why=pr.fx.why;notes.push(`${a.name}↔${b.name}: ${why}`);}
-      else{e=pr.ev.e;nz=pr.ev.nz;tier=mmTier(a,b,day,null);}
+      else{e=pr.ev.e;nz=pr.ev.nz;tier=mmTier(a,b,ctx.stage,null);}
       const dbg=mmDbg(a,b,day,ctx,e,tier,why,nz,list);
       out.push({a,b,gi,w:null,swiss:false,dbg});
     }
@@ -968,12 +987,12 @@ function calcBounty(m,res){
   if(m.practice)return null;
   const ra=bountyRank(m.a),rb=bountyRank(m.b);
   if(!ra||!rb)return null;
-  const day=S.basho.day,last=maxDays();
+  const gd=(GROUPS[m.gi]||{days:7}).days;const day=S.basho.day,last=gd;
   let base=BOUNTY_BASE*(ra+rb);
   const giant=Math.abs(ra-rb)>=2;
   if(giant)base*=BOUNTY_GIANT;
   let mult=1.0;const why=[];
-  if(!m.playoff&&day>=BOUNTY_MIN_DAY){
+  if(!m.playoff&&stageOf(day,gd)>=BOUNTY_MIN_DAY){
     if(m.a.l===0&&m.b.l===0){mult+=2.0;why.push('全勝同士+2.0');}
     else if(m.a.l===1&&m.b.l===1){mult+=1.0;why.push('1敗同士+1.0');}
   }
