@@ -705,9 +705,11 @@ function stageOf(day,days){return days===7?day:Math.min(7,Math.max(1,Math.round(
 /* isMatchAllowed の本体: 許可なら null、禁止なら理由の文字列を返す(§12〜§16,§25) */
 function mmHard(a,b,day,ctx){
   const k=topPairKey(a,b);if(!k)return null;            // 先鋒以上同士でなければ制限なし
-  if(ctx.days===15){                                    // 15日制(総合・闘士): 先鋒以上同士は1〜8日目禁止、副将以上同士は1〜12日目禁止。大将同士は13日目以降
+  if(ctx.days===15){                                    // 15日制(総合・闘士): 先鋒以上同士は1〜8日目禁止
     if(day<=8)return '先鋒以上同士は1〜8日目禁止';
-    if(day<=12&&(k==='TT'||k==='TF'||k==='FF'))return '副将以上同士は1〜12日目禁止';
+    // 副将以上が10人以上いる場合は11日目から副将以上同士(大将同士も含む)を解禁。それ未満なら12日目まで禁止
+    const open=(ctx.nT+ctx.nF)>=10&&day>=11;
+    if(!open&&day<=12&&(k==='TT'||k==='TF'||k==='FF'))return '副将以上同士は1〜12日目禁止(副将以上が10人未満)';
     return null;
   }
   const RS=ctx.R;
@@ -745,6 +747,8 @@ function mmEval(a,b,day,ctx){
   if(ctx.days===15){                                    // 15日制の優先: 13日目は大将↔副将、15日目は大将が絡む対戦
     if(day===13&&k==='TF')bonus+=200;
     if(day===15&&k&&k[0]==='T')bonus+=200;
+    // 副将以上が10人以上のときは、終盤ほど大将同士が優先される(11日目50 → 15日目250)
+    if((ctx.nT+ctx.nF)>=10&&day>=11&&k==='TT')bonus+=(day-10)*50;
   }
   const n=a.met.filter(x=>x===b.id).length;
   const rem=n===0?0:n===1?MM.REMATCH1:MM.REMATCH2;
