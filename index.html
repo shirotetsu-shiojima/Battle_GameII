@@ -207,6 +207,14 @@ input[type=search],input[type=text]{width:100%}
 .nick-edit{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}
 .nick-edit input{width:9em}
 .nick-prev{width:100%;font-size:13px}
+.shop-item>.shop-main{flex-direction:row;align-items:center;gap:10px}
+.drink-can{width:34px;height:52px;border-radius:7px 7px 10px 10px;background:linear-gradient(90deg,rgba(255,255,255,.45),rgba(255,255,255,0) 35%,rgba(0,0,0,.18)),var(--c);box-shadow:0 2px 6px #0004;display:flex;align-items:center;justify-content:center;flex:none;position:relative}
+.drink-can::before{content:"";position:absolute;top:-4px;left:4px;right:4px;height:6px;border-radius:3px;background:#cfd6de}
+.drink-can b{writing-mode:vertical-rl;font-size:11px;color:#fff;text-shadow:0 1px 2px #0008;letter-spacing:.05em}
+.fx-prev{position:relative;width:100%;max-width:280px;height:96px;border-radius:10px;background:linear-gradient(#b9a6e8,#f3e8ff);overflow:hidden;margin:6px 0 4px}
+.nick-sample{margin-top:4px;max-width:280px}
+.shop-item button[data-eprev]{align-self:flex-start}
+.charm-icon{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a7a,#b3261e 70%);border:2px solid #ffd45c;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 2px 6px #0005}
 .fxlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6}
 .fx-canvas{position:absolute;inset:0;width:100%;height:100%}
 .fx-banner{position:absolute;left:0;right:0;top:34%;text-align:center;font-size:clamp(28px,6vw,64px);font-weight:900;color:#ffe27a;text-shadow:0 3px 0 #7a3fb0,0 0 18px #000a;animation:fxBanner 3.2s ease forwards;opacity:0}
@@ -464,7 +472,7 @@ function imgUrl(u){
 function mkPerson(r){
   return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
     fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),
-    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null};
+    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null,charm:null};
 }
 function initPeople(rows){
   rows=rows||DATA;
@@ -1503,7 +1511,7 @@ function gateOK(r,s,o,ctx){
 function mkSide(p,place,key,noSuper){
   const base=condRoll();let c=base,pl='';
   if(place.key===p.fav){c*=1.2;pl='fav';}
-  else if(place.key===p.bad){c*=0.8;pl='bad';}
+  else if(place.key===p.bad&&!charmActive(p)){c*=0.8;pl='bad';}   // お守りで苦手場所を無効化
   const sup=!noSuper&&isSuper(p);
   if(sup)c+=SUPER_BOOST;
   const mhp=boostedStat(p,'hp');
@@ -2143,7 +2151,7 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
-    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null})),
+    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
       byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
@@ -2427,6 +2435,13 @@ const FX_VFX={
     layer.insertAdjacentHTML('beforeend',h);
   },
 };
+/* ショップの見本: その場で演出を再生する(対戦画面の演出と同じ見た目) */
+function playFxPreview(id){
+  const box=document.getElementById('fxprev_'+id);if(!box||!FX_VFX[id])return;
+  box.querySelectorAll('.fxlayer').forEach(x=>x.remove());
+  const layer=document.createElement('div');layer.className='fxlayer';box.appendChild(layer);
+  FX_VFX[id](layer);setTimeout(()=>layer.remove(),3000);
+}
 const DELAY={1:1000,2:650,3:400,4:230,5:110};
 function evClass(e){
   if(e.kind==='trig')return 'trig';
@@ -2900,6 +2915,7 @@ const SHOP_EFFECTS=[
 ];
 function effectOf(id){return SHOP_EFFECTS.find(x=>x.id===id);}
 const DRINK_MUL=1.1;
+const DRINK_COL={stamina:'#3ec1d3',power:'#ef476f',guard:'#4d96ff',energy:'#ffd166'};
 const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ'};
 function plateOf(id){return SHOP_PLATES.find(x=>x.id===id);}
 function plateName(p){const x=plateOf(p.plate);return x?x.name:'なし';}
@@ -2950,6 +2966,25 @@ function shopSaveNick(p){
   p.nick={pre,post};
   saveSoon();renderShop();toast('2つ名を保存しました');
 }
+/* お守り: 購入から6大会(1年)保有。期限が切れたら買い直せる */
+const CHARM_PRICE=100000, CHARM_TERM=6;
+function charmActive(p){const c=p.charm;return !!c&&S.basho.no>=c.from&&S.basho.no<=c.until;}
+function shopBuyCharm(p){
+  if(charmActive(p)){toast('お守りは効果中です');return;}
+  if((p.money||0)<CHARM_PRICE){toast('所持金が足りません');return;}
+  const from=drinkTargetNo();
+  p.money-=CHARM_PRICE;p.charm={from,until:from+CHARM_TERM-1};
+  L(`ショップ: ${p.name} がお守りを購入(${fmt(CHARM_PRICE)}pt、${tName(from)}〜${tName(from+CHARM_TERM-1)})`);
+  saveSoon();renderShop();
+}
+function charmHTML(p,money){
+  const c=p.charm,act=charmActive(p);
+  const st=act?`効果中(残り${c.until-S.basho.no+1}大会・${tName(c.until)}まで)`:c?'失効しました(買い直せます)':'未購入';
+  const btn=act?'<button disabled>効果中</button>':`<button data-cbuy="1" ${money<CHARM_PRICE?'disabled':''}>${c?'買い直す':'購入'}</button>`;
+  return `<div class="shop-item"><div class="shop-main"><span class="charm-icon">守</span><div>
+    <b>お守り</b> <small class="dim">購入から6大会(1年)保有。苦手場所の不利を無効化します</small>
+    <small>${fmt(CHARM_PRICE)} pt ・ ${st}</small></div></div>${btn}</div>`;
+}
 function nickText(p){const n=p.nick;if(!n)return 'なし';return [n.pre,n.post].filter(Boolean).length?`${n.pre||'…'} ${p.name} ${n.post||'…'}`:'(未設定)';}
 function shopBuyDrink(p,id){
   const d=SHOP_DRINKS.find(x=>x.id===id);if(!d)return;
@@ -2968,7 +3003,7 @@ function shopList(){
 function nickHTML(p,money){
   if(!p.nick){
     return `<div class="shop-item"><div><b>2つ名</b> <small class="dim">名前の前後に、5文字ずつの言葉を付けられます</small>
-      <small>${fmt(NICK_PRICE)} pt</small></div><button data-nbuy="1" ${money<NICK_PRICE?'disabled':''}>購入</button></div>`;
+      <small>${fmt(NICK_PRICE)} pt</small><div class="nick-sample"><span class="who"><span class="nkl"><span class="np">鋼鉄の王者</span><span class="nq">山脈</span></span><span class="rk">(戦士8)</span><span class="nm">${esc(p.name)}</span></span></div></div><button data-nbuy="1" ${money<NICK_PRICE?'disabled':''}>購入</button></div>`;
   }
   const n=p.nick;
   return `<div class="nick-edit">
@@ -2991,8 +3026,8 @@ function shopBodyHTML(p){
   const drinks=SHOP_DRINKS.map(d=>{
     const on=!!(p.boost&&p.boost[d.stat]===no);
     const btn=on?'<button disabled>効果中</button>':`<button data-dbuy="${d.id}" ${money<d.price?'disabled':''}>購入</button>`;
-    return `<div class="shop-item"><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${DRINK_MUL})</small>
-      <small>${fmt(d.price)} pt</small></div>${btn}</div>`;
+    return `<div class="shop-item"><div class="shop-main"><span class="drink-can" style="--c:${DRINK_COL[d.id]}"><b>${STAT_LABEL[d.stat]}</b></span><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${DRINK_MUL})</small>
+      <small>${fmt(d.price)} pt</small></div></div>${btn}</div>`;
   }).join('');
   const fxs=SHOP_EFFECTS.map(x=>{
     const own=(p.effects||[]).includes(x.id),eq=p.effect===x.id;
@@ -3001,14 +3036,15 @@ function shopBodyHTML(p){
       :`<button data-ebuy="${x.id}" ${money<x.price?'disabled':''}>購入</button>`;
     const st=own?(eq?' ・ 装備中':' ・ 所持'):'';
     return `<div class="shop-item"><div><b>${esc(x.name)}</b> <small class="dim">${esc(x.desc)}</small>
-      <small>${fmt(x.price)} pt${st}</small></div>${btn}</div>`;
+      <small>${fmt(x.price)} pt${st}</small><div class="fx-prev" id="fxprev_${x.id}"></div><button data-eprev="${x.id}">▶ 演出を見る</button></div>${btn}</div>`;
   }).join('');
   return `<h3>${esc(p.name)} <small class="dim">${esc(rankLabel(p))}</small></h3>
     <p>所持金: <b>${fmt(money)} pt</b> ・ 名札: <b>${esc(plateName(p))}</b></p>
     <h4>名札(プレート)</h4>${plates}
     <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}
     <h4>大将撃破の演出(装備は1種類)</h4>${fxs}
-    <h4>2つ名(前後それぞれ5文字まで・何度でも編集可)</h4>${nickHTML(p,money)}`;
+    <h4>2つ名(前後それぞれ5文字まで・何度でも編集可)</h4>${nickHTML(p,money)}
+    <h4>お守り</h4>${charmHTML(p,money)}`;
 }
 function renderShop(){
   const el=$('tab_shop');
@@ -3033,7 +3069,9 @@ function renderShop(){
       else if(b.dataset.ebuy)shopBuyEffect(p,b.dataset.ebuy);
       else if(b.dataset.eequip)shopEquipEffect(p,b.dataset.eequip);
       else if(b.dataset.eunequip)shopEquipEffect(p,'');
+      else if(b.dataset.eprev)playFxPreview(b.dataset.eprev);
       else if(b.dataset.nbuy)shopBuyNick(p);
+      else if(b.dataset.cbuy)shopBuyCharm(p);
       else if(b.dataset.nsave)shopSaveNick(p);
     };
   }
