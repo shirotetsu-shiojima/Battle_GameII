@@ -214,6 +214,11 @@ input[type=search],input[type=text]{width:100%}
 .fx-prev{position:relative;width:100%;max-width:280px;height:96px;border-radius:10px;background:linear-gradient(#b9a6e8,#f3e8ff);overflow:hidden;margin:6px 0 4px}
 .nick-sample{margin-top:4px;max-width:280px}
 .shop-item button[data-eprev]{align-self:flex-start}
+.robot-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.robot-ill{width:64px;height:64px;flex:none}
+.robot-ill .robot-fist{animation:robotPunch 1.4s ease-in-out infinite}
+@keyframes robotPunch{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
+.robot-pick select{max-width:240px}
 .charm-icon{width:40px;height:40px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff8a7a,#b3261e 70%);border:2px solid #ffd45c;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 2px 6px #0005}
 .fxlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:6}
 .fx-canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -472,7 +477,7 @@ function imgUrl(u){
 function mkPerson(r){
   return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
     fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),
-    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null,charm:null};
+    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null,charm:null,robot:null,robotUsed:false};
 }
 function initPeople(rows){
   rows=rows||DATA;
@@ -1008,7 +1013,7 @@ function applyResult(m,res){
 function playNextFast(){
   const B=S.basho;if(B.mi>=B.matches.length)return null;
   const m=B.matches[B.mi++];
-  const res=simulate(m.a,m.b,B.place);applyResult(m,res);return {m,res};
+  const res=simulateMatch(m.a,m.b,B.place);applyResult(m,res);return {m,res};
 }
 function dayDone(){return S.basho.mi>=S.basho.matches.length;}
 function bashoDaysDone(){return S.basho.day>=maxDays()&&dayDone();}
@@ -1058,7 +1063,7 @@ function playoffApply(G,m,res){
   G.nxt.push(res.winner.id);G.pos+=2;
 }
 function playoffDrain(){   // 残りの決定戦を演出なしで一気に消化
-  for(let pp;(pp=playoffPending());){const res=simulate(pp.m.a,pp.m.b,S.basho.place);if(UI.mode==='fast')S.basho.fastUsed=true;playoffApply(pp.G,pp.m,res);}
+  for(let pp;(pp=playoffPending());){const res=simulateMatch(pp.m.a,pp.m.b,S.basho.place);if(UI.mode==='fast')S.basho.fastUsed=true;playoffApply(pp.G,pp.m,res);}
 }
 
 /* ---------- 番付編成 ---------- */
@@ -1730,6 +1735,21 @@ function tick(s){
 }
 
 /* ---------- 1試合 ---------- */
+/* 公式戦の対戦結果。名指しロボットの持ち主と、その相手が当たったときは、持ち主が無条件で一撃する(1回限り) */
+function simulateMatch(a,b,place){
+  const res=simulate(a,b,place);
+  const owner=[a,b].find(p=>p.robot&&p.robot.target===(p===a?b:a).id);
+  if(!owner)return res;
+  const loser=owner===a?b:a,os=owner===a?'A':'B',ls=os==='A'?'B':'A';
+  const prev=res[ls].hp;
+  res[ls].hp=0;
+  res.win=os;res.winner=owner;res.loser=loser;
+  res.ev.push({t:res.turns,hpA:res.A.hp,hpB:res.B.hp,mA:null,mB:null,kind:'hp',delta:-Math.max(1,Math.round(prev)),
+    s:os,tgt:ls,text:`ワンパンロボット(${owner.name})の一撃!${loser.name}は一発でKO`});
+  owner.robot=null;owner.robotUsed=true;
+  L(`ワンパンロボット: ${owner.name} が ${loser.name} を一撃`);
+  return res;
+}
 function simulate(a,b,place,noSuper){
   const A=mkSide(a,place,'A',noSuper),B=mkSide(b,place,'B',noSuper);
   const useSp=S.settings.special!==false;
@@ -2151,7 +2171,7 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
-    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null})),
+    people:S.people.map(p=>({id:p.id,name:p.name,hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null,robot:p.robot||null,robotUsed:!!p.robotUsed})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
       byes:B.byes.map(p=>p.id),sb:B.sb||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
@@ -2633,7 +2653,7 @@ async function playMatch(animate,quiet){
     }
   }
   const m=B.matches[B.mi++];
-  const res=simulate(m.a,m.b,B.place);
+  const res=simulateMatch(m.a,m.b,B.place);
   if(UI.mode==='fast')B.fastUsed=true;   // 高速で進めた大会は場所収入なし
   applyResult(m,res);
   UI.last={m,res};
@@ -2656,7 +2676,7 @@ async function playPlayoff(animate,quiet){
   const B=S.basho,pp=playoffPending();
   if(!pp){finishBasho();return 'bashoend';}
   const {G,m}=pp;
-  const res=simulate(m.a,m.b,B.place);
+  const res=simulateMatch(m.a,m.b,B.place);
   if(UI.mode==='fast')B.fastUsed=true;
   setBounty(m,res);                      // GameSet 演出で懸賞金を出すため、先に決めておく
   UI.last={m,res};
@@ -2985,6 +3005,52 @@ function charmHTML(p,money){
     <b>お守り</b> <small class="dim">購入から6大会(1年)保有。苦手場所の不利を無効化します</small>
     <small>${fmt(CHARM_PRICE)} pt ・ ${st}</small></div></div>${btn}</div>`;
 }
+/* ワンパンロボット(ネタ商品): キャラを1人名指しして購入。次にその相手と公式戦が組まれたとき、無条件で一撃して消費される */
+const ROBOT_PRICE=1000000;
+function shopBuyRobot(p,tid){
+  const t=S.byId.get(tid);
+  if(!t||t.id===p.id){toast('名指しする相手を選んでください');return;}
+  if(p.robot){toast('既に名指し中です');return;}
+  if((p.money||0)<ROBOT_PRICE){toast('所持金が足りません');return;}
+  p.money-=ROBOT_PRICE;p.robot={target:t.id};
+  L(`ショップ: ${p.name} がワンパンロボットを購入し、${t.name} を名指し`);
+  saveSoon();renderShop();
+}
+function shopSetRobot(p,tid){
+  const t=S.byId.get(tid);
+  if(!p.robot||!t||t.id===p.id){toast('対象を選んでください');return;}
+  p.robot={target:t.id};
+  L(`ショップ: ${p.name} がワンパンロボットの対象を ${t.name} に変更`);
+  saveSoon();renderShop();
+}
+/* ロボットの絵(SVG・外部素材なし)。拳だけ軽く揺れる */
+const ROBOT_SVG=`<svg class="robot-ill" viewBox="0 0 60 60" aria-hidden="true">
+  <line x1="30" y1="14" x2="30" y2="8" stroke="#4a5561" stroke-width="2"/>
+  <circle cx="30" cy="6" r="3.2" fill="#e4572e" stroke="#8a2a10" stroke-width="1"/>
+  <rect x="16" y="14" width="28" height="22" rx="5" fill="#9aa7b4" stroke="#4a5561" stroke-width="1.5"/>
+  <circle cx="24" cy="25" r="3.6" fill="#ffd166"/><circle cx="36" cy="25" r="3.6" fill="#ffd166"/>
+  <circle cx="24.8" cy="25.4" r="1.6" fill="#2b3440"/><circle cx="36.8" cy="25.4" r="1.6" fill="#2b3440"/>
+  <rect x="23" y="30" width="14" height="3" rx="1.5" fill="#2b3440"/>
+  <rect x="20" y="38" width="20" height="14" rx="3" fill="#3b82c4" stroke="#1f4f80" stroke-width="1.5"/>
+  <rect x="26" y="43" width="8" height="4" rx="1" fill="#ffd166"/>
+  <rect x="8" y="40" width="12" height="6" rx="3" fill="#6b7785"/>
+  <g class="robot-fist">
+    <rect x="38" y="40" width="8" height="6" rx="2" fill="#6b7785"/>
+    <circle cx="50" cy="43" r="7" fill="#e4572e" stroke="#8a2a10" stroke-width="1.5"/>
+  </g>
+</svg>`;
+function robotHTML(p,money){
+  const r=p.robot,t=r&&S.byId.get(r.target);
+  const opts=sortRank(S.people.filter(x=>x.id!==p.id)).map(x=>`<option value="${x.id}" ${r&&r.target===x.id?'selected':''}>${esc(x.name)}(${esc(rankLabel(x))})</option>`).join('');
+  const sel=`<select id="robotSel">${opts}</select>`;
+  if(r){
+    return `<div class="shop-item"><div class="shop-main">${ROBOT_SVG}<div><b>ワンパンロボット</b> <small class="dim">名指し中: 次にこの相手と公式戦が組まれた時、無条件で一撃(1回限り)</small>
+      <small>次の相手: <b>${esc(t?t.name:'(不明)')}</b></small></div></div><div class="robot-pick">${sel}<button data-rset="1">対象を変更</button></div></div>`;
+  }
+  return `<div class="shop-item"><div class="shop-main">${ROBOT_SVG}<div><b>ワンパンロボット</b> <small class="dim">キャラを1人名指し。次にその相手と公式戦が組まれた時、無条件で一撃(1回限り)</small>
+    <small>${fmt(ROBOT_PRICE)} pt${p.robotUsed?' ・ 前回は発動済み(再購入できます)':''}</small></div></div>
+    <div class="robot-pick">${sel}<button data-rbuy="1" ${money<ROBOT_PRICE?'disabled':''}>購入して名指し</button></div></div>`;
+}
 function nickText(p){const n=p.nick;if(!n)return 'なし';return [n.pre,n.post].filter(Boolean).length?`${n.pre||'…'} ${p.name} ${n.post||'…'}`:'(未設定)';}
 function shopBuyDrink(p,id){
   const d=SHOP_DRINKS.find(x=>x.id===id);if(!d)return;
@@ -3044,7 +3110,8 @@ function shopBodyHTML(p){
     <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}
     <h4>大将撃破の演出(装備は1種類)</h4>${fxs}
     <h4>2つ名(前後それぞれ5文字まで・何度でも編集可)</h4>${nickHTML(p,money)}
-    <h4>お守り</h4>${charmHTML(p,money)}`;
+    <h4>お守り</h4>${charmHTML(p,money)}
+    <h4>ワンパンロボット(ネタ商品)</h4>${robotHTML(p,money)}`;
 }
 function renderShop(){
   const el=$('tab_shop');
@@ -3072,6 +3139,8 @@ function renderShop(){
       else if(b.dataset.eprev)playFxPreview(b.dataset.eprev);
       else if(b.dataset.nbuy)shopBuyNick(p);
       else if(b.dataset.cbuy)shopBuyCharm(p);
+      else if(b.dataset.rbuy)shopBuyRobot(p,+$('robotSel').value);
+      else if(b.dataset.rset)shopSetRobot(p,+$('robotSel').value);
       else if(b.dataset.nsave)shopSaveNick(p);
     };
   }
