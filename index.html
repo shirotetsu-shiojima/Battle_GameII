@@ -200,8 +200,10 @@ input[type=search],input[type=text]{width:100%}
 .shop-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .shop-item>div{display:flex;flex-direction:column;gap:2px;min-width:0}
 .shop-prev{align-self:flex-start;display:inline-flex;padding:3px 12px}
-.who .np,.who .nq{font-size:.6em;font-weight:800;padding:1px 6px;border-radius:6px;background:rgba(255,255,255,.2);color:#fff8dc;white-space:nowrap}
+.who .np,.who .nq{font-size:.78em;font-weight:800;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,.2);color:#fff8dc;white-space:nowrap}
 .who.pl-silver .np,.who.pl-silver .nq,.who.pl-gold .np,.who.pl-gold .nq{background:rgba(0,0,0,.12);color:inherit}
+.who .nkl{flex-basis:100%;display:flex;justify-content:center;gap:6px;flex-wrap:wrap}
+.who .nkl[hidden]{display:none}
 .nick-edit{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 0}
 .nick-edit input{width:9em}
 .nick-prev{width:100%;font-size:13px}
@@ -2183,7 +2185,7 @@ function loadSaved(){
 const STAGE_BG_DIR='images/';                                 // 背景画像を入れるフォルダ(index.html からの相対パス)
 const STAGE_BG_FILE=month=>`${month}月背景.png`;               // 開催月 → ファイル名
 const STAGE_BG_URL='';   // 開催月の画像が無いときの共通背景(例: 'images/共通背景.png')。空ならデフォルトのグラデーション背景
-const SIDE_TPL=`<div class="who"><span class="rk">-</span><span class="np" hidden></span><span class="nm">-</span><span class="nq" hidden></span><span class="mv"></span></div>
+const SIDE_TPL=`<div class="who"><span class="nkl" hidden><span class="np"></span><span class="nq"></span></span><span class="rk">-</span><span class="nm">-</span><span class="mv"></span></div>
 <div class="cond"></div>
 <div class="hpt"></div>
 <div class="bar"><i></i></div>
@@ -2295,8 +2297,9 @@ const stage={
       rk.textContent=m.practice?'(練習戦)':`(${rankLabel(p)})`;
       rk.style.setProperty('--dc',TOP_DIVS.includes(p.div)?'#ffc83d':(DIV_COLOR[p.div]||'#aaa'));
       el.querySelector('.nm').textContent=p.name;
-      const nk=p.nick||{},np=el.querySelector('.np'),nq=el.querySelector('.nq');   // 2つ名(前・後)
-      np.textContent=nk.pre||'';np.hidden=!nk.pre;nq.textContent=nk.post||'';nq.hidden=!nk.post;
+      const nk=p.nick||{};   // 2つ名は名前の上の段(前半・後半を並べる)
+      el.querySelector('.np').textContent=nk.pre||'';el.querySelector('.nq').textContent=nk.post||'';
+      el.querySelector('.nkl').hidden=!nk.pre&&!nk.post;
       const mv=el.querySelector('.who .mv');   // 矢印: 得意場所=上向き / 苦手場所=下向き
       mv.outerHTML=s.pl==='fav'?'<span class="mv" title="得意場所">⤴</span>':s.pl==='bad'?'<span class="mv dn" title="苦手場所">⤵</span>':'<span class="mv"></span>';
       const tags=[];
@@ -2971,7 +2974,7 @@ function nickHTML(p,money){
   return `<div class="nick-edit">
     <label>前 <input id="nickPre" maxlength="12" value="${esc(n.pre)}" placeholder="例: 鋼鉄の"></label>
     <label>後 <input id="nickPost" maxlength="12" value="${esc(n.post)}" placeholder="例: 山脈"></label>
-    <div class="nick-prev">表示例: <span class="who"><span class="np">${esc(n.pre)}</span><span class="nm">${esc(p.name)}</span><span class="nq">${esc(n.post)}</span></span></div>
+    <div class="nick-prev">表示例: <span class="who"><span class="nkl"><span class="np">${esc(n.pre)}</span><span class="nq">${esc(n.post)}</span></span><span class="rk">${esc(rankLabel(p))}</span><span class="nm">${esc(p.name)}</span></span></div>
     <button data-nsave="1">保存</button></div>`;
 }
 function shopBodyHTML(p){
