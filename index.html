@@ -1538,25 +1538,29 @@ function mkSide(p,place,key,noSuper){
   const sup=!noSuper&&isSuper(p);
   if(sup)c+=SUPER_BOOST;
   const mhp=boostedStat(p,'hp');
-  return {key,p,base,c,sup,pl,hp:mhp,max:mhp,maxHp:mhp,prevBonus:0,meter:0,hasMeter:false,cmds:[],last:0,
+  return {key,p,base,c,sup,pl,hp:mhp,max:mhp,maxHp:mhp,baseMax:mhp,bonusTurn:0,prevBonus:0,meter:0,hasMeter:false,cmds:[],last:0,
     v:null,critO:null,missO:null,defO:null,critMult:DEF_CRIT_MULT};
 }
 function resetVars(s){
   const p=s.p;
   s.v={pw:boostedStat(p,'pw'),gd:boostedStat(p,'gd'),iq:boostedStat(p,'iq'),com:p.com,gaku:p.gaku};
-  s.maxHp=boostedStat(p,'hp');s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
+  s.baseMax=boostedStat(p,'hp');s.bonusTurn=0;   // 体力の増減は今ターンぶんを毎ターン決め直す
+  s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
 }
 /* 体力(最大体力)の増減を現在HPへ反映: 上限を超えた分は切り捨て、増えた分は加算。
    効果が切れても「減らした分」は戻らない */
+/* 体力(最大体力)の反映: 今ターンの体力(基礎値+増減)が上限になる。
+   上限が増えた分は現在HPにも加え、減った分は上限で切り捨てる。
+   毎ターン同じ増減を加算し直すことはしない(受けたダメージが回復してしまうため) */
 function syncHp(s){
+  const newMax=Math.max(1,s.baseMax+s.bonusTurn);
+  if(newMax>s.maxHp)s.hp+=newMax-s.maxHp;
+  s.maxHp=newMax;s.max=newMax;
   if(s.hp>s.maxHp)s.hp=s.maxHp;
-  const bonus=Math.max(0,s.maxHp-s.p.hp);
-  if(bonus>s.prevBonus)s.hp+=bonus-s.prevBonus;
-  s.prevBonus=bonus;
 }
-function getStat(s,k){return k===0?s.maxHp:[0,s.v.pw,s.v.gd,s.v.com,s.v.gaku,s.v.iq][k];}
+function getStat(s,k){return k===0?s.baseMax+s.bonusTurn:[0,s.v.pw,s.v.gd,s.v.com,s.v.gaku,s.v.iq][k];}
 function setStat(s,k,v){
-  if(k===0)s.maxHp=v;else s.v[['','pw','gd','com','gaku','iq'][k]]=v;
+  if(k===0)s.bonusTurn=v-s.baseMax;else s.v[['','pw','gd','com','gaku','iq'][k]]=v;
 }
 function curDefense(s){
   let d=s.defO!=null?s.defO:guardRateV(s.v.gd,s.c);
@@ -1578,7 +1582,7 @@ function refValue(a,s,o){
 /* ---------- 戦闘ログ ---------- */
 function emit(ctx,e){
   const A=ctx.A,B=ctx.B;
-  ctx.ev.push(Object.assign({t:ctx.t,hpA:A.hp,hpB:B.hp,mA:A.hasMeter?A.meter:null,mB:B.hasMeter?B.meter:null},e));
+  ctx.ev.push(Object.assign({t:ctx.t,hpA:A.hp,hpB:B.hp,maxA:A.maxHp,maxB:B.maxHp,mA:A.hasMeter?A.meter:null,mB:B.hasMeter?B.meter:null},e));
 }
 const fm=n=>Math.round(n).toLocaleString('ja-JP');
 function ko(s){if(Math.ceil(s.hp)<1)s.hp=0;}
@@ -1784,7 +1788,6 @@ function simulate(a,b,place,noSuper){
   while(A.hp>0&&B.hp>0&&turn<TURN_LIMIT){
     turn++;ctx.t=turn;
     resetVars(A);resetVars(B);
-    syncHp(A);syncHp(B);
     if(A.hasMeter)A.meter=Math.min(METER_MAX,A.meter+meterGain(A,B,ctx));
     if(B.hasMeter)B.meter=Math.min(METER_MAX,B.meter+meterGain(B,A,ctx));
     passivePhase(ctx,A,B);passivePhase(ctx,B,A);
@@ -2517,7 +2520,7 @@ async function showBattle(m,res,animate){
     const tgtEl=(e.tgt||(e.s==='A'?'B':'A'))==='A'?stage.el.L:stage.el.R;
     stage.el.turn.textContent=e.kind==='ko'?'ワンパン':`${e.t}ターン`;
     stage.log(e.text,evClass(e));
-    stage.hp(stage.el.L,e.hpA,ini.A);stage.hp(stage.el.R,e.hpB,ini.B);
+    stage.hp(stage.el.L,e.hpA,e.maxA||ini.A);stage.hp(stage.el.R,e.hpB,e.maxB||ini.B);
     stage.meter(stage.el.L,e.mA);stage.meter(stage.el.R,e.mB);
     let wait=DELAY[UI.speed];
     if(e.kind==='ko'){stage.robotPunch(side);wait=2600;snd.play('crit');}
