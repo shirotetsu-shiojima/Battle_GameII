@@ -216,6 +216,20 @@ input[type=search],input[type=text]{width:100%}
 .shop-item button[data-eprev]{align-self:flex-start}
 .robot-pick{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .robot-ill{width:64px;height:64px;flex:none}
+.rp-robot{position:absolute;top:14%;width:200px;height:200px;--px:18px}
+.rp-robot .robot-ill{width:200px;height:200px}
+.rp-robot .robot-fist{animation:rpPunch .5s .6s ease-in both}
+.rp-robot.from-l{left:6%;animation:rpInL .6s cubic-bezier(.2,.8,.3,1) both}
+.rp-robot.from-r{left:62%;animation:rpInR .6s cubic-bezier(.2,.8,.3,1) both;--px:-18px}
+@keyframes rpInL{0%{transform:translateX(-160%)}100%{transform:translateX(0)}}
+@keyframes rpInR{0%{transform:translateX(160%)}100%{transform:translateX(0)}}
+@keyframes rpPunch{0%{transform:translateX(0)}100%{transform:translateX(var(--px))}}
+.rp-burst{position:absolute;left:50%;top:40%;width:170px;height:170px;margin:-85px 0 0 -85px;border-radius:50%;background:radial-gradient(circle,#fff8c4 0,#ffd166 22%,#e4572e 45%,transparent 70%);opacity:0;animation:rpBurst .6s 1.05s ease-out forwards}
+@keyframes rpBurst{0%{opacity:0;transform:scale(.2)}40%{opacity:1;transform:scale(1.2)}100%{opacity:0;transform:scale(1.8)}}
+.rp-banner{position:absolute;left:0;right:0;top:60%;text-align:center;font-size:clamp(38px,9vw,92px);font-weight:900;color:#ff5a3c;text-shadow:0 3px 0 #fff,0 0 22px #000a;opacity:0;animation:rpBanner 2s .9s ease forwards}
+@keyframes rpBanner{0%{opacity:0;transform:scale(2)}18%{opacity:1;transform:scale(1)}85%{opacity:1}100%{opacity:0}}
+.duel.rp-shake{animation:rpShake .7s linear}
+@keyframes rpShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(7px,-3px)}60%{transform:translate(-5px,2px)}80%{transform:translate(4px,-2px)}}
 .robot-ill .robot-fist{animation:robotPunch 1.4s ease-in-out infinite}
 @keyframes robotPunch{0%,100%{transform:translateX(0)}50%{transform:translateX(5px)}}
 .robot-pick select{max-width:240px}
@@ -1741,11 +1755,13 @@ function simulateMatch(a,b,place){
   const owner=[a,b].find(p=>p.robot&&p.robot.target===(p===a?b:a).id);
   if(!owner)return res;
   const loser=owner===a?b:a,os=owner===a?'A':'B',ls=os==='A'?'B':'A';
-  const prev=res[ls].hp;
+  res[os].hp=res[os].max;   // 持ち主は無傷のまま
   res[ls].hp=0;
   res.win=os;res.winner=owner;res.loser=loser;
-  res.ev.push({t:res.turns,hpA:res.A.hp,hpB:res.B.hp,mA:null,mB:null,kind:'hp',delta:-Math.max(1,Math.round(prev)),
-    s:os,tgt:ls,text:`ワンパンロボット(${owner.name})の一撃!${loser.name}は一発でKO`});
+  res.ko=true;res.turns=0;
+  // 戦闘は1ターン目が始まる前に終わる。途中の攻防は再生しない
+  res.ev=[{t:0,kind:'ko',s:os,tgt:ls,hpA:res.A.hp,hpB:res.B.hp,mA:null,mB:null,
+    text:`ワンパンロボット(${owner.name})の一撃!${loser.name}は一発でKO`}];
   owner.robot=null;owner.robotUsed=true;
   L(`ワンパンロボット: ${owner.name} が ${loser.name} を一撃`);
   return res;
@@ -2403,12 +2419,24 @@ const stage={
     FX_VFX[fx](layer);
     setTimeout(()=>layer.remove(),3800);
   },
+  /* ワンパンロボットの演出。side は持ち主の側(左右) */
+  robotPunch(side){
+    const host=$('duel');if(!host)return;
+    host.querySelectorAll('.fxlayer').forEach(x=>x.remove());
+    const fromL=side===this.el.L;
+    const layer=document.createElement('div');layer.className='fxlayer rp-layer';
+    layer.innerHTML=`<div class="rp-robot ${fromL?'from-l':'from-r'}">${ROBOT_SVG}</div><div class="rp-burst"></div><div class="rp-banner">ワンパン!</div>`;
+    host.appendChild(layer);
+    setTimeout(()=>host.classList.add('rp-shake'),650);
+    setTimeout(()=>host.classList.remove('rp-shake'),1400);
+    setTimeout(()=>layer.remove(),3000);
+  },
   finish(m,res){
     this.hp(this.el.L,res.A.hp,res.A.max);this.hp(this.el.R,res.B.hp,res.B.max);
     const W=res.win==='A'?this.el.L:this.el.R,Lo=res.win==='A'?this.el.R:this.el.L;
     W.classList.add('win');Lo.classList.add('lose');
     this.chips(this.el.L,m.a,m,true);this.chips(this.el.R,m.b,m,true);
-    this.el.turn.textContent=`${res.turns}ターン`;
+    this.el.turn.textContent=res.ko?'ワンパン決着':`${res.turns}ターン`;
     this.el.res.textContent=`勝者 ${res.winner.name}`;
     this.aiai(m,true,res);
     this.gameset(m,res);
@@ -2483,12 +2511,13 @@ async function showBattle(m,res,animate){
     if(UI.skip||UI.stop)break;
     const side=e.s==='A'?stage.el.L:stage.el.R;
     const tgtEl=(e.tgt||(e.s==='A'?'B':'A'))==='A'?stage.el.L:stage.el.R;
-    stage.el.turn.textContent=`${e.t}ターン`;
+    stage.el.turn.textContent=e.kind==='ko'?'ワンパン':`${e.t}ターン`;
     stage.log(e.text,evClass(e));
     stage.hp(stage.el.L,e.hpA,ini.A);stage.hp(stage.el.R,e.hpB,ini.B);
     stage.meter(stage.el.L,e.mA);stage.meter(stage.el.R,e.mB);
     let wait=DELAY[UI.speed];
-    if(e.kind==='trig'){stage.flash(side,'cast');snd.play('special');}
+    if(e.kind==='ko'){stage.robotPunch(side);wait=2600;snd.play('crit');}
+    else if(e.kind==='trig'){stage.flash(side,'cast');snd.play('special');}
     else if(e.kind==='fx'){stage.pop(side,'✦','pf');wait*=.6;}
     else if(e.kind==='hp'){
       if(e.delta>0)stage.pop(tgtEl,'+'+fmt(e.delta),'pg');else{stage.pop(tgtEl,fmt(e.delta),'ph');stage.flash(tgtEl,'hit');snd.play('hit');}
