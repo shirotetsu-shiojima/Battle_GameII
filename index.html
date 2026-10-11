@@ -993,6 +993,10 @@ function payBounty(winner,m){
   L(`懸賞金: ${winner.name} に ${fmt(m.bounty)}pt(${m.a.name} vs ${m.b.name}、大会終了時に支払い)`);
 }
 /* 場所収入: 大会が終わったとき、全員にデータの「場所収入」の額を支払う(大会ごとに1回) */
+/* 場所収入は「今の番付(区分)」で決める。スプレッドシートの場所収入列は以前の番付の値なので使わない
+   (前作メモの基本給表。上等兵〜三等兵の間の一等兵・二等兵は、表の幅から補間した値) */
+const BASHO_INCOME={大将:10000,副将:7500,先鋒:5000,旗頭:4000,戦士:2500,闘士:1500,上等兵:500,一等兵:300,二等兵:200,三等兵:100,前相撲:0};
+function bashoIncome(p){return BASHO_INCOME[p.div]||0;}
 function payBashoIncome(){
   const B=S.basho;
   if(B.fastUsed){
@@ -1002,7 +1006,7 @@ function payBashoIncome(){
     return;
   }
   let total=0;
-  S.people.forEach(p=>{const v=+p.inc||0;if(v>0){p.money=(p.money||0)+v;total+=v;}});
+  S.people.forEach(p=>{const v=bashoIncome(p);if(v>0){p.money=(p.money||0)+v;total+=v;}});
   L(`${tName(S.basho.no)} 場所収入: 全員に計 ${fmt(total)}pt を支払い`);
   toast(`${tName(S.basho.no)} 場所収入を支払いました(計 ${fmt(total)}pt)`);
   let bsum=0;(B.bounties||[]).forEach(([id,amt])=>{const w=S.byId.get(id);if(w){w.money=(w.money||0)+amt;bsum+=amt;}});
@@ -3366,7 +3370,7 @@ function openProfile(id){
    <div><small>ガード</small><b>${fmt(p.gd)}</b>${bar(p.gd,27000)}</div>
    <div><small>IQ</small><b>${p.iq}</b>${bar(p.iq,190)}</div>
    <div><small>能力評価値</small><b>${fmt(p.ab)}</b>${bar(p.ab,40000)}</div>
-   <div><small>場所収入(大会ごと)</small><b>${fmt(p.inc)}</b></div><div><small>所持金</small><b>${fmt(p.money||0)} pt</b></div>
+   <div><small>場所収入(今の番付)</small><b>${fmt(bashoIncome(p))}</b></div><div><small>所持金</small><b>${fmt(p.money||0)} pt</b></div>
   </div>
   <p>2つ名: <b>${esc(nickText(p))}</b></p>
   <p>名札: <b>${esc(plateName(p))}</b> ・ 所持金: <b>${fmt(p.money||0)} pt</b></p>
