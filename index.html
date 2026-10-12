@@ -944,13 +944,15 @@ function planDay(day){
   });
   // 調整枠: 当日の出場予定が奇数なら、損傷度(今大会の総合)が最も高い人を1人休ませる(不戦敗にはしない)
   const total=pools.reduce((s,x)=>s+x.list.length,0);
+  if(T)T.kyu=[];
   if(total%2){
     let best=null,bl=null;
     for(const x of pools)for(const p of x.list){if(!best||trD(p.id)>trD(best.id)){best=p;bl=x.list;}}
     if(best){
       bl.splice(bl.indexOf(best),1);B.byes.push(best);
-      notes.push(`${best.name}は調整枠(奇数のため今日は休み・損傷度${trD(best.id)})`);
-      if(T)T.rests[best.id]=(T.rests[best.id]||0)+1;
+      notes.push(`${best.name}は調整枠(奇数のため今日は不戦敗・損傷度${trD(best.id)})`);
+      best.l++;                                    // 調整枠で休んだ日は不戦敗(負け)。休みの数には入れない
+      if(T){T.forf[best.id]=(T.forf[best.id]||0)+1;T.kyu=[best.id];T.part[best.id]={fd:day,kyu:true};}   // 以後は復帰せず大会の最後まで休み
     }
   }
   // 奇数なら下の階級から1人借りて偶数にする。最後が奇数なら1人は休み
@@ -1091,11 +1093,13 @@ function trReportHtml(){
   const T=S.basho.tr;if(!T)return '';
   const day=S.basho.day,nm=id=>esc(pname(+id));
   const fx=Object.keys(T.part).filter(id=>T.part[id].fd===day);
-  const sit=Object.keys(T.part).filter(id=>T.part[id].fd<day);
+  const sit=Object.keys(T.part).filter(id=>T.part[id].fd<day);   // 途中休場・調整枠の後に休んでいる人
   const full=Object.keys(T.full);
+  const ky=T.kyu||[];
   let h='';
+  if(ky.length)h+=`<p class="dim">調整枠による不戦敗(本日): ${ky.map(nm).join('、')}</p>`;
   if(fx.length)h+=`<p class="dim">途中休場による不戦敗(本日): ${fx.map(nm).join('、')}</p>`;
-  if(sit.length)h+=`<p class="dim">途中休場中: ${sit.map(nm).join('、')}</p>`;
+  if(sit.length)h+=`<p class="dim">休場中(途中休場・調整枠): ${sit.map(nm).join('、')}</p>`;
   if(full.length)h+=`<p class="dim">全休(今大会): ${full.map(nm).join('、')}</p>`;
   return h;
 }
@@ -1244,7 +1248,7 @@ function bashoDaysDone(){return S.basho.day>=maxDays()&&dayDone();}
 const shuffleIds=a=>a.slice().sort(()=>Math.random()-.5);
 function setTitle(g,ch,first,playoff){
   const B=S.basho;
-  B.titles[g.key]={id:ch.id,w:ch.w,l:ch.l,playoff,n:first};
+  B.titles[g.key]={id:ch.id,w:ch.w,l:ch.l,k:trRestN(ch),playoff,n:first};
   ch.titles.push({b:B.no,key:g.key});
   L(`${tName(B.no)} ${g.label}:${ch.name}(${ch.w}勝${ch.l}敗)${playoff?' 決定戦':''}`);
 }
@@ -3240,12 +3244,12 @@ function renderTitles(){
   const el=$('tab_titles');const B=S.basho;
   const cards=GROUPS.map(g=>{
     const t=B.titles&&B.titles[g.key];
-    return `<div class="card"><small>${g.label}</small><b>${t?idLink(t.id):'-'}</b><small class="dim">${t?`${t.w}勝${t.l}敗${t.playoff?`(${t.n}名で決定戦)`:''}`:''}</small></div>`;
+    return `<div class="card"><small>${g.label}</small><b>${t?idLink(t.id):'-'}</b><small class="dim">${t?`${t.w}-${t.l}${t.k>0?'-'+t.k:''}${t.playoff?`(${t.n}名で決定戦)`:''}`:''}</small></div>`;
   }).join('');
   const ranking=S.people.map(p=>({p,n:p.titles.filter(t=>t.key==='総合').length,all:p.titles.length})).filter(x=>x.all).sort((a,b)=>b.n-a.n||b.all-a.all).slice(0,12);
   const hist=S.history.slice(-30).reverse().map(h=>{
     const t=h.titles&&h.titles['総合'];
-    return `<tr><td>${tName(h.no)}</td><td>${esc(h.place)}</td><td>${t?idLink(t.id):'-'}</td><td>${t?`${t.w}-${t.l}`:''}</td><td>${h.titles&&h.titles['闘士']?idLink(h.titles['闘士'].id):''}</td></tr>`;
+    return `<tr><td>${tName(h.no)}</td><td>${esc(h.place)}</td><td>${t?idLink(t.id):'-'}</td><td>${t?`${t.w}-${t.l}${t.k>0?'-'+t.k:''}`:''}</td><td>${h.titles&&h.titles['闘士']?idLink(h.titles['闘士'].id):''}</td></tr>`;
   }).join('');
   const ch=(B.changes||[]).filter(c=>/大将|副将|先鋒|旗頭/.test(c)).slice(0,20);
   el.innerHTML=`<h3>${B.titles?`${tName(B.no)}の結果`:'今大会の優勝(終了後に確定)'}</h3><div class="cards">${cards}</div>
