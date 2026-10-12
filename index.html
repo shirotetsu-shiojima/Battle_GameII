@@ -661,7 +661,7 @@ function rankSortKey(p){return p.div==='前相撲'?99999:p.slot;}
 function startBasho(no){
   S.people.forEach(p=>{p.w=0;p.l=0;p.met=[];p.res=[];});
   S.basho={no,place:PLACES[(no-1)%PLACES.length],day:0,matches:[],mi:0,phase:'ready',
-    titles:null,playoffs:[],byes:[],supers:rollSupers()};
+    titles:null,playoffs:[],byes:[],supers:rollSupers(),tr:null};
   if(S.basho.supers.length)L(`${tName(no)} 超絶好調: ${S.basho.supers.map(id=>pname(id)).join('、')}`);
 }
 /* 大会前に全員が抽選。当たった人はその大会中ずっと超絶好調(調子値+0.5) */
@@ -935,12 +935,24 @@ function mmTier(a,b,day,fixedTier){
 
 function planDay(day){
   const B=S.basho;B.byes=[];
+  const T=B.tr;const notes=[];
   const pools=[];
   GROUPS.forEach((g,gi)=>{
     if(day>g.days)return;
-    const list=sortRank(S.people.filter(p=>g.divs.includes(p.div)));
+    const list=sortRank(S.people.filter(p=>g.divs.includes(p.div)&&!trSkip(p,day)));
     pools.push({g,gi,list});
   });
+  // 調整枠: 当日の出場予定が奇数なら、損傷度(今大会の総合)が最も高い人を1人休ませる(不戦敗にはしない)
+  const total=pools.reduce((s,x)=>s+x.list.length,0);
+  if(total%2){
+    let best=null,bl=null;
+    for(const x of pools)for(const p of x.list){if(!best||trD(p.id)>trD(best.id)){best=p;bl=x.list;}}
+    if(best){
+      bl.splice(bl.indexOf(best),1);B.byes.push(best);
+      notes.push(`${best.name}は調整枠(奇数のため今日は休み・損傷度${trD(best.id)})`);
+      if(T)T.rests[best.id]=(T.rests[best.id]||0)+1;
+    }
+  }
   // 奇数なら下の階級から1人借りて偶数にする。最後が奇数なら1人は休み
   for(let i=0;i<pools.length;i++){
     if(pools[i].list.length%2){
@@ -948,7 +960,7 @@ function planDay(day){
       else{B.byes.push(pools[i].list.pop());}
     }
   }
-  const out=[],notes=[];
+  const out=[];
   for(const {g,gi,list} of pools){
     const ctx=mmContext(list,day,notes,g.days);
     const fixed=mmFixed(list,day,ctx);
@@ -990,9 +1002,108 @@ function planDay(day){
   B.mmNotes=notes;
   return out;
 }
+/* ---------- 休場(全休・途中休場・調整枠) ----------
+   B.tr: F=故障率 / dmg=損傷度(大会前の持ち越し+今大会の加算) / full=全休(大会を通して出ない)
+         part={fd}=途中休場(fd日は不戦敗、fd+1日目以降は休) / played=前日に取組があった人 / rests=休の日数 / forf=不戦敗の回数
+   途中休場の判定は仮の式: P = 1 - exp(-(R × D / K_MID)), R = (F/100)^ALPHA, D = 損傷度 */
+const TR_K_MID=6500, TR_ALPHA=1.9;   // 仮。故障率100で約85%が皆勤になるように調整
+const TR_FORCE_DAY=13, TR_FORCE_P=0.6; // 13日目以降の朝に、まだ判定していない人は60%で「強行出場」を選ぶ(選んだら以後は判定なし)。外れた人は毎朝判定
+function trEmpty(){return {F:{},dmg:{},full:{},part:{},played:[],rests:{},forf:{},force:{}};}
+function trF(id){const T=S.basho.tr;const v=T&&T.F[id];return v!=null?v:100;}
+function trD(id){const T=S.basho.tr;return (T&&T.dmg[id])||0;}
+function trGain(id){return Math.max(1,Math.round(10*trF(id)/100));}   // 1試合の損傷度(平均値。仮)
+function trAdd(id){
+  const T=S.basho.tr;if(!T)return;
+  T.dmg[id]=(T.dmg[id]||0)+trGain(id);
+  if(!T.played.includes(id))T.played.push(id);
+}
+/* その日の編成から外す人か(全休、または途中休場で不戦敗の日以降) */
+function trSkip(p,day){
+  const T=S.basho.tr;if(!T)return false;
+  if(T.full[p.id])return true;
+  const pr=T.part[p.id];return !!pr&&day>=pr.fd;
+}
+/* 休んだ日数。全休の人は所属する階級の日数(総合・闘士は15、上等兵以下は7)。途中休場・調整枠は実際に休んだ日数 */
+function trGroupDays(p){const g=GROUPS.find(g=>g.divs.includes(p.div));return g?g.days:maxDays();}
+function trRestN(p){
+  const T=S.basho.tr;if(!T)return 0;
+  if(T.full[p.id])return trGroupDays(p);
+  return T.rests[p.id]||0;
+}
+/* 順位表の「休」列。休みが0なら空欄 */
+function trRestCell(p){const n=trRestN(p);return n>0?String(n):'';}
+/* 翌朝の判定(前日に取組があった人)→ 不戦敗・休の記録 */
+function trStartDay(B){
+  const T=B.tr||(B.tr=trEmpty()),day=B.day;
+  if(day>1){
+    if(!T.force)T.force={};
+    for(const id of T.played){
+      if(T.full[id]||T.part[id])continue;
+      const p=S.byId.get(id);if(!p)continue;
+      if(day>=TR_FORCE_DAY){                       // 13日目以降は、最初の判定で強行出場を選ぶかを決める(以後は固定)
+        if(T.force[id]===undefined)T.force[id]=Math.random()<TR_FORCE_P;
+        if(T.force[id])continue;
+      }
+      const P=1-Math.exp(-(Math.pow(trF(id)/100,TR_ALPHA)*trD(id))/TR_K_MID);
+      if(Math.random()<P){
+        T.part[id]={fd:day};
+        L(`${p.name} 途中休場(${day}日目は不戦敗、${day+1}日目以降は休場)`);
+        if(UI.watch.has(id))toast(`観戦リストの${p.name}が途中休場しました。大会の最後まで観戦はスキップされます`);
+      }
+    }
+  }
+  T.played=[];
+  for(const p of S.people){
+    const pr=T.part[p.id];
+    if(!pr||T.full[p.id])continue;
+    if(pr.fd===day){p.l++;T.forf[p.id]=(T.forf[p.id]||0)+1;}      // 不戦敗は「敗」として数える
+    else if(day>pr.fd)T.rests[p.id]=(T.rests[p.id]||0)+1;          // 休(最終日の不戦敗は休に数えない)
+  }
+}
+/* 休場の情報を番付サーバーと DB から集める(大会の初日の前に一度だけ) */
+async function sbRest(q){
+  const C=SUPABASE_CONFIG,base=C.url.replace(/\/+$/,'').replace(/\/rest\/v1$/,'');
+  const headers={apikey:C.anonKey};if(!/^sb_/.test(C.anonKey))headers.Authorization='Bearer '+C.anonKey;
+  try{const r=await fetch(`${base}/rest/v1/${q}`,{headers});if(!r.ok)return {ok:false};return {ok:true,data:await r.json()};}
+  catch(e){return {ok:false};}
+}
+async function trPrepare(){
+  const B=S.basho,T=trEmpty();
+  const [ch,cd,got]=await Promise.all([
+    sbRest('characters?select=id,failure_rate&limit=5000'),
+    sbRest('character_condition?select=character_id,damage&limit=5000'),
+    sbApi('GET',`/rankings?tournament_no=${B.no}`)]);
+  if(!ch.ok||!cd.ok||!got.ok)throw new Error('番付サーバーから休場の情報を取得できませんでした。通信を確かめてから、もう一度押してください');
+  ch.data.forEach(r=>{if(r.failure_rate!=null)T.F[r.id]=+r.failure_rate;});
+  cd.data.forEach(r=>{T.dmg[r.character_id]=+r.damage||0;});
+  (got.rankings||[]).forEach(r=>{if(r.rest_reason!=null)T.full[r.character_id]=r.rest_reason;});   // 大けが・場所前の全休
+  B.tr=T;
+  const wf=[...UI.watch].filter(id=>T.full[id]);
+  if(wf.length){
+    $('dlgBody').innerHTML=`<h2>観戦リストの選手が全休です</h2><p>${wf.map(id=>esc(pname(id))).join('、')} は今大会 初日から全休のため、取組はありません。観戦リストから外してください。</p><div class="row"><button id="mClose">閉じる</button></div>`;
+    $('mClose').onclick=()=>$('dlg').close();
+    if(!$('dlg').open)$('dlg').showModal();
+  }
+  L(`${tName(B.no)} 休場情報: 全休${Object.keys(T.full).length}人`);
+}
+/* 休場の内訳(取組タブ用)。不戦敗が出た日は、誰が途中休場したかを示す */
+function trReportHtml(){
+  const T=S.basho.tr;if(!T)return '';
+  const day=S.basho.day,nm=id=>esc(pname(+id));
+  const fx=Object.keys(T.part).filter(id=>T.part[id].fd===day);
+  const sit=Object.keys(T.part).filter(id=>T.part[id].fd<day);
+  const full=Object.keys(T.full);
+  let h='';
+  if(fx.length)h+=`<p class="dim">途中休場による不戦敗(本日): ${fx.map(nm).join('、')}</p>`;
+  if(sit.length)h+=`<p class="dim">途中休場中: ${sit.map(nm).join('、')}</p>`;
+  if(full.length)h+=`<p class="dim">全休(今大会): ${full.map(nm).join('、')}</p>`;
+  return h;
+}
 function beginDay(){
   const B=S.basho;
   B.day++;B.mi=0;B.phase='days';
+  if(!B.tr)B.tr=trEmpty();
+  trStartDay(B);
   B.matches=planDay(B.day);
   L(`${tName(B.no)} ${B.day}日目:${B.matches.length}番の取組を編成`+((B.mmNotes&&B.mmNotes.length)?`(${B.mmNotes.join(' / ')})`:''));
 }
@@ -1112,6 +1223,7 @@ function applyResult(m,res){
   m.hpA=res.A.hp;m.hpB=res.B.hp;
   const win=res.winner,lose=res.loser;
   win.w++;lose.l++;
+  trAdd(win.id);trAdd(lose.id);
   applyManeki(m,win);
   payBounty(win,m);
   win.met.push(lose.id);lose.met.push(win.id);
@@ -1135,6 +1247,14 @@ function setTitle(g,ch,first,playoff){
   B.titles[g.key]={id:ch.id,w:ch.w,l:ch.l,playoff,n:first};
   ch.titles.push({b:B.no,key:g.key});
   L(`${tName(B.no)} ${g.label}:${ch.name}(${ch.w}勝${ch.l}敗)${playoff?' 決定戦':''}`);
+}
+/* 最終日に途中休場の不戦敗となった人は、決定戦も不戦敗(両方そうなら通常どおり戦う) */
+function trFinalDayOut(p){const T=S.basho.tr;const pr=T&&T.part[p.id];return !!pr&&pr.fd===maxDays();}
+function playoffResult(m){
+  const res=simulateMatch(m.a,m.b,S.basho.place);
+  const fa=trFinalDayOut(m.a),fb=trFinalDayOut(m.b);
+  if(fa!==fb){res.winner=fa?m.b:m.a;res.loser=fa?m.a:m.b;res.forfeit=true;}
+  return res;
 }
 function playoffInit(){
   const B=S.basho;B.titles={};B.playoffs=[];B.po={groups:[],g:0};
@@ -1171,7 +1291,7 @@ function playoffApply(G,m,res){
   G.nxt.push(res.winner.id);G.pos+=2;
 }
 function playoffDrain(){   // 残りの決定戦を演出なしで一気に消化
-  for(let pp;(pp=playoffPending());){const res=simulateMatch(pp.m.a,pp.m.b,S.basho.place);if(UI.mode==='fast')S.basho.fastUsed=true;playoffApply(pp.G,pp.m,res);}
+  for(let pp;(pp=playoffPending());){const res=playoffResult(pp.m);if(UI.mode==='fast')S.basho.fastUsed=true;playoffApply(pp.G,pp.m,res);}
 }
 
 /* ---------- 番付編成 ---------- */
@@ -1295,13 +1415,14 @@ async function sbRun(){
     const s=sb.s[p.id];if(s&&s.st==='ok')continue;
     const sub=sb.s[p.id]||(sb.s[p.id]={sid:sbUuid(),st:'',msg:''});   // submission_idは初回に作って保存し、再送でも同じものを使う
     const results=idx.get(p.id)||[];
-    if(results.length!==p.w+p.l){sub.st='rej';sub.msg=`取組数が一致しません(記録${results.length}件 / 勝敗${p.w+p.l}戦)`;continue;}
-    items.push({p,s:sub,results});
+    const forf=(B.tr&&B.tr.forf[p.id])||0;     // 途中休場による不戦敗(勝敗の「敗」に含まれている)
+    if(results.length+forf!==p.w+p.l){sub.st='rej';sub.msg=`取組数が一致しません(記録${results.length}件+不戦敗${forf} / 勝敗${p.w+p.l}戦)`;continue;}
+    items.push({p,s:sub,results,forf});
   }
   sbPaint();
   for(let i=0;i<items.length&&!UI.stop;i+=SB_BATCH){
     const part=items.slice(i,i+SB_BATCH);
-    const r=await sbCallBatch(sb.tid,part.map(x=>({character_id:x.p.id,submission_id:x.s.sid,matches:x.results,bye:x.results.length===0})));   // 大会を通して1番も取組がなければ完全休場(bye)
+    const r=await sbCallBatch(sb.tid,part.map(x=>({character_id:x.p.id,submission_id:x.s.sid,matches:x.results,forfeits:x.forf,bye:x.results.length===0&&x.forf===0})));   // 大会を通して1番も取組がなければ完全休場(bye)
     if(!r.ok){   // 呼び出し自体の失敗(通信・サーバー・関数が無い等)は、受付拒否ではなく「未送信」として止める
       part.forEach(x=>{x.s.st='net';x.s.msg=r.msg;});
       sb.abort='送信を中断しました。「送信を再開」で続きから送れます: '+r.msg;
@@ -1373,7 +1494,7 @@ async function sbFinalize(){
   const got=await sbApi('GET',`/rankings?tournament_no=${fin.next_tournament_no}`);
   if(!got.ok){fail('次の番付の取得に失敗しました。もう一度お試しください');return;}
   // 今大会の記録を履歴に残してから、次の番付を入れる
-  for(const p of S.people){p.rec.push({b:B.no,div:rankLabel(p),w:p.w,l:p.l});if(p.rec.length>40)p.rec.shift();}
+  for(const p of S.people){p.rec.push({b:B.no,div:rankLabel(p),w:p.w,l:p.l,k:trRestN(p)});if(p.rec.length>40)p.rec.shift();}
   B.pendingNext={no:fin.next_tournament_no,rows:got.rankings};   // 次の番付は「次の大会へ」を押したときに反映する
   B.changes=(fin.changes||[]).map(c=>c.replace(/#(\d+)/g,(m,id)=>pname(+id)));
   B.changes.filter(c=>/大将|副将|先鋒/.test(c)).slice(0,12).forEach(c=>L('番付 '+c));
@@ -2381,7 +2502,7 @@ function serialize(){
     retired:S.retired,aiai:S.aiai,
     people:S.people.map(p=>({id:p.id,name:p.name,kanri:p.kanri||'',hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null,robot:p.robot||null,robotUsed:!!p.robotUsed,cards:p.cards||{},equip:p.equip||[]})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
-      byes:B.byes.map(p=>p.id),sb:B.sb||null,pendingNext:B.pendingNext||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
+      byes:B.byes.map(p=>p.id),tr:B.tr||null,sb:B.sb||null,pendingNext:B.pendingNext||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
 }
 function restore(d){
@@ -2400,7 +2521,7 @@ function restore(d){
   if(d.ui){UI.mode=d.ui.mode||UI.mode;UI.speed=d.ui.speed||UI.speed;UI.scope=d.ui.scope||UI.scope;if(d.ui.autoNext!=null)UI.autoNext=d.ui.autoNext;}
   const b=d.basho;
   S.basho={no:b.no,place:PLACES[(b.no-1)%PLACES.length],day:b.day,mi:b.mi,phase:b.phase,titles:b.titles,incomePaid:!!b.incomePaid,fastUsed:!!b.fastUsed,bounties:b.bounties||[],
-    playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),sb:b.sb||null,pendingNext:b.pendingNext||null,
+    playoffs:b.playoffs||[],changes:b.changes||[],supers:(b.supers||[]).filter(id=>S.byId.has(id)),po:restorePo(b.po),byes:(b.byes||[]).map(id=>S.byId.get(id)).filter(Boolean),tr:b.tr||null,sb:b.sb||null,pendingNext:b.pendingNext||null,
     matches:b.matches.filter(r=>S.byId.has(r[0])&&S.byId.has(r[1])).map(r=>({a:S.byId.get(r[0]),b:S.byId.get(r[1]),w:r[2],gi:r[3],swiss:!!r[4],turns:r[5],condA:r[6],condB:r[7],sp:r[8]||0,dbg:r[9]||null}))};
   if(S.basho.mi>S.basho.matches.length)S.basho.mi=S.basho.matches.length;
 }
@@ -2872,6 +2993,7 @@ async function playMatch(animate,quiet){
   if(B.phase==='playoff')return playPlayoff(animate,quiet);
   if(B.day===0||dayDone()){
     if(B.day>=maxDays()&&dayDone())return afterDays();
+    if(B.day===0&&!B.tr&&sbEnabled()){try{await trPrepare();}catch(e){toast(e.message);return 'error';}}
     beginDay();renderAll();
     if(!B.matches.length){            // その日に取組がない(リセット直後で上位階級が空など)
       if(B.day>=maxDays())return afterDays();
@@ -2902,11 +3024,16 @@ async function playPlayoff(animate,quiet){
   const B=S.basho,pp=playoffPending();
   if(!pp){finishBasho();return 'bashoend';}
   const {G,m}=pp;
-  const res=simulateMatch(m.a,m.b,B.place);
+  const res=playoffResult(m);
   if(UI.mode==='fast')B.fastUsed=true;
   setBounty(m,res);                      // GameSet 演出で懸賞金を出すため、先に決めておく
-  UI.last={m,res};
-  if(!quiet)await showBattle(m,res,animate&&UI.mode==='anim');
+  if(res.forfeit){
+    toast(`${res.loser.name}は最終日の途中休場による不戦敗のため、決定戦は不戦敗`);
+    L(`${tName(B.no)} 決定戦: ${res.loser.name}が不戦敗(${res.winner.name}の勝ち)`);
+  }else{
+    UI.last={m,res};
+    if(!quiet)await showBattle(m,res,animate&&UI.mode==='anim');
+  }
   playoffApply(G,m,res);                 // 演出が終わってから結果を確定(途中で止めても結果は確定する)
   if(!playoffPending()){finishBasho();return 'bashoend';}
   return 'ok';
@@ -2938,6 +3065,7 @@ async function runUntil(kind){
       const m=nextMatch();
       const anim=UI.mode==='anim'&&!!m&&animTarget(m);
       const r=await playMatch(anim,!anim);
+      if(r==='error')break;
       if(r==='dayend'){
         renderAll();saveSoon();
         if(kind==='day')break;
@@ -3032,6 +3160,7 @@ function renderMatches(){
     });
     html+='</div>';
     if(B.byes.length)html+=`<p class="dim">休み:${B.byes.map(p=>esc(p.name)).join('、')}</p>`;
+    html+=trReportHtml();
   }
   el.innerHTML=html;
   const f=$('mFilter');if(f)f.onchange=()=>{UI.mFilter=f.value;renderMatches();};
@@ -3061,7 +3190,7 @@ function renderBanzuke(){
   const cell=(p,east)=>{
     if(!p)return '<span class="none">―</span>';
     const champs=p.titles.filter(t=>t.key==='総合').length;
-    const mt=[arrow(p),S.basho.day?`${p.w}-${p.l}`:'',p.rec.length?`前${p.rec[p.rec.length-1].w}勝`:'',champs?'★'.repeat(Math.min(champs,6))+(champs>6?'+'+(champs-6):''):''].filter(Boolean).join(' ');
+    const rn=trRestN(p);const mt=[arrow(p),S.basho.day?`${p.w}-${p.l}${rn>0?'-'+rn:''}`:'',p.rec.length?`前${p.rec[p.rec.length-1].w}勝`:'',champs?'★'.repeat(Math.min(champs,6))+(champs>6?'+'+(champs-6):''):''].filter(Boolean).join(' ');
     const m=`<span class="mt">${mt}</span>`;
     return `<div class="cell">${east?m+rowName(p):rowName(p)+m}</div>`;
   };
@@ -3080,7 +3209,7 @@ function renderStandings(){
   const g=GROUPS.find(x=>x.key===UI.sFilter)||GROUPS[0];
   const list=S.people.filter(p=>g.divs.includes(p.div)).sort((a,b)=>b.w-a.w||a.l-b.l||ordKey(a)-ordKey(b));
   el.innerHTML=`<div class="row"><label>階級 <select id="sFilter">${GROUPS.map(x=>`<option value="${x.key}"${x.key===g.key?' selected':''}>${x.key}</option>`).join('')}</select></label></div>
-  <div class="tbl"><table><thead><tr><th>順位</th><th>番付</th><th>名前</th><th>勝</th><th>敗</th></tr></thead><tbody>${list.map((p,i)=>`<tr><td>${i+1}</td><td>${rankLabel(p)}</td><td>${rowName(p)}</td><td>${p.w}</td><td>${p.l}</td></tr>`).join('')}</tbody></table></div>`;
+  <div class="tbl"><table><thead><tr><th>順位</th><th>番付</th><th>名前</th><th>成績</th></tr></thead><tbody>${list.map((p,i)=>{const n=trRestN(p);return `<tr><td>${i+1}</td><td>${rankLabel(p)}</td><td>${rowName(p)}</td><td>${p.w}-${p.l}${n>0?'-'+n:''}</td></tr>`;}).join('')}</tbody></table></div>`;
   $('sFilter').onchange=e=>{UI.sFilter=e.target.value;renderStandings();};
 }
 /* ---------- 総合優勝争い ----------
@@ -3551,7 +3680,7 @@ function cmdHTML(p){
 function openProfile(id){
   const p=S.byId.get(id);if(!p)return;
   const bar=(v,max)=>`<span class="sb"><i style="width:${Math.min(100,v/max*100)}%"></i></span>`;
-  const rec=p.rec.slice(-12).reverse().map(r=>`<tr><td>${tName(r.b)}</td><td>${esc(r.div)}</td><td>${r.w}勝${r.l}敗</td></tr>`).join('');
+  const rec=p.rec.slice(-12).reverse().map(r=>`<tr><td>${tName(r.b)}</td><td>${esc(r.div)}</td><td>${r.w}勝${r.l}敗${r.k?`${r.k}休`:''}</td></tr>`).join('');
   const tl=p.titles.map(t=>`${tName(t.b)} ${t.key}`).slice(-12).join('、');
   const tw=p.rec.reduce((s,r)=>s+r.w,0),tl2=p.rec.reduce((s,r)=>s+r.l,0);
   $('dlgBody').innerHTML=`<h2>${esc(p.name)}</h2>
@@ -3569,6 +3698,7 @@ function openProfile(id){
   <p>名札: <b>${esc(plateName(p))}</b> ・ 所持金: <b>${fmt(p.money||0)} pt</b></p>
   <p>得意場所:<b>${esc(placeLabel(p.fav)||'なし')}</b> / 苦手場所:<b>${esc(placeLabel(p.bad)||'なし')}</b>${isSuper(p)?' / <b style="color:#d98a00">⚡ 今大会は超絶好調</b>':''}</p>
   ${cmdHTML(p)}
+  ${(()=>{const T=S.basho&&S.basho.tr;if(!T)return '';const n=trRestN(p);return `<p>今大会: ${p.w}勝${p.l}敗${n>0?`${n}休`:''}${T.part[p.id]?'(途中休場)':''}</p>`;})()}
   <p>通算(記録分): ${tw}勝${tl2}敗 ${tl?`<br>優勝歴: ${esc(tl)}`:''}</p>
   ${rec?`<div class="tbl small"><table><thead><tr><th>大会</th><th>番付</th><th>成績</th></tr></thead><tbody>${rec}</tbody></table></div>`:'<p class="dim">まだ大会の記録がありません</p>'}
   <div class="row"><button id="pWatch">${UI.watch.has(id)?'観戦リストから外す':'観戦リストに追加'}</button><button id="pClose">閉じる</button></div>`;
