@@ -1066,8 +1066,15 @@ function trStartDay(B){
 async function sbRest(q){
   const C=SUPABASE_CONFIG,base=C.url.replace(/\/+$/,'').replace(/\/rest\/v1$/,'');
   const headers={apikey:C.anonKey};if(!/^sb_/.test(C.anonKey))headers.Authorization='Bearer '+C.anonKey;
-  try{const r=await fetch(`${base}/rest/v1/${q}`,{headers});if(!r.ok)return {ok:false};return {ok:true,data:await r.json()};}
+  try{const r=await fetch(`${base}/rest/v1/${q}`,{headers,cache:'no-store'});if(!r.ok)return {ok:false};return {ok:true,data:await r.json()};}
   catch(e){return {ok:false};}
+}
+/* 故障率は、毎朝 Supabase から取り直す(大会の途中で変更された値を、その日の判定から使う) */
+async function trRefreshF(){
+  const T=S.basho.tr;if(!T)return;
+  const ch=await sbRest('characters?select=id,failure_rate&limit=5000');
+  if(!ch.ok){toast('故障率の最新値を取得できませんでした。前回の値で進めます');return;}
+  ch.data.forEach(r=>{if(r.failure_rate!=null)T.F[r.id]=+r.failure_rate;});
 }
 async function trPrepare(){
   const B=S.basho,T=trEmpty();
@@ -2998,6 +3005,7 @@ async function playMatch(animate,quiet){
   if(B.day===0||dayDone()){
     if(B.day>=maxDays()&&dayDone())return afterDays();
     if(B.day===0&&!B.tr&&sbEnabled()){try{await trPrepare();}catch(e){toast(e.message);return 'error';}}
+    else if(B.tr&&sbEnabled()){await trRefreshF();}
     beginDay();renderAll();
     if(!B.matches.length){            // その日に取組がない(リセット直後で上位階級が空など)
       if(B.day>=maxDays())return afterDays();
