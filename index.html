@@ -499,9 +499,32 @@ function imgUrl(u){
 }
 
 /* ---------- データ初期化 ---------- */
+/* ---------- デビュー期ごとの能力補正 ----------
+   期ごとに、能力評価値の上位3人の平均が6期の上位3人の平均と同じになるように掛ける倍率。
+   対象: 体力・パワー・ガード・コミュ力・学力・能力評価値(IQは対象外)。
+   殿堂入り(星陽 珱羽, ID 445)は選抜の対象外で、補正なし。
+   期の範囲は活動開始日から決めた(ID 1〜464)。ここに無い新しいIDは補正なし。 */
+const DEBUT_ADJ={1:2.1341,2:2.0602,3:1.5248,4:1.1407,5:0.9192,6:1.0};
+const DEBUT_RANGES=[[1,79,1],[80,121,2],[122,194,3],[195,333,4],[334,421,5],[422,464,6]];   // [開始ID, 終了ID, 期]
+const DEBUT_HALL=[445];
+function debutFactor(id){
+  if(DEBUT_HALL.includes(id))return 1;
+  const g=DEBUT_RANGES.find(([a,b])=>id>=a&&id<=b);
+  return g?DEBUT_ADJ[g[2]]:1;
+}
+/* v: {hp,pw,gd,ab,com,gaku} を補正した新しいオブジェクトを返す(値が無い項目は触らない) */
+function debutAdj(id,v){
+  const f=debutFactor(id);
+  if(f===1)return v;
+  const o={...v};
+  for(const k of ['hp','pw','gd','com','gaku'])if(o[k]!=null)o[k]=Math.round(o[k]*f);
+  if(o.ab!=null)o.ab=Math.round(o.ab*f*10)/10;
+  return o;
+}
 function mkPerson(r){
-  return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
-    fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),kanri:r[16]||'',
+  const A=debutAdj(r[0],{hp:r[2],pw:r[3],gd:r[4],ab:r[6],com:r[13]||0,gaku:r[14]||0});
+  return {id:r[0],name:r[1],hp:A.hp,pw:A.pw,gd:A.gd,iq:r[5],ab:A.ab,rk:r[7],
+    fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:A.com,gaku:A.gaku,img:imgUrl(r[15]),kanri:r[16]||'',
     div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null,charm:null,robot:null,robotUsed:false,cards:{},equip:[]};
 }
 function initPeople(rows){
@@ -540,8 +563,9 @@ function applyRoster(rows){
     const p=S.byId.get(r[0]);   // IDで照合(IDはスプレッドシートのID列が正)
     if(p){
       keep.add(p);
-      p.name=r[1];p.hp=r[2];p.pw=r[3];p.gd=r[4];p.iq=r[5];p.ab=r[6];
-      p.fav=placeKey(norm(r[8]))||'';p.bad=placeKey(norm(r[9]))||'';p.inc=r[10];p.cmd=r[11]||'';p.com=r[13]||0;p.gaku=r[14]||0;p.img=imgUrl(r[15]);
+      const A=debutAdj(r[0],{hp:r[2],pw:r[3],gd:r[4],ab:r[6],com:r[13]||0,gaku:r[14]||0});
+      p.name=r[1];p.hp=A.hp;p.pw=A.pw;p.gd=A.gd;p.iq=r[5];p.ab=A.ab;
+      p.fav=placeKey(norm(r[8]))||'';p.bad=placeKey(norm(r[9]))||'';p.inc=r[10];p.cmd=r[11]||'';p.com=A.com;p.gaku=A.gaku;p.img=imgUrl(r[15]);
       if(r[16]!==undefined)p.kanri=r[16]||'';   // 管理(ショップの利用者)をデータ更新で反映
     }else{
       const np=mkPerson(r);
@@ -2127,6 +2151,7 @@ function buildMerge(text){
   for(const c of chars){
     newIds.add(c.id);
     const live=S.byId.get(c.id),old=oldById.get(c.id);
+    const Av=debutAdj(c.id,{hp:c.hp,pw:c.pw,gd:c.gd,ab:c.ab,com:c.com!==undefined?c.com:(live?live.com:0),gaku:c.gaku!==undefined?c.gaku:(live?live.gaku:0)});   // 差分は補正後の値で比べる
     const rk=old?old[7]:9999;
     const fav=pick(c.fav,old?old[8]:'',live?live.fav:undefined);
     const bad=pick(c.bad,old?old[9]:'',live?live.bad:undefined);
@@ -2139,7 +2164,7 @@ function buildMerge(text){
     rows.push([c.id,c.name,c.hp,c.pw,c.gd,c.iq,c.ab,rk,fav||'',bad||'',inc,cmd||'',old?old[12]:0,com,gaku,img,kanri]);
     if(!live&&!old)added.push(c.name);
     else if(!live)added.push(c.name+'(再登場)');
-    else if(live.name!==c.name||live.hp!==c.hp||live.pw!==c.pw||live.gd!==c.gd||live.iq!==c.iq||Math.abs(live.ab-c.ab)>0.05||live.com!==com||live.gaku!==gaku||(live.cmd||'')!==(cmd||'')||(live.img||'')!==img||(live.kanri||'')!==kanri||(live.fav||'')!==(fav||'')||(live.bad||'')!==(bad||''))changed.push(c.name);
+    else if(live.name!==c.name||live.hp!==Av.hp||live.pw!==Av.pw||live.gd!==Av.gd||live.iq!==c.iq||Math.abs(live.ab-Av.ab)>0.05||live.com!==Av.com||live.gaku!==Av.gaku||(live.cmd||'')!==(cmd||'')||(live.img||'')!==img||(live.kanri||'')!==kanri||(live.fav||'')!==(fav||'')||(live.bad||'')!==(bad||''))changed.push(c.name);
     else same++;
   }
   const removed=S.people.filter(p=>!newIds.has(p.id));
@@ -2329,7 +2354,7 @@ const UI={tab:'matches',mode:'anim',speed:3,scope:'top',busy:false,stop:false,sk
 /* ---------- 保存 ---------- */
 function serialize(){
   const B=S.basho;
-  return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),pendingCredits:S.pendingCredits||[],
+  return {v:1,debut:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),pendingCredits:S.pendingCredits||[],
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
     people:S.people.map(p=>({id:p.id,name:p.name,kanri:p.kanri||'',hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null,robot:p.robot||null,robotUsed:!!p.robotUsed,cards:p.cards||{},equip:p.equip||[]})),
@@ -2342,6 +2367,8 @@ function restore(d){
   const legacy=new Map(DATA.map(r=>[r[0],r]));
   S.people=d.people.map(x=>Object.assign(mkPerson(legacy.get(x.id)||[x.id,'?',0,0,0,0,0,0,'','',0,'',0]),x));
   S.people.forEach(p=>{p.fav=placeKey(p.fav)||'';p.bad=placeKey(p.bad)||'';if(!p.kanri){const l=legacy.get(p.id);p.kanri=(l&&l[16])||'';}});
+  // デビュー期の補正(debut:1)を入れる前の保存データは、ここで補正を掛ける(補正済みのデータには掛けない)
+  if(!d.debut)S.people.forEach(p=>{const A=debutAdj(p.id,{hp:p.hp,pw:p.pw,gd:p.gd,ab:p.ab,com:p.com,gaku:p.gaku});Object.assign(p,{hp:A.hp,pw:A.pw,gd:A.gd,ab:A.ab,com:A.com,gaku:A.gaku});});
   ensureOrd();   // 「みけ原」表記のまま保存されたものを御卦原にそろえる
   S.byId=new Map(S.people.map(p=>[p.id,p]));
   S.retired=d.retired||{};S.aiai=d.aiai||{};S.pendingCredits=d.pendingCredits||[];
