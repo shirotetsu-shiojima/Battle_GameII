@@ -2499,8 +2499,11 @@ const stage={
       cd.dataset.c=s.sup?'sup':(s.pl||'');
       el.querySelector('.st').textContent=`体${fmt(p.hp)} 力${fmt(p.pw)} 守${fmt(p.gd)} IQ${p.iq}`;
       const tag=el.querySelector('.spt');
-      const n=s.cmds.length;
-      tag.hidden=!n;tag.textContent=n?`✦ 特殊能力(${n})`:'';
+      const n=s.cmds.length,k=(p.equip||[]).length;
+      const parts=[];
+      if(n)parts.push(`✦ 特殊能力(${n})`);
+      if(k)parts.push(`🃏 カード(${k})`);
+      tag.hidden=!parts.length;tag.textContent=parts.join(' ・ ');
       el.querySelector('.vm').classList.toggle('off',!s.hasMeter);
       this.hp(el,s.hp,s.max);this.meter(el,0);
       el.classList.remove('win','lose','hit','cast');
