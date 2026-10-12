@@ -700,6 +700,7 @@ const MM={
   BONUS:{TT:{5:70,6:90,7:200},TF:{5:50,6:75,7:120},FF:{5:50,6:75,7:110},
          TS:{5:30,6:45,7:70},FS:{5:25,6:40,7:60},SS:{5:20,6:35,7:50}},
   REMATCH1:-1000, REMATCH2:-3000,                             // 再戦ペナルティ(§19)
+  SPREAD:10,                                                  // 大将の対戦相手(旗頭・戦士上位)の分散: 既に大将と戦った回数×この値を減点
   NOISE:3,                                                    // ランダム補正 ±3(§23)
   RESTARTS:4,
   DEF:{mmT6:40,mmF5:20,mmF6:50}                               // 解禁確率の初期値(%)(§14,§15)。設定画面で変更可
@@ -711,6 +712,8 @@ const isHatagashira=p=>p.div==='旗頭';
 const isSanyakuUp=p=>isTaisho(p)||isFukusho(p)||isSenpo(p);      // 先鋒以上
 const isTaishoOrFukusho=p=>isTaisho(p)||isFukusho(p);
 function topKind(p){return p.div==='大将'?'T':p.div==='副将'?'F':p.div==='先鋒'?'S':'';}
+const SENSHI_TOP_MAX=9;   // 戦士の上位10人(戦士の枠の番号5〜9。2人1枚)
+function isSenshiTop(p){return p.div==='戦士'&&p.slot<=SENSHI_TOP_MAX;}
 function mmClass(p){
   switch(p.div){
     case '大将':return 1;
@@ -782,7 +785,10 @@ function isMatchAllowed(a,b,day,ctx){return mmHard(a,b,day,ctx)===null;}
 function mmEval(a,b,day,ctx){
   const ca=mmClass(a),cb=mmClass(b);
   let rf,dist=null;
-  if(ca!==cb)rf=Math.abs(ca-cb)===1?MM.ADJ:MM.FAR;
+  // 大将と戦士上位(戦士の上から10人)は、旗頭と同じ「隣接」扱い。大将の対戦が旗頭に集中しないように分散させる
+  const taishoSenshi=(a.div==='大将'&&isSenshiTop(b))||(b.div==='大将'&&isSenshiTop(a));
+  const taishoHata=(a.div==='大将'&&b.div==='旗頭')||(b.div==='大将'&&a.div==='旗頭');
+  if(ca!==cb)rf=(Math.abs(ca-cb)===1||taishoSenshi)?MM.ADJ:MM.FAR;
   else{dist=Math.abs(a.slot-b.slot);rf=5;for(const [mx,v] of MM.RANK_FIT)if(dist<=mx){rf=v;break;}}
   const diff=Math.abs(a.w-b.w),cf=MM.REC_FIT[Math.min(diff,MM.REC_FIT.length-1)];
   const st=ctx.stage;
@@ -798,7 +804,13 @@ function mmEval(a,b,day,ctx){
   }
   const n=a.met.filter(x=>x===b.id).length;
   const rem=n===0?0:n===1?MM.REMATCH1:MM.REMATCH2;
-  return {rf,cf,rw,cw,dist,diff,base,bonus,rem,final:base+bonus+rem};
+  // 大将が旗頭・戦士上位と組むとき、相手がこの大会で既に大将と戦った回数だけ減点(同じ相手に集中させず順に回す)
+  let spread=0;
+  if(taishoSenshi||taishoHata){
+    const o=a.div==='大将'?b:a;
+    spread=-MM.SPREAD*o.met.filter(id=>(S.byId.get(id)||{}).div==='大将').length;
+  }
+  return {rf,cf,rw,cw,dist,diff,base,bonus,rem,spread,final:base+bonus+rem+spread};
 }
 
 /* 7日目の固定・最優先対戦(§14〜§17,§26,§27) */
