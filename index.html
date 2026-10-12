@@ -512,13 +512,23 @@ function debutFactor(id){
   const g=DEBUT_RANGES.find(([a,b])=>id>=a&&id<=b);
   return g?DEBUT_ADJ[g[2]]:1;
 }
+/* 上限: 補正の結果、個別のステータスが30000以上になったら29999にする。
+   能力評価値が30000以上になったら、全ステータスを同じ比率で下げて能力評価値を29999にする */
+const DEBUT_CAP=29999;
+const DEBUT_STATS=['hp','pw','gd','com','gaku'];
 /* v: {hp,pw,gd,ab,com,gaku} を補正した新しいオブジェクトを返す(値が無い項目は触らない) */
 function debutAdj(id,v){
   const f=debutFactor(id);
   if(f===1)return v;
   const o={...v};
-  for(const k of ['hp','pw','gd','com','gaku'])if(o[k]!=null)o[k]=Math.round(o[k]*f);
+  for(const k of DEBUT_STATS)if(o[k]!=null)o[k]=Math.round(o[k]*f);
   if(o.ab!=null)o.ab=Math.round(o.ab*f*10)/10;
+  for(const k of DEBUT_STATS)if(o[k]!=null&&o[k]>DEBUT_CAP)o[k]=DEBUT_CAP;
+  if(o.ab!=null&&o.ab>DEBUT_CAP){
+    const s=DEBUT_CAP/o.ab;
+    for(const k of DEBUT_STATS)if(o[k]!=null)o[k]=Math.round(o[k]*s);
+    o.ab=DEBUT_CAP;
+  }
   return o;
 }
 function mkPerson(r){
