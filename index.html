@@ -1597,7 +1597,7 @@ function mkSide(p,place,key,noSuper){
 function resetVars(s,o,turn){
   const p=s.copyP||s.p,m=cardTurnMul(s,o,turn);
   s.v={pw:boostedStat(p,'pw')*m,gd:boostedStat(p,'gd')*m,iq:boostedStat(p,'iq')*m,com:p.com*m,gaku:p.gaku*m};
-  s.baseMax=boostedStat(p,'hp')*(s.phoenixMul||1);s.bonusTurn=0;   // 体力の増減は今ターンぶんを毎ターン決め直す
+  s.baseMax=boostedStat(p,'hp');s.bonusTurn=0;   // 体力の増減は今ターンぶんを毎ターン決め直す
   s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
 }
 /* 体力(最大体力)の増減を現在HPへ反映: 上限を超えた分は切り捨て、増えた分は加算。
@@ -1642,7 +1642,11 @@ const fm=n=>Math.round(n).toLocaleString('ja-JP');
 function ko(s){
   if(Math.ceil(s.hp)>=1)return;
   if(hasC(s,'kongou')&&!s.kongouUsed){s.kongouUsed=true;s.hp=1;pendMsg(s,`✦ ${s.p.name}は金剛不壊で踏みとどまった!`);return;}
-  if(hasC(s,'phoenix')&&!s.phoenixUsed){phoenixRevive(s);return;}
+  if(hasC(s,'phoenix')&&!s.phoenixUsed){
+    s.phoenixUsed=true;   // 1試合1回。発動確率の判定は一度きりで、外れたら以後は使えない
+    if(roll(30)){phoenixRevive(s);return;}
+    pendMsg(s,`✦ ${s.p.name}の不死鳥は発動しなかった…`);
+  }
   s.hp=0;
 }
 function sideOf(ctx,key){return key==='A'?ctx.A:ctx.B;}
@@ -1847,13 +1851,14 @@ function simulateMatch(a,b,place){
    ・連勝ブースト: 連勝数ごとにステータス +3%(最大 +15%)。連勝は今大会の成績から数える
    ・逆境強化: 自分のHP割合が相手より低いターン、ステータス +5%
    ・ビギナーズラック: 常にステータス +3%
-   ・不死鳥/金剛不壊: ko() で処理(蘇生・踏みとどまり) */
+   ・不死鳥: HPが0になった瞬間に30%で全快蘇生(1試合1回。外れたら以後は使えない)
+   ・金剛不壊: ko() で処理(HP1で踏みとどまり) */
 function hasC(s,id){return !!(s.cards&&s.cards.has(id));}
 function pendMsg(s,t){(s.pend=s.pend||[]).push(t);}
 function flushPend(ctx,s){if(s.pend&&s.pend.length){for(const t of s.pend)emit(ctx,{s:s.key,kind:'fx',text:t});s.pend=[];}}
 /* 戦闘開始前に決める効果(試合中ずっと同じ値): 合い口・連勝・ビギナーズラック */
 function cardPrep(s,o){
-  s.cards=new Set(s.p.equip||[]);s.pend=[];s.preMul=1;s.phoenixMul=1;
+  s.cards=new Set(s.p.equip||[]);s.pend=[];s.preMul=1;
   if(hasC(s,'revenge')){const r=aiaiGet(s.p,o.p);if(r){const lose=r[1]-r[0];if(lose>0)s.preMul*=1+Math.min(0.2,0.05*lose);}}
   if(hasC(s,'streak')){let n=0;const rs=s.p.res||[];for(let i=rs.length-1;i>=0&&rs[i].w===1;i--)n++;if(n>0)s.preMul*=1+Math.min(0.15,0.03*n);}
   if(hasC(s,'beginner'))s.preMul*=1.03;
@@ -1862,18 +1867,17 @@ function cardPrep(s,o){
 function cmdMulOf(ctx,s){let m=1;if(hasC(s,'start')&&ctx.t<=2)m*=1.25;if(lastOn(s))m*=1.3;return m;}
 function lastOn(s){return hasC(s,'last')&&s.hp/s.maxHp<=0.3;}
 function pr(s,r){return Math.min(100,r.prob*(lastOn(s)?1.5:1));}
-/* ステータスの倍率(ターン開始時に決める)。体力は別に扱う(phoenixMul のみ) */
+/* ステータスの倍率(ターン開始時に決める)。戦闘前の合い口・連勝・ビギナーズラックと、ターン数・逆境による変動を合わせる */
 function cardTurnMul(s,o,turn){
-  let m=(s.preMul||1)*(s.phoenixMul||1);
+  let m=s.preMul||1;
   if(hasC(s,'start')&&turn<=2)m*=1.25;
   if(hasC(s,'adversity')&&o&&s.hp/s.maxHp<o.hp/o.maxHp)m*=1.05;
   return m;
 }
+/* 不死鳥の蘇生: HPを100%回復する(ステータスは変わらない) */
 function phoenixRevive(s){
-  s.phoenixUsed=true;s.phoenixMul=1.5;
-  s.v.pw*=1.5;s.v.gd*=1.5;s.v.com*=1.5;s.v.gaku*=1.5;s.v.iq*=1.5;
-  s.baseMax*=1.5;s.bonusTurn*=1.5;syncHp(s);s.hp=s.maxHp;
-  pendMsg(s,`✦ ${s.p.name}は不死鳥の力で蘇生! 全ステータスが1.5倍に`);
+  syncHp(s);s.hp=s.maxHp;
+  pendMsg(s,`✦ ${s.p.name}は不死鳥の力で蘇生!`);
 }
 /* 天変地異: 1ターン目の開始時に、相手の元の能力と特殊能力をコピーする */
 function tenpestCopy(ctx,s,o){
@@ -3610,7 +3614,7 @@ const CARD_RATES=[['SSR',0.5],['SR',4.5],['R',35],['N',60]];   // 排出率(%)�
 const CARD_PRICE_1=100000, CARD_PRICE_10=800000;
 const CARD_RAR_COLOR={SSR:'#c4551b',SR:'#8a4fd6',R:'#2457a6',N:'#6b6b6b'};
 const CARD_LIST=[
-  {id:'phoenix',rar:'SSR',name:'不死鳥（フェニックス）',text:'【トリガー】自身のHPが0になった瞬間(1試合1回)。【効果】HPを100%回復して蘇生し、戦闘終了まで全ステータスが1.5倍。'},
+  {id:'phoenix',rar:'SSR',name:'不死鳥（フェニックス）',text:'【トリガー】自身のHPが0になった瞬間(1試合1回)。【効果】30%の確率でHPを100%回復して蘇生する。'},
   {id:'tempest',rar:'SSR',name:'天変地異（テンペスト）',text:'【トリガー】1ターン目限定。【効果】相手の全ステータスおよび12桁マルチコマンドの構成を完全にコピー＆強奪して発動する。'},
   {id:'kongou',rar:'SR',name:'金剛不壊',text:'【トリガー】致命傷(HPが0になるダメージ)を受けた際。【効果】HP1で確実に1回だけ踏みとどまる。'},
   {id:'zetsuryo',rar:'SR',name:'絶対領域',text:'【トリガー】戦闘開始〜3ターン目。【効果】相手のすべての特殊能力(コマンド・バフ・デバフ)の発動を完全に封印する。'},
