@@ -407,6 +407,7 @@ a.btn{color:var(--ink);text-decoration:none}
     <button data-tab="titles">優勝</button>
     <button data-tab="search">検索・観戦</button>
     <button data-tab="shop">ショップ</button>
+    <button data-tab="gacha">ガチャ</button>
     <button data-tab="duel">練習戦</button>
     <button data-tab="log">ログ</button>
     <button data-tab="settings">設定</button>
@@ -417,6 +418,7 @@ a.btn{color:var(--ink);text-decoration:none}
   <div class="pane" id="tab_titles" hidden></div>
   <div class="pane" id="tab_search" hidden></div>
   <div class="pane" id="tab_shop" hidden></div>
+  <div class="pane" id="tab_gacha" hidden></div>
   <div class="pane" id="tab_duel" hidden></div>
   <div class="pane" id="tab_log" hidden></div>
   <div class="pane" id="tab_settings" hidden></div>
@@ -500,7 +502,7 @@ function imgUrl(u){
 function mkPerson(r){
   return {id:r[0],name:r[1],hp:r[2],pw:r[3],gd:r[4],iq:r[5],ab:r[6],rk:r[7],
     fav:placeKey(norm(r[8]))||'',bad:placeKey(norm(r[9]))||'',inc:r[10],cmd:r[11]||'',pre:!!r[12],com:r[13]||0,gaku:r[14]||0,img:imgUrl(r[15]),kanri:r[16]||'',
-    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null,charm:null,robot:null,robotUsed:false};
+    div:'',slot:0,ord:NaN,pk:0,w:0,l:0,met:[],res:[],rec:[],titles:[],tsuna:false,demoted:false,money:0,plates:[],plate:'',boost:{},effects:[],effect:'',nick:null,charm:null,robot:null,robotUsed:false,cards:{},equip:[]};
 }
 function initPeople(rows){
   rows=rows||DATA;
@@ -1064,6 +1066,7 @@ function applyResult(m,res){
   m.hpA=res.A.hp;m.hpB=res.B.hp;
   const win=res.winner,lose=res.loser;
   win.w++;lose.l++;
+  applyManeki(m,win);
   payBounty(win,m);
   win.met.push(lose.id);lose.met.push(win.id);
   (win.res=win.res||[]).push({o:lose.id,w:1});(lose.res=lose.res||[]).push({o:win.id,w:0});
@@ -1591,10 +1594,10 @@ function mkSide(p,place,key,noSuper){
   return {key,p,base,c,sup,pl,hp:mhp,max:mhp,maxHp:mhp,baseMax:mhp,bonusTurn:0,prevBonus:0,meter:0,hasMeter:false,cmds:[],last:0,
     v:null,critO:null,missO:null,defO:null,critMult:DEF_CRIT_MULT};
 }
-function resetVars(s){
-  const p=s.p;
-  s.v={pw:boostedStat(p,'pw'),gd:boostedStat(p,'gd'),iq:boostedStat(p,'iq'),com:p.com,gaku:p.gaku};
-  s.baseMax=boostedStat(p,'hp');s.bonusTurn=0;   // 体力の増減は今ターンぶんを毎ターン決め直す
+function resetVars(s,o,turn){
+  const p=s.copyP||s.p,m=cardTurnMul(s,o,turn);
+  s.v={pw:boostedStat(p,'pw')*m,gd:boostedStat(p,'gd')*m,iq:boostedStat(p,'iq')*m,com:p.com*m,gaku:p.gaku*m};
+  s.baseMax=boostedStat(p,'hp')*(s.phoenixMul||1);s.bonusTurn=0;   // 体力の増減は今ターンぶんを毎ターン決め直す
   s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
 }
 /* 体力(最大体力)の増減を現在HPへ反映: 上限を超えた分は切り捨て、増えた分は加算。
@@ -1635,7 +1638,13 @@ function emit(ctx,e){
   ctx.ev.push(Object.assign({t:ctx.t,hpA:A.hp,hpB:B.hp,maxA:A.maxHp,maxB:B.maxHp,mA:A.hasMeter?A.meter:null,mB:B.hasMeter?B.meter:null},e));
 }
 const fm=n=>Math.round(n).toLocaleString('ja-JP');
-function ko(s){if(Math.ceil(s.hp)<1)s.hp=0;}
+/* HPが0になるとき: 金剛不壊(1回だけHP1で踏みとどまる) → 不死鳥(1試合1回だけ全快で蘇生) の順に確認する */
+function ko(s){
+  if(Math.ceil(s.hp)>=1)return;
+  if(hasC(s,'kongou')&&!s.kongouUsed){s.kongouUsed=true;s.hp=1;pendMsg(s,`✦ ${s.p.name}は金剛不壊で踏みとどまった!`);return;}
+  if(hasC(s,'phoenix')&&!s.phoenixUsed){phoenixRevive(s);return;}
+  s.hp=0;
+}
 function sideOf(ctx,key){return key==='A'?ctx.A:ctx.B;}
 function targetsOf(idx1,s,o){return idx1===0?[s]:idx1===1?[o]:[s,o];}
 
@@ -1688,12 +1697,13 @@ function hurt(ctx,s,x,raw,label,kind){
   x.hp-=fin;ko(x);
   emit(ctx,{s:s.key,tgt:x.key,kind,type:'hit',dmg:fin,guard:d,
     text:`${label}${x.p.name}に ${fm(fin)} ダメージ${d>0.005?`(防御${Math.round(d*100)}%軽減)`:''}`});
+  if(x!==s)cardReflect(ctx,x,s,fin);
   return fin;
 }
 function doAttack(ctx,s,o,r,kind){
   const a=r.a;
   let raw=a[3]===0?a[6]:a[3]===1?s.v.pw*a[6]:refValue(a,s,o);
-  raw=Math.max(0,Number.isFinite(raw)?raw:0);
+  raw=Math.max(0,Number.isFinite(raw)?raw:0)*cmdMulOf(ctx,s);
   let dealt=0;
   for(const x of targetsOf(a[1],s,o)){
     if(x.hp<=0)continue;
@@ -1721,6 +1731,7 @@ function normalAttack(ctx,s,o){
   emit(ctx,{s:s.key,tgt:o.key,kind:'atk',type,dmg:fin,guard:d,
     text:type==='miss'?`${s.p.name}の攻撃は外れた`:
       `${s.p.name}の${type==='crit'?'会心の一撃! ':'攻撃 '}${fm(fin)}ダメージ${d>0?`(防御${Math.round(d*100)}%軽減)`:''}`});
+  cardReflect(ctx,o,s,fin);
   return fin;
 }
 
@@ -1756,14 +1767,14 @@ function meterBaseRate(p){
   return ((p.com||0)+Math.floor((30000-ab)/2))/5/((Math.floor(ab)+3000)*METER_CAP_RATE)*100;
 }
 function passivePhase(ctx,s,o){
-  if(s.hp<=0)return;
+  if(s.hp<=0||s.sealed)return;
   for(const r of s.cmds){
     if(r.exc||(r.t!==1&&r.t!==3))continue;
     if(r.gates.length&&!gateOK(r,s,o,ctx))continue;
     let go=false;
     if(r.trig===0)go=r.active>0&&!r.now;
-    else if(r.trig===1)go=inWindow(r,ctx.t)&&roll(r.prob);
-    else if(r.trig===2)go=inWindow(r,ctx.t)&&hpCond(r,s,o)&&roll(r.prob);
+    else if(r.trig===1)go=inWindow(r,ctx.t)&&roll(pr(s,r));
+    else if(r.trig===2)go=inWindow(r,ctx.t)&&hpCond(r,s,o)&&roll(pr(s,r));
     if(!go)continue;
     const loud=r.trig!==0&&(r.prob<100||!r.logged);
     if(r.trig!==0)r.logged=true;
@@ -1772,7 +1783,7 @@ function passivePhase(ctx,s,o){
 }
 function act(ctx,s,o){
   if(s.hp<=0||o.hp<=0)return;
-  if(s.hasMeter&&s.meter>=METER_MAX){
+  if(s.hasMeter&&s.meter>=METER_MAX&&!s.sealed){
     const cand=s.cmds.filter(r=>r.trig===0&&r.active!==Infinity&&gateOK(r,s,o,ctx));   // 永続化済みのものは再発動しない
     if(cand.length){
       s.meter=0;ctx.sp++;
@@ -1789,8 +1800,8 @@ function act(ctx,s,o){
       for(const r of cand)if(r.now&&(r.t===1||r.t===3))applyEffect(ctx,s,o,r,true);
     }
   }
-  const special=s.cmds.filter(r=>r.trig===0&&r.t===2&&r.active>0&&gateOK(r,s,o,ctx));
-  const extra=s.cmds.filter(r=>(r.trig===1||r.trig===2)&&r.t===2&&inWindow(r,ctx.t)&&gateOK(r,s,o,ctx)&&(r.trig===1||hpCond(r,s,o))&&roll(r.prob));
+  const special=s.sealed?[]:s.cmds.filter(r=>r.trig===0&&r.t===2&&r.active>0&&gateOK(r,s,o,ctx));
+  const extra=s.sealed?[]:s.cmds.filter(r=>(r.trig===1||r.trig===2)&&r.t===2&&inWindow(r,ctx.t)&&gateOK(r,s,o,ctx)&&(r.trig===1||hpCond(r,s,o))&&roll(pr(s,r)));
   let dealt=0;
   for(const r of special.concat(extra)){
     if(s.hp<=0||o.hp<=0)break;
@@ -1824,6 +1835,71 @@ function simulateMatch(a,b,place){
   L(`ワンパンロボット: ${owner.name} が ${loser.name} を一撃`);
   return res;
 }
+/* ---------- カード効果(戦闘中) ----------
+   各キャラの装着カードは side.cards(カードIDの集合)で判定する。数値はここにまとめる。
+   ・スタートダッシュ: 1〜2ターン目、ステータスとコマンド威力 ×1.25
+   ・ラストスパート: 自分のHP30%以下で、コマンド発動率 ×1.5、威力 ×1.3
+   ・カウンター: 受けた攻撃の20%を攻撃してきた相手に返す
+   ・ジャイアントキリング: 相手の最大体力の25%以上の被ダメージ時、20%で100%を返す(カウンターより優先)
+   ・絶対領域: 相手は1〜3ターン目の特殊能力が発動しない
+   ・天変地異: 1ターン目の開始時に相手の全ステータスと特殊能力(コマンド)をコピーして使う
+   ・リベンジ: 合い口で負け越している分だけステータス +5%(最大 +20%)
+   ・連勝ブースト: 連勝数ごとにステータス +3%(最大 +15%)。連勝は今大会の成績から数える
+   ・逆境強化: 自分のHP割合が相手より低いターン、ステータス +5%
+   ・ビギナーズラック: 常にステータス +3%
+   ・不死鳥/金剛不壊: ko() で処理(蘇生・踏みとどまり) */
+function hasC(s,id){return !!(s.cards&&s.cards.has(id));}
+function pendMsg(s,t){(s.pend=s.pend||[]).push(t);}
+function flushPend(ctx,s){if(s.pend&&s.pend.length){for(const t of s.pend)emit(ctx,{s:s.key,kind:'fx',text:t});s.pend=[];}}
+/* 戦闘開始前に決める効果(試合中ずっと同じ値): 合い口・連勝・ビギナーズラック */
+function cardPrep(s,o){
+  s.cards=new Set(s.p.equip||[]);s.pend=[];s.preMul=1;s.phoenixMul=1;
+  if(hasC(s,'revenge')){const r=aiaiGet(s.p,o.p);if(r){const lose=r[1]-r[0];if(lose>0)s.preMul*=1+Math.min(0.2,0.05*lose);}}
+  if(hasC(s,'streak')){let n=0;const rs=s.p.res||[];for(let i=rs.length-1;i>=0&&rs[i].w===1;i--)n++;if(n>0)s.preMul*=1+Math.min(0.15,0.03*n);}
+  if(hasC(s,'beginner'))s.preMul*=1.03;
+}
+/* コマンドの威力倍率(ターンごと・HPごとに変わる) */
+function cmdMulOf(ctx,s){let m=1;if(hasC(s,'start')&&ctx.t<=2)m*=1.25;if(lastOn(s))m*=1.3;return m;}
+function lastOn(s){return hasC(s,'last')&&s.hp/s.maxHp<=0.3;}
+function pr(s,r){return Math.min(100,r.prob*(lastOn(s)?1.5:1));}
+/* ステータスの倍率(ターン開始時に決める)。体力は別に扱う(phoenixMul のみ) */
+function cardTurnMul(s,o,turn){
+  let m=(s.preMul||1)*(s.phoenixMul||1);
+  if(hasC(s,'start')&&turn<=2)m*=1.25;
+  if(hasC(s,'adversity')&&o&&s.hp/s.maxHp<o.hp/o.maxHp)m*=1.05;
+  return m;
+}
+function phoenixRevive(s){
+  s.phoenixUsed=true;s.phoenixMul=1.5;
+  s.v.pw*=1.5;s.v.gd*=1.5;s.v.com*=1.5;s.v.gaku*=1.5;s.v.iq*=1.5;
+  s.baseMax*=1.5;s.bonusTurn*=1.5;syncHp(s);s.hp=s.maxHp;
+  pendMsg(s,`✦ ${s.p.name}は不死鳥の力で蘇生! 全ステータスが1.5倍に`);
+}
+/* 天変地異: 1ターン目の開始時に、相手の元の能力と特殊能力をコピーする */
+function tenpestCopy(ctx,s,o){
+  if(!hasC(s,'tempest')||s.copied||s.sealed)return;
+  s.copied=true;s.copyP=o.p;
+  s.cmds=compileCmds(o.p).filter(r=>!r.exc);
+  s.hasMeter=s.cmds.some(r=>r.trig===0);
+  emit(ctx,{s:s.key,kind:'fx',text:`✦ ${s.p.name}: 天変地異! ${o.p.name}の全ステータスと特殊能力を強奪`});
+}
+/* 被弾時の跳ね返し: x が受けた fin を、攻撃してきた s に返す(跳ね返しは連鎖しない) */
+function cardReflect(ctx,x,s,fin){
+  if(fin<=0||s.hp<=0)return;
+  let back=0,text='';
+  if(hasC(x,'giant')&&fin>=0.25*x.maxHp&&roll(20)){back=fin;text=`✦ ${x.p.name}のジャイアントキリング! 被ダメージを100%跳ね返した`;}
+  else if(hasC(x,'counter')){back=fin*0.2;text=`✦ ${x.p.name}のカウンター! ${fm(back)}ダメージを返した`;}
+  if(back<=0)return;
+  s.hp-=back;ko(s);
+  emit(ctx,{s:x.key,tgt:s.key,kind:'fx',text});
+}
+/* 招き猫: 勝者が装着していれば懸賞金を1.5〜2倍にする(勝敗を反映する直前に呼ぶ) */
+function applyManeki(m,win){
+  if(!m.bounty||!(win.equip||[]).includes('maneki'))return;
+  const k=1.5+Math.random()*0.5;
+  m.bounty=Math.round(m.bounty*k);
+  if(m.bountyInfo){m.bountyInfo.amount=m.bounty;m.bountyInfo.tip+=` ／ 招き猫 ×${k.toFixed(2)}`;}
+}
 function simulate(a,b,place,noSuper){
   const A=mkSide(a,place,'A',noSuper),B=mkSide(b,place,'B',noSuper);
   const useSp=S.settings.special!==false;
@@ -1831,20 +1907,25 @@ function simulate(a,b,place,noSuper){
   B.cmds=useSp?compileCmds(b):[];
   A.hasMeter=A.cmds.some(r=>r.trig===0);
   B.hasMeter=B.cmds.some(r=>r.trig===0);
+  cardPrep(A,B);cardPrep(B,A);
   const ctx={A,B,ev:[],t:0,sp:0,place};
   for(const [s,o] of [[A,B],[B,A]])
     for(const r of s.cmds)if(r.exc&&EXC_HANDLERS[r.a[1]])EXC_HANDLERS[r.a[1]](ctx,s,o);
   let turn=0;
   while(A.hp>0&&B.hp>0&&turn<TURN_LIMIT){
     turn++;ctx.t=turn;
-    resetVars(A);resetVars(B);
+    A.sealed=turn<=3&&hasC(B,'zetsuryo');B.sealed=turn<=3&&hasC(A,'zetsuryo');
+    if(turn===1){tenpestCopy(ctx,A,B);tenpestCopy(ctx,B,A);}
+    resetVars(A,B,turn);resetVars(B,A,turn);
     if(A.hasMeter)A.meter=Math.min(METER_MAX,A.meter+meterGain(A,B,ctx));
     if(B.hasMeter)B.meter=Math.min(METER_MAX,B.meter+meterGain(B,A,ctx));
     passivePhase(ctx,A,B);passivePhase(ctx,B,A);
+    flushPend(ctx,A);flushPend(ctx,B);
     syncHp(A);syncHp(B);
     if(A.hp<=0||B.hp<=0)break;
-    act(ctx,A,B);
+    act(ctx,A,B);flushPend(ctx,A);flushPend(ctx,B);
     if(A.hp>0&&B.hp>0)act(ctx,B,A);
+    flushPend(ctx,A);flushPend(ctx,B);
     tick(A);tick(B);
   }
   let win;
@@ -2247,7 +2328,7 @@ function serialize(){
   return {v:1,thirdStart:S.thirdStart,maxSlot:S.maxSlot,history:S.history,logs:S.logs.slice(-120),pendingCredits:S.pendingCredits||[],
     settings:S.settings,watch:[...UI.watch],ui:{mode:UI.mode,speed:UI.speed,scope:UI.scope,autoNext:UI.autoNext},
     retired:S.retired,aiai:S.aiai,
-    people:S.people.map(p=>({id:p.id,name:p.name,kanri:p.kanri||'',hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null,robot:p.robot||null,robotUsed:!!p.robotUsed})),
+    people:S.people.map(p=>({id:p.id,name:p.name,kanri:p.kanri||'',hp:p.hp,pw:p.pw,gd:p.gd,iq:p.iq,ab:p.ab,rk:p.rk,fav:p.fav,bad:p.bad,inc:p.inc,cmd:p.cmd,com:p.com,gaku:p.gaku,img:p.img,res:p.res||[],div:p.div,slot:p.slot,ord:p.ord,pre:p.pre,pk:p.pk,pos:p.pos,prevPos:p.prevPos,posNo:p.posNo,label:p.label,prevLabel:p.prevLabel,w:p.w,l:p.l,met:p.met,rec:p.rec,titles:p.titles,tsuna:p.tsuna,demoted:p.demoted,money:p.money||0,plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',nick:p.nick||null,charm:p.charm||null,robot:p.robot||null,robotUsed:!!p.robotUsed,cards:p.cards||{},equip:p.equip||[]})),
     basho:{no:B.no,day:B.day,mi:B.mi,phase:B.phase,titles:B.titles,playoffs:B.playoffs,changes:B.changes||[],supers:B.supers||[],po:B.po||null,
       byes:B.byes.map(p=>p.id),sb:B.sb||null,pendingNext:B.pendingNext||null,incomePaid:!!B.incomePaid,fastUsed:!!B.fastUsed,bounties:B.bounties||[],
       matches:B.matches.map(m=>[m.a.id,m.b.id,m.w,m.gi,m.swiss?1:0,m.turns||0,m.condA||1,m.condB||1,m.sp||0,m.dbg||null])}};
@@ -3382,7 +3463,7 @@ function renderDuel(){
   $('dGo').onclick=go;$('dRep').onclick=go;
   showAiai();
 }
-const TABS={duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,shop:renderShop,log:renderLog,settings:renderSettings};
+const TABS={duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,shop:renderShop,gacha:renderGacha,log:renderLog,settings:renderSettings};
 function renderTab(){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===UI.tab));
   document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!=='tab_'+UI.tab);
@@ -3521,6 +3602,106 @@ async function bootGame(){
   renderAll();setBusy(false);
   sbCatchUp();
 }
+/* ---------- カード・ガチャ ----------
+   カードはショップと同じくキャラごとに持ち、所持金・購入品と一緒に全員で同期する(shop の保存内容に含める)。
+   ガチャを使えるのは、ショップを使えるキャラ(管理権限のあるユーザーでログインしているとき)だけ。
+   装着は1キャラ最大3枠。同じカードは重ねて装着できない(持っている枚数は重ねて持てる)。 */
+const CARD_RATES=[['SSR',0.5],['SR',4.5],['R',35],['N',60]];   // 排出率(%)。レアリティごとに同じ確率で各カードへ振り分ける
+const CARD_PRICE_1=100000, CARD_PRICE_10=800000;
+const CARD_RAR_COLOR={SSR:'#c4551b',SR:'#8a4fd6',R:'#2457a6',N:'#6b6b6b'};
+const CARD_LIST=[
+  {id:'phoenix',rar:'SSR',name:'不死鳥（フェニックス）',text:'【トリガー】自身のHPが0になった瞬間(1試合1回)。【効果】HPを100%回復して蘇生し、戦闘終了まで全ステータスが1.5倍。'},
+  {id:'tempest',rar:'SSR',name:'天変地異（テンペスト）',text:'【トリガー】1ターン目限定。【効果】相手の全ステータスおよび12桁マルチコマンドの構成を完全にコピー＆強奪して発動する。'},
+  {id:'kongou',rar:'SR',name:'金剛不壊',text:'【トリガー】致命傷(HPが0になるダメージ)を受けた際。【効果】HP1で確実に1回だけ踏みとどまる。'},
+  {id:'zetsuryo',rar:'SR',name:'絶対領域',text:'【トリガー】戦闘開始〜3ターン目。【効果】相手のすべての特殊能力(コマンド・バフ・デバフ)の発動を完全に封印する。'},
+  {id:'giant',rar:'SR',name:'ジャイアントキリング',text:'【トリガー】大ダメージ被弾時(1回の被ダメージが相手の最大体力の25%以上)。【効果】20%の確率で、その被ダメージを100%の威力で相手に跳ね返す。'},
+  {id:'maneki',rar:'SR',name:'招き猫',text:'【トリガー】戦闘勝利時(パッシブ)。【効果】獲得できる懸賞金ptが1.5〜2倍になる。'},
+  {id:'start',rar:'R',name:'スタートダッシュ',text:'1〜2ターン目、ステータスとコマンド威力が1.25倍。'},
+  {id:'last',rar:'R',name:'ラストスパート',text:'自身のHPが30%以下のとき、コマンドの発動率が1.5倍、威力が1.3倍。'},
+  {id:'counter',rar:'R',name:'カウンター',text:'受けたダメージの20%を、攻撃してきた相手に跳ね返す。'},
+  {id:'revenge',rar:'R',name:'リベンジ',text:'相手との合い口で負け越している分だけ強化。負け1つにつきステータス+5%(最大+20%)。'},
+  {id:'streak',rar:'R',name:'連勝ブースト',text:'現在の連勝数に応じてステータスが+3%ずつ上がる(最大+15%)。'},
+  {id:'adversity',rar:'N',name:'逆境強化',text:'自分の体力割合が相手より少ないとき、全能力が5%強化。'},
+  {id:'beginner',rar:'N',name:'ビギナーズラック',text:'常時、全能力が3%強化。'},
+];
+let gBusy=false;
+function cardOf(id){return CARD_LIST.find(c=>c.id===id);}
+function cardDraw(){
+  const r=Math.random()*100;let acc=0,rar=CARD_RATES[CARD_RATES.length-1][0];
+  for(const [k,v] of CARD_RATES){acc+=v;if(r<acc){rar=k;break;}}
+  const pool=CARD_LIST.filter(c=>c.rar===rar);
+  return pool[Math.floor(Math.random()*pool.length)].id;
+}
+function gachaTarget(){const p=UI.gachaId!=null?S.byId.get(UI.gachaId):null;return p&&canShop(p)?p:null;}
+const sleepMs=ms=>new Promise(r=>setTimeout(r,ms));
+/* ガチャの結果を共有側へ確実に送る(同期の途中なら終わるまで待つ) */
+async function shopFlush(){while(shopBusy)await sleepMs(80);await shopSync();while(shopBusy)await sleepMs(80);}
+async function gachaPull(n){
+  const p=gachaTarget();
+  if(!p){toast('このキャラはガチャを使えません');return;}
+  if(gBusy)return;
+  const cost=n===10?CARD_PRICE_10:CARD_PRICE_1;
+  if((p.money||0)<cost){toast('所持金が足りません');return;}
+  gBusy=true;
+  try{
+    const got=[];
+    for(let i=0;i<n;i++)got.push(cardDraw());
+    p.money-=cost;
+    p.cards=p.cards||{};
+    for(const id of got)p.cards[id]=(p.cards[id]||0)+1;
+    UI.gachaLast={who:p.id,ids:got};
+    saveSoon();renderGacha();
+    await shopFlush();
+  }finally{gBusy=false;renderGacha();}
+}
+function gachaEquip(){
+  const p=gachaTarget();if(!p)return;
+  const id=$('gEq')?$('gEq').value:'';
+  if(!id){toast('装着するカードを選んでください');return;}
+  p.equip=p.equip||[];
+  if(p.equip.length>=3){toast('装着枠は3つまでです');return;}
+  if(p.equip.includes(id)){toast('同じカードは重ねて装着できません');return;}
+  if(!((p.cards||{})[id]>0)){toast('そのカードは持っていません');return;}
+  p.equip.push(id);saveSoon();renderGacha();
+}
+function gachaUnequip(i){const p=gachaTarget();if(!p||!p.equip)return;p.equip.splice(i,1);saveSoon();renderGacha();}
+function renderGacha(){
+  const el=$('tab_gacha');
+  if(!currentUser()){el.innerHTML='<p class="dim">ガチャはログインすると使えます。</p>';return;}
+  const list=shopList();
+  if(!list.length){el.innerHTML='<p class="dim">あなたが管理するキャラがいないため、ガチャは使えません。</p>';return;}
+  let p=gachaTarget();
+  if(!p){p=list[0];UI.gachaId=p.id;}
+  const owned=p.cards||{},eq=p.equip||[],money=p.money||0;
+  const sel=list.map(x=>`<option value="${x.id}" ${x.id===p.id?'selected':''}>${esc(x.name)}(${esc(rankLabel(x))}) ${fmt(x.money||0)}pt</option>`).join('');
+  const slots=[0,1,2].map(i=>{
+    const id=eq[i];
+    if(!id)return `<div class="gslot dim">空き枠 ${i+1}</div>`;
+    const c=cardOf(id);
+    return `<div class="gslot"><span style="color:${CARD_RAR_COLOR[c.rar]};font-weight:bold">[${c.rar}]</span> ${esc(c.name)} <button onclick="gachaUnequip(${i})">外す</button></div>`;
+  }).join('');
+  const choices=CARD_LIST.filter(c=>(owned[c.id]||0)>0&&!eq.includes(c.id));
+  const equipBox=eq.length<3
+    ?`<div class="row"><select id="gEq" style="flex:1">${choices.length?'':'<option value="">装着できるカードがありません</option>'}${choices.map(c=>`<option value="${c.id}">[${c.rar}] ${esc(c.name)}</option>`).join('')}</select> <button onclick="gachaEquip()" ${choices.length?'':'disabled'}>装着</button></div>`
+    :'<p class="dim">装着枠がいっぱいです(外すと空きます)。</p>';
+  const cat=CARD_LIST.map(c=>`<tr><td><span style="color:${CARD_RAR_COLOR[c.rar]};font-weight:bold">${c.rar}</span></td><td>${esc(c.name)}</td><td style="text-align:right">${owned[c.id]||0}</td><td class="dim" style="font-size:12px">${esc(c.text)}</td></tr>`).join('');
+  const last=UI.gachaLast&&UI.gachaLast.who===p.id?UI.gachaLast.ids:null;
+  const lastHTML=last?`<div class="gres"><h4>今回の結果</h4>${last.map(id=>{const c=cardOf(id);return `<div><span style="color:${CARD_RAR_COLOR[c.rar]};font-weight:bold">[${c.rar}]</span> ${esc(c.name)}</div>`;}).join('')}</div>`:'';
+  const rates=CARD_RATES.map(([r,v])=>`${r} ${v}%(1枚あたり ${+(v/CARD_LIST.filter(c=>c.rar===r).length).toFixed(3)}%)`).join(' / ');
+  el.innerHTML=`<p class="dim">キャラごとの所持金でガチャを回します。カードは1度獲得すれば永続で、装着は最大3枠です。</p>
+    <div class="row"><select id="gSel" onchange="UI.gachaId=+this.value;UI.gachaLast=null;renderGacha()" style="width:100%">${sel}</select></div>
+    <p>所持金: <b>${fmt(money)}pt</b></p>
+    <div class="row">
+      <button onclick="gachaPull(1)" ${money<CARD_PRICE_1||gBusy?'disabled':''}>単発ガチャ(100,000pt)</button>
+      <button onclick="gachaPull(10)" ${money<CARD_PRICE_10||gBusy?'disabled':''}>10連ガチャ(800,000pt)</button>
+    </div>
+    ${lastHTML}
+    <h4>装着(${eq.length}/3)</h4>${slots}${equipBox}
+    <h4>排出率</h4><p class="dim" style="font-size:12px">${rates}</p>
+    <h4>カード一覧</h4>
+    <div style="overflow-x:auto"><table><tr><th>レア</th><th>名前</th><th>所持</th><th>効果</th></tr>${cat}</table></div>`;
+}
+
 /* ---------- 管理と共有の所持金・購入品 ----------
    スプレッドシートの「管理」列で、ショップを使える人を決める。「共同」は全員、空欄や未知の値は誰も使えない。
    所持金と購入品は Supabase に1キャラ1行で保存し、全員で同じ内容を見る(楽観ロックで同時更新の食い違いを防ぐ)。 */
@@ -3535,13 +3716,14 @@ function canShop(p){
 const shopSigs=new Map();   // キャラID → 共有側と一致していた時点の内容
 let shopBusy=false,shopAgain=false;
 function shopPayload(p){
-  return {plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',
+  return {cards:p.cards||{},equip:p.equip||[],plates:p.plates||[],plate:p.plate||'',boost:p.boost||{},effects:p.effects||[],effect:p.effect||'',
     nick:p.nick||null,charm:p.charm||null,robot:p.robot||null,robotUsed:!!p.robotUsed};
 }
 function shopSig(p){return JSON.stringify([p.money||0,shopPayload(p)]);}
 function applyShopServer(p,row){
   const s=row.shop||{};
   p.money=row.money||0;
+  p.cards=s.cards||{};p.equip=s.equip||[];
   p.plates=s.plates||[];p.plate=s.plate||'';p.boost=s.boost||{};p.effects=s.effects||[];p.effect=s.effect||'';
   p.nick=s.nick||null;p.charm=s.charm||null;p.robot=s.robot||null;p.robotUsed=!!s.robotUsed;
   p.shopVer=row.version||0;
@@ -3567,7 +3749,7 @@ async function shopPull(){
   for(const p of S.people){
     if(seen.has(p.id))continue;
     p.shopVer=0;
-    const blank=!(p.money>0)&&!(p.plates&&p.plates.length)&&!p.plate&&!(p.effects&&p.effects.length)&&!p.effect&&!p.nick&&!p.charm&&!p.robot&&!(p.boost&&Object.keys(p.boost).length);
+    const blank=!(p.money>0)&&!(p.equip&&p.equip.length)&&!Object.keys(p.cards||{}).length&&!(p.plates&&p.plates.length)&&!p.plate&&!(p.effects&&p.effects.length)&&!p.effect&&!p.nick&&!p.charm&&!p.robot&&!(p.boost&&Object.keys(p.boost).length);
     if(blank)shopSigs.set(p.id,shopSig(p));   // 何も無いキャラは送らない(送るのは内容がある場合だけ)
   }
   shopSync();
