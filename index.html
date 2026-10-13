@@ -483,7 +483,8 @@ const MID=[-13,-9,-5,5,10,15];            // 評価値(中位)
 const LOW=[-20,-12,-5,5,20,30];           // 評価値(下位)
 const LOWEST=[0,2,5,10,20,30];            // 評価値(最下位)
 const PRE=[0,2,5,7,9,12];                 // 前相撲評価点
-const SUPER_BOOST=0.5;     // 超絶好調: 調子値に+0.5(+50%)。基本値×得意苦手補正のあとに加算
+const SUPER_BOOST=1.0;     // 超絶好調: 調子値に+1.0(+100%)。基本値×得意苦手補正のあとに加算
+const SUPER_CONTINUE_P=0.5; // 前の大会で超絶好調だった人が、翌大会も超絶好調になる確率
 const SUPER_PROB_DEF=1;    // 大会前の抽選確率(%)の初期値
 const TOP_NAMES={1:'大将',2:'副将',3:'先鋒',4:'旗頭'};
 const TOP_DIVS=['大将','副将','先鋒','旗頭'];
@@ -676,15 +677,20 @@ function rankSortKey(p){return p.div==='前相撲'?99999:p.slot;}
 function startBasho(no){
   S.people.forEach(p=>{p.w=0;p.l=0;p.met=[];p.res=[];});
   S.basho={no,place:PLACES[(no-1)%PLACES.length],day:0,matches:[],mi:0,phase:'ready',
-    titles:null,playoffs:[],byes:[],supers:rollSupers(),tr:null};
+    titles:null,playoffs:[],byes:[],supers:rollSupers(no),tr:null};
   if(S.basho.supers.length)L(`${tName(no)} 超絶好調: ${S.basho.supers.map(id=>pname(id)).join('、')}`);
 }
-/* 大会前に全員が抽選。当たった人はその大会中ずっと超絶好調(調子値+0.5) */
+/* 大会前に全員が抽選。当たった人はその大会中ずっと超絶好調(調子値+1.0)。前の大会で超絶好調だった人は50%で翌大会も継続 */
 function superProb(){const v=+S.settings.superProb;return Number.isFinite(v)&&S.settings.superProb!==''&&S.settings.superProb!=null?Math.max(0,Math.min(100,v)):SUPER_PROB_DEF;}
-function rollSupers(){
+function rollSupers(no){
   if(S.settings.superOn===false)return [];
   const pr=superProb();
-  return S.people.filter(()=>Math.random()*100<pr).map(p=>p.id);
+  // 直前の大会(no-1)で超絶好調だった人は、50%で翌大会も継続する。継続しなかった人は通常の抽選を受ける
+  const prevSet=(S.basho&&S.basho.no===no-1)?new Set(S.basho.supers||[]):new Set();
+  return S.people.filter(p=>{
+    if(prevSet.has(p.id)&&Math.random()<SUPER_CONTINUE_P)return true;
+    return Math.random()*100<pr;
+  }).map(p=>p.id);
 }
 function isSuper(p){const B=S.basho;return !!(B&&B.supers&&B.supers.includes(p.id));}
 function maxDays(){return 15;}
@@ -3629,7 +3635,7 @@ function renderSettings(){
   <h3>ゲーム設定</h3>
   <div class="set"><label><input type="checkbox" id="oSpecial" ${S.settings.special!==false?'checked':''}> 特殊能力を有効にする <small class="dim">オフにすると全員が通常攻撃だけで戦います</small></label></div>
   <div class="set"><label><input type="checkbox" id="oGate" ${S.settings.gateHp!==false?'checked':''}> 条件分岐の「体力」を、現在のHPで判定する <small class="dim">オフにすると原作どおり、データ上の体力値で判定します</small></label></div>
-  <div class="set"><label><input type="checkbox" id="oSuper" ${S.settings.superOn!==false?'checked':''}> 超絶好調を有効にする <small class="dim">大会の開始前に全員が抽選し、当たった人はその大会中ずっと調子値が +0.5(基本値×得意苦手補正のあとに加算)</small></label></div>
+  <div class="set"><label><input type="checkbox" id="oSuper" ${S.settings.superOn!==false?'checked':''}> 超絶好調を有効にする <small class="dim">大会の開始前に全員が抽選し、当たった人はその大会中ずっと調子値が +1.0(基本値×得意苦手補正のあとに加算)。前の大会で超絶好調だった人は50%で翌大会も継続</small></label></div>
   <div class="set"><label>超絶好調の抽選確率 <input type="number" id="oSuperP" min="0" max="100" step="0.1" value="${superProb()}" style="width:72px"> %(1人ずつ独立に抽選・次の大会から反映)</label></div>
   <h3>サウンド</h3>
   <div class="set"><label><input type="checkbox" id="oSound" ${snd.on()?'checked':''}> BGM・効果音を鳴らす <small class="dim">BGMは大会の開催月に合わせて切り替わります。効果音は「観戦」モードのときに鳴ります</small></label></div>
