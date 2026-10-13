@@ -265,7 +265,9 @@ input[type=search],input[type=text]{width:100%}
 .hoshi td.hs .g{display:block;width:100%;overflow:hidden;white-space:nowrap;text-align:center}
 .hoshi th.nm,.hoshi td.nm{width:96px;min-width:96px;max-width:96px;text-align:left;padding-right:6px}
 .hoshi th.rec,.hoshi td.rec{width:100px;min-width:100px;max-width:100px;text-align:left;padding:2px 6px 2px 2px}
-.hoshi th.rk,.hoshi td.rk{width:56px;min-width:56px;max-width:56px;text-align:center;font-weight:600;padding:2px 4px;border-left:1px solid #bbb;border-right:1px solid #bbb}
+.hoshi th.rk,.hoshi td.rk{width:56px;min-width:56px;max-width:56px;text-align:center;font-weight:600;font-size:13px;letter-spacing:-.02em;padding:2px 2px;border-left:1px solid #bbb;border-right:1px solid #bbb}
+.hoshi.long th.rk,.hoshi.long td.rk{width:56px;min-width:56px;max-width:56px}
+.hoshi.short th.rk,.hoshi.short td.rk{width:84px;min-width:84px;max-width:84px}
 .hoshi td.nmr{text-align:right;padding-left:6px;padding-right:2px}
 .tabs button{padding:7px 17px}
 .tabs button.on{background:linear-gradient(135deg,var(--btn1),var(--btn2));border-color:transparent;color:var(--on-accent);font-weight:700;box-shadow:0 3px 10px rgba(155,87,201,.3)}
@@ -3297,7 +3299,7 @@ function hoshiHTML(list,g){
     const mid=e?rankLabel(e):(w?rankLabel(w):'');
     return `<tr>${hoshiNameCell(e)}${hoshiRecCell(e)}${hoshiCells(e,days,T)}<td class="rk">${mid}</td>${hoshiCells(w,days,T)}${hoshiRecCell(w)}${hoshiNameCell(w).replace('class="nm"','class="nm nmr"')}</tr>`;
   }).join('');
-  return `<h3>星取表</h3><div class="hoshi"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+  return `<h3>星取表</h3><div class="hoshi ${days>7?'long':'short'}"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
 }
 
 /* ---------- 総合優勝争い ----------
