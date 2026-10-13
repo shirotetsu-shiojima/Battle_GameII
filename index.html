@@ -209,8 +209,6 @@ input[type=search],input[type=text]{width:100%}
 .nick-prev{width:100%;font-size:13px}
 .shop-item>.shop-main{flex-direction:row;align-items:center;gap:10px}
 .drink-can{width:34px;height:52px;border-radius:7px 7px 10px 10px;background:linear-gradient(90deg,rgba(255,255,255,.45),rgba(255,255,255,0) 35%,rgba(0,0,0,.18)),var(--c);box-shadow:0 2px 6px #0004;display:flex;align-items:center;justify-content:center;flex:none;position:relative}
-.drink-can.aqua b{writing-mode:horizontal-tb;font-size:6px;line-height:1.1;letter-spacing:0;white-space:normal;width:32px;text-align:center;font-weight:800}
-.drink-can.aqua{background:linear-gradient(90deg,rgba(255,255,255,.45),rgba(255,255,255,0) 35%,rgba(0,0,0,.14)),linear-gradient(160deg,#7fe6ff 0%,#6fb1ff 45%,#9b6bff 100%)}
 .drink-can::before{content:"";position:absolute;top:-4px;left:4px;right:4px;height:6px;border-radius:3px;background:#cfd6de}
 .drink-can b{writing-mode:vertical-rl;font-size:11px;color:#fff;text-shadow:0 1px 2px #0008;letter-spacing:.05em}
 .fx-prev{position:relative;width:100%;max-width:280px;height:96px;border-radius:10px;background:linear-gradient(#b9a6e8,#f3e8ff);overflow:hidden;margin:6px 0 4px}
@@ -256,17 +254,6 @@ input[type=search],input[type=text]{width:100%}
 .pfimg{display:block;width:100%;max-width:220px;aspect-ratio:1/1;object-fit:cover;border-radius:18px;margin:8px auto;border:4px solid var(--line)}
 
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
-#tab_standings h3{display:flex;align-items:center;gap:8px;text-align:left}
-.hoshi{overflow-x:auto;max-width:100%;text-align:left}
-.hoshi table{border-collapse:collapse;font-size:15px;width:auto;table-layout:fixed}
-.hoshi th,.hoshi td{padding:4px 2px;text-align:center;white-space:nowrap;line-height:1.3;overflow:hidden}
-.hoshi th{font-weight:600}
-.hoshi th.hd,.hoshi td.hs{width:22px;min-width:22px;max-width:22px;box-sizing:border-box;padding:4px 0;font-size:13px}
-.hoshi td.hs .g{display:block;width:100%;overflow:hidden;white-space:nowrap;text-align:center}
-.hoshi th.nm,.hoshi td.nm{width:96px;min-width:96px;max-width:96px;text-align:left;padding-right:6px}
-.hoshi th.rec,.hoshi td.rec{width:100px;min-width:100px;max-width:100px;text-align:left;padding:2px 6px 2px 2px}
-.hoshi th.rk,.hoshi td.rk{width:56px;min-width:56px;max-width:56px;text-align:center;font-weight:600;padding:2px 4px;border-left:1px solid #bbb;border-right:1px solid #bbb}
-.hoshi td.nmr{text-align:right;padding-left:6px;padding-right:2px}
 .tabs button{padding:7px 17px}
 .tabs button.on{background:linear-gradient(135deg,var(--btn1),var(--btn2));border-color:transparent;color:var(--on-accent);font-weight:700;box-shadow:0 3px 10px rgba(155,87,201,.3)}
 .pane{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;min-height:240px;box-shadow:var(--shadow)}
@@ -957,21 +944,13 @@ function planDay(day){
   });
   // 調整枠: 当日の出場予定が奇数なら、損傷度(今大会の総合)が最も高い人を1人休ませる(不戦敗にはしない)
   const total=pools.reduce((s,x)=>s+x.list.length,0);
-  if(T)T.kyu=[];
   if(total%2){
-    // 損傷度が最も高い人を選ぶ。同点の人が複数いるときは、その中から乱数で1人を選ぶ
-    const cands=[];
-    for(const x of pools)for(const p of x.list)cands.push({p,l:x.list});
-    let top=-1;
-    for(const c of cands)top=Math.max(top,trD(c.p.id));
-    const tied=cands.filter(c=>trD(c.p.id)===top);
-    const pick=tied.length?tied[Math.floor(Math.random()*tied.length)]:null;
-    let best=pick?pick.p:null,bl=pick?pick.l:null;
+    let best=null,bl=null;
+    for(const x of pools)for(const p of x.list){if(!best||trD(p.id)>trD(best.id)){best=p;bl=x.list;}}
     if(best){
       bl.splice(bl.indexOf(best),1);B.byes.push(best);
-      notes.push(`${best.name}は調整枠(奇数のため今日は不戦敗・損傷度${trD(best.id)})`);
-      best.l++;                                    // 調整枠で休んだ日は不戦敗(負け)。休みの数には入れない
-      if(T){T.forf[best.id]=(T.forf[best.id]||0)+1;T.kyu=[best.id];T.part[best.id]={fd:day,kyu:true};trRec(best.id,day,'FL');}   // 以後は復帰せず大会の最後まで休み
+      notes.push(`${best.name}は調整枠(奇数のため今日は休み・損傷度${trD(best.id)})`);
+      if(T)T.rests[best.id]=(T.rests[best.id]||0)+1;
     }
   }
   // 奇数なら下の階級から1人借りて偶数にする。最後が奇数なら1人は休み
@@ -1032,16 +1011,7 @@ const TR_FORCE_DAY=13, TR_FORCE_P=0.6; // 13日目以降の朝に、まだ判定
 function trEmpty(){return {F:{},dmg:{},full:{},part:{},played:[],rests:{},forf:{},force:{}};}
 function trF(id){const T=S.basho.tr;const v=T&&T.F[id];return v!=null?v:100;}
 function trD(id){const T=S.basho.tr;return (T&&T.dmg[id])||0;}
-function trGain(id){                                   // 1試合の損傷度: 基準(10×F/100)に 0.5〜1.5 倍の乱数(サーバーと同じ幅)
-  const r=0.5+Math.random();
-  return Math.max(1,Math.round(10*trF(id)/100*r));
-}
-/* 日別の星取表の記録(W 勝ち / L 負け / FL 不戦敗 / R 休み) */
-function trRec(id,day,code){
-  const T=S.basho.tr;if(!T)return;
-  if(!T.hoshi)T.hoshi={};
-  (T.hoshi[id]||(T.hoshi[id]={}))[day]=code;
-}
+function trGain(id){return Math.max(1,Math.round(10*trF(id)/100));}   // 1試合の損傷度(平均値。仮)
 function trAdd(id){
   const T=S.basho.tr;if(!T)return;
   T.dmg[id]=(T.dmg[id]||0)+trGain(id);
@@ -1057,7 +1027,7 @@ function trSkip(p,day){
 function trGroupDays(p){const g=GROUPS.find(g=>g.divs.includes(p.div));return g?g.days:maxDays();}
 function trRestN(p){
   const T=S.basho.tr;if(!T)return 0;
-  if(T.full[p.id])return Math.min(S.basho.day||0,trGroupDays(p));   // 全休は、進んだ日数の分だけ休みが増える
+  if(T.full[p.id])return trGroupDays(p);
   return T.rests[p.id]||0;
 }
 /* 順位表の「休」列。休みが0なら空欄 */
@@ -1070,7 +1040,6 @@ function trStartDay(B){
     for(const id of T.played){
       if(T.full[id]||T.part[id])continue;
       const p=S.byId.get(id);if(!p)continue;
-      if(day>trGroupDays(p))continue;               // 階級の日数(上等兵以下は7日)を過ぎたら判定しない
       if(day>=TR_FORCE_DAY){                       // 13日目以降は、最初の判定で強行出場を選ぶかを決める(以後は固定)
         if(T.force[id]===undefined)T.force[id]=Math.random()<TR_FORCE_P;
         if(T.force[id])continue;
@@ -1087,23 +1056,16 @@ function trStartDay(B){
   for(const p of S.people){
     const pr=T.part[p.id];
     if(!pr||T.full[p.id])continue;
-    if(pr.fd===day){p.l++;T.forf[p.id]=(T.forf[p.id]||0)+1;trRec(p.id,day,'FL');}      // 不戦敗は「敗」として数える
-    else if(day>pr.fd&&day<=trGroupDays(p)){T.rests[p.id]=(T.rests[p.id]||0)+1;trRec(p.id,day,'R');}   // 休(階級の日数まで。最終日の不戦敗は休に数えない)
+    if(pr.fd===day){p.l++;T.forf[p.id]=(T.forf[p.id]||0)+1;}      // 不戦敗は「敗」として数える
+    else if(day>pr.fd)T.rests[p.id]=(T.rests[p.id]||0)+1;          // 休(最終日の不戦敗は休に数えない)
   }
 }
 /* 休場の情報を番付サーバーと DB から集める(大会の初日の前に一度だけ) */
 async function sbRest(q){
   const C=SUPABASE_CONFIG,base=C.url.replace(/\/+$/,'').replace(/\/rest\/v1$/,'');
   const headers={apikey:C.anonKey};if(!/^sb_/.test(C.anonKey))headers.Authorization='Bearer '+C.anonKey;
-  try{const r=await fetch(`${base}/rest/v1/${q}`,{headers,cache:'no-store'});if(!r.ok)return {ok:false};return {ok:true,data:await r.json()};}
+  try{const r=await fetch(`${base}/rest/v1/${q}`,{headers});if(!r.ok)return {ok:false};return {ok:true,data:await r.json()};}
   catch(e){return {ok:false};}
-}
-/* 故障率は、毎朝 Supabase から取り直す(大会の途中で変更された値を、その日の判定から使う) */
-async function trRefreshF(){
-  const T=S.basho.tr;if(!T)return;
-  const ch=await sbRest('characters?select=id,failure_rate&limit=5000');
-  if(!ch.ok){toast('故障率の最新値を取得できませんでした。前回の値で進めます');return;}
-  ch.data.forEach(r=>{if(r.failure_rate!=null)T.F[r.id]=+r.failure_rate;});
 }
 async function trPrepare(){
   const B=S.basho,T=trEmpty();
@@ -1129,13 +1091,11 @@ function trReportHtml(){
   const T=S.basho.tr;if(!T)return '';
   const day=S.basho.day,nm=id=>esc(pname(+id));
   const fx=Object.keys(T.part).filter(id=>T.part[id].fd===day);
-  const sit=Object.keys(T.part).filter(id=>T.part[id].fd<day);   // 途中休場・調整枠の後に休んでいる人
+  const sit=Object.keys(T.part).filter(id=>T.part[id].fd<day);
   const full=Object.keys(T.full);
-  const ky=T.kyu||[];
   let h='';
-  if(ky.length)h+=`<p class="dim">調整枠による不戦敗(本日): ${ky.map(nm).join('、')}</p>`;
   if(fx.length)h+=`<p class="dim">途中休場による不戦敗(本日): ${fx.map(nm).join('、')}</p>`;
-  if(sit.length)h+=`<p class="dim">休場中(途中休場・調整枠): ${sit.map(nm).join('、')}</p>`;
+  if(sit.length)h+=`<p class="dim">途中休場中: ${sit.map(nm).join('、')}</p>`;
   if(full.length)h+=`<p class="dim">全休(今大会): ${full.map(nm).join('、')}</p>`;
   return h;
 }
@@ -1264,7 +1224,6 @@ function applyResult(m,res){
   const win=res.winner,lose=res.loser;
   win.w++;lose.l++;
   trAdd(win.id);trAdd(lose.id);
-  trRec(win.id,S.basho.day,'W');trRec(lose.id,S.basho.day,'L');
   applyManeki(m,win);
   payBounty(win,m);
   win.met.push(lose.id);lose.met.push(win.id);
@@ -1285,12 +1244,12 @@ function bashoDaysDone(){return S.basho.day>=maxDays()&&dayDone();}
 const shuffleIds=a=>a.slice().sort(()=>Math.random()-.5);
 function setTitle(g,ch,first,playoff){
   const B=S.basho;
-  B.titles[g.key]={id:ch.id,w:ch.w,l:ch.l,k:trRestN(ch),playoff,n:first};
+  B.titles[g.key]={id:ch.id,w:ch.w,l:ch.l,playoff,n:first};
   ch.titles.push({b:B.no,key:g.key});
   L(`${tName(B.no)} ${g.label}:${ch.name}(${ch.w}勝${ch.l}敗)${playoff?' 決定戦':''}`);
 }
 /* 最終日に途中休場の不戦敗となった人は、決定戦も不戦敗(両方そうなら通常どおり戦う) */
-function trFinalDayOut(p){const T=S.basho.tr;const pr=T&&T.part[p.id];return !!pr&&pr.fd===trGroupDays(p);}
+function trFinalDayOut(p){const T=S.basho.tr;const pr=T&&T.part[p.id];return !!pr&&pr.fd===maxDays();}
 function playoffResult(m){
   const res=simulateMatch(m.a,m.b,S.basho.place);
   const fa=trFinalDayOut(m.a),fb=trFinalDayOut(m.b);
@@ -3035,7 +2994,6 @@ async function playMatch(animate,quiet){
   if(B.day===0||dayDone()){
     if(B.day>=maxDays()&&dayDone())return afterDays();
     if(B.day===0&&!B.tr&&sbEnabled()){try{await trPrepare();}catch(e){toast(e.message);return 'error';}}
-    else if(B.tr&&sbEnabled()){await trRefreshF();}
     beginDay();renderAll();
     if(!B.matches.length){            // その日に取組がない(リセット直後で上位階級が空など)
       if(B.day>=maxDays())return afterDays();
@@ -3232,7 +3190,7 @@ function renderBanzuke(){
   const cell=(p,east)=>{
     if(!p)return '<span class="none">―</span>';
     const champs=p.titles.filter(t=>t.key==='総合').length;
-    const rn=trRestN(p);const mt=[arrow(p),S.basho.day?`${p.w}勝${p.l}敗${rn>0?rn+'休':''}`:'',p.rec.length?`前${p.rec[p.rec.length-1].w}勝`:'',champs?'★'.repeat(Math.min(champs,6))+(champs>6?'+'+(champs-6):''):''].filter(Boolean).join(' ');
+    const rn=trRestN(p);const mt=[arrow(p),S.basho.day?`${p.w}-${p.l}${rn>0?'-'+rn:''}`:'',p.rec.length?`前${p.rec[p.rec.length-1].w}勝`:'',champs?'★'.repeat(Math.min(champs,6))+(champs>6?'+'+(champs-6):''):''].filter(Boolean).join(' ');
     const m=`<span class="mt">${mt}</span>`;
     return `<div class="cell">${east?m+rowName(p):rowName(p)+m}</div>`;
   };
@@ -3249,51 +3207,11 @@ function renderBanzuke(){
 function renderStandings(){
   const el=$('tab_standings');
   const g=GROUPS.find(x=>x.key===UI.sFilter)||GROUPS[0];
-  const list=S.people.filter(p=>g.divs.includes(p.div)).sort(bzCmp);   // 番付順(番付表と同じ並び)
-  el.innerHTML=`<div class="row"><label>階級 <select id="sFilter">${GROUPS.map(x=>`<option value="${x.key}"${x.key===g.key?' selected':''}>${x.key}</option>`).join('')}</select></label></div>${hoshiHTML(list,g)}`;
+  const list=S.people.filter(p=>g.divs.includes(p.div)).sort((a,b)=>b.w-a.w||a.l-b.l||ordKey(a)-ordKey(b));
+  el.innerHTML=`<div class="row"><label>階級 <select id="sFilter">${GROUPS.map(x=>`<option value="${x.key}"${x.key===g.key?' selected':''}>${x.key}</option>`).join('')}</select></label></div>
+  <div class="tbl"><table><thead><tr><th>順位</th><th>番付</th><th>名前</th><th>成績</th></tr></thead><tbody>${list.map((p,i)=>{const n=trRestN(p);return `<tr><td>${i+1}</td><td>${rankLabel(p)}</td><td>${rowName(p)}</td><td>${p.w}-${p.l}${n>0?'-'+n:''}</td></tr>`;}).join('')}</tbody></table></div>`;
   $('sFilter').onchange=e=>{UI.sFilter=e.target.value;renderStandings();};
 }
-/* 星取表: 勝ち○ 負け● 不戦勝□ 不戦敗■ 休み「や」(休みの日は空欄にしない) */
-const HOSHI_SYM={W:'⚪︎',L:'⚫︎',FW:'◻︎',FL:'◼︎',R:'や'};
-/* 番付表と同じ東西の振り分け: 同じ番付の中で、偶数番目が東、その次の奇数番目が西 */
-function bzPairs(list){
-  const rows=[],cnt={};
-  for(const p of list){
-    const base=(TOP_DIVS.includes(p.div)||p.div==='前相撲')?p.div:p.div+':'+p.slot;
-    const n=cnt[base]=(cnt[base]||0)+1,idx=n-1;
-    if(idx%2===0)rows.push({e:p,w:null});else rows[rows.length-1].w=p;
-  }
-  return rows;
-}
-function hoshiCells(p,days,T){
-  return Array.from({length:days},(_,i)=>{
-    const d=i+1;let c='';
-    if(!p)return '<td class="hs"></td>';
-    if(T&&T.full[p.id])c=d<=S.basho.day?'R':'';                 // 全休は、進んだ日まで「や」
-    else if(T&&T.hoshi&&T.hoshi[p.id])c=T.hoshi[p.id][d]||'';
-    return `<td class="hs ${c==='W'?'w':c==='L'?'x':''}"><span class="g">${c?HOSHI_SYM[c]:''}</span></td>`;
-  }).join('');
-}
-function hoshiRecCell(p){
-  if(!p)return '<td class="rec"></td>';
-  const n=trRestN(p);
-  return `<td class="rec">${p.w}勝${p.l}敗${n>0?n+'休':''}</td>`;
-}
-function hoshiNameCell(p){return p?`<td class="nm">${rowName(p)}</td>`:'<td class="nm"></td>';}
-function hoshiHTML(list,g){
-  const T=S.basho.tr,days=g.days;
-  if(!list.length)return '';
-  const pairs=bzPairs(list);
-  // 左: 東(名前・成績・日別) / 中央: 番付 / 右: 西(日別・成績・名前)
-  const head=`<tr><th class="nm">名前</th><th class="rec">成績</th>${Array.from({length:days},(_,i)=>`<th class="hd">${i+1}</th>`).join('')}<th class="rk">番付</th>${Array.from({length:days},(_,i)=>`<th class="hd">${i+1}</th>`).join('')}<th class="rec">成績</th><th class="nm">名前</th></tr>`;
-  const body=pairs.map(x=>{
-    const e=x.e,w=x.w;
-    const mid=e?rankLabel(e):(w?rankLabel(w):'');
-    return `<tr>${hoshiNameCell(e)}${hoshiRecCell(e)}${hoshiCells(e,days,T)}<td class="rk">${mid}</td>${hoshiCells(w,days,T)}${hoshiRecCell(w)}${hoshiNameCell(w).replace('class="nm"','class="nm nmr"')}</tr>`;
-  }).join('');
-  return `<h3>星取表</h3><div class="hoshi"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
-}
-
 /* ---------- 総合優勝争い ----------
    4日目終了以降、総合優勝の対象(大将〜戦士)で勝ち数が最も多い人を表示する。
    6日目終了以降で首位の人数が少ないとき(RACE_CHASE_MAX人以下)は、首位と1勝差の人も表示する。 */
@@ -3322,12 +3240,12 @@ function renderTitles(){
   const el=$('tab_titles');const B=S.basho;
   const cards=GROUPS.map(g=>{
     const t=B.titles&&B.titles[g.key];
-    return `<div class="card"><small>${g.label}</small><b>${t?idLink(t.id):'-'}</b><small class="dim">${t?`${t.w}勝${t.l}敗${t.k>0?t.k+'休':''}${t.playoff?`(${t.n}名で決定戦)`:''}`:''}</small></div>`;
+    return `<div class="card"><small>${g.label}</small><b>${t?idLink(t.id):'-'}</b><small class="dim">${t?`${t.w}勝${t.l}敗${t.playoff?`(${t.n}名で決定戦)`:''}`:''}</small></div>`;
   }).join('');
   const ranking=S.people.map(p=>({p,n:p.titles.filter(t=>t.key==='総合').length,all:p.titles.length})).filter(x=>x.all).sort((a,b)=>b.n-a.n||b.all-a.all).slice(0,12);
   const hist=S.history.slice(-30).reverse().map(h=>{
     const t=h.titles&&h.titles['総合'];
-    return `<tr><td>${tName(h.no)}</td><td>${esc(h.place)}</td><td>${t?idLink(t.id):'-'}</td><td>${t?`${t.w}勝${t.l}敗${t.k>0?t.k+'休':''}`:''}</td><td>${h.titles&&h.titles['闘士']?idLink(h.titles['闘士'].id):''}</td></tr>`;
+    return `<tr><td>${tName(h.no)}</td><td>${esc(h.place)}</td><td>${t?idLink(t.id):'-'}</td><td>${t?`${t.w}-${t.l}`:''}</td><td>${h.titles&&h.titles['闘士']?idLink(h.titles['闘士'].id):''}</td></tr>`;
   }).join('');
   const ch=(B.changes||[]).filter(c=>/大将|副将|先鋒|旗頭/.test(c)).slice(0,20);
   el.innerHTML=`<h3>${B.titles?`${tName(B.no)}の結果`:'今大会の優勝(終了後に確定)'}</h3><div class="cards">${cards}</div>
@@ -3362,7 +3280,6 @@ const SHOP_DRINKS=[
   {id:'power',  stat:'pw',name:'パワードリンク',  price:7500,desc:'パワーを強化'},
   {id:'guard',  stat:'gd',name:'ガードドリンク',  price:7500,desc:'ガードを強化'},
   {id:'energy', stat:'iq',name:'エナジードリンク',price:10000,desc:'IQを強化'},
-  {id:'aqua',   stat:'all',name:'アクアポローニアドリンク',price:777777,desc:'全能力を強化(3大会持続)',mul:1.99,term:3},
 ];
 /* 大将撃破の演出: 相手が大将で、その大将に勝ったときに再生する(勝者の番付は問わない)。装備は1種類 */
 const SHOP_EFFECTS=[
@@ -3373,24 +3290,14 @@ const SHOP_EFFECTS=[
 ];
 function effectOf(id){return SHOP_EFFECTS.find(x=>x.id===id);}
 const DRINK_MUL=1.1;
-const DRINK_COL={stamina:'#3ec1d3',power:'#ef476f',guard:'#4d96ff',energy:'#ffd166',aqua:'#6fb1ff'};
-const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ',all:'全能力'};
-const ALL_STATS=['hp','pw','gd','iq'];
+const DRINK_COL={stamina:'#3ec1d3',power:'#ef476f',guard:'#4d96ff',energy:'#ffd166'};
+const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ'};
 function plateOf(id){return SHOP_PLATES.find(x=>x.id===id);}
 function plateName(p){const x=plateOf(p.plate);return x?x.name:'なし';}
 /* 能力の強化値: ドリンクの効果が及ぶ大会の間だけ強化する */
-/* ドリンクの効果期間: 購入した大会(start)から term 大会の間。term 省略時は1大会 */
-function boostTerm(stat){const d=SHOP_DRINKS.find(x=>x.stat===stat);return (d&&d.term)||1;}
-function boostActive(p,stat,no){
-  const st=p.boost&&p.boost[stat];
-  return st!=null&&no>=st&&no<st+boostTerm(stat);
-}
 function boostedStat(p,k){
   const v=p[k];
-  let m=1;
-  if(ALL_STATS.includes(k)&&boostActive(p,'all',S.basho.no))m*=SHOP_DRINKS.find(x=>x.stat==='all').mul;
-  if(boostActive(p,k,S.basho.no))m*=DRINK_MUL;
-  return m===1?v:Math.round(v*m);
+  return (p.boost&&p.boost[k]===S.basho.no)?Math.round(v*DRINK_MUL):v;
 }
 /* ドリンクの効果が及ぶ大会番号: 大会と大会の間(終了後)なら次の大会、それ以外は今の大会 */
 function drinkTargetNo(){const B=S.basho;return (B.phase==='done'||B.phase==='submit')?B.no+1:B.no;}
@@ -3504,11 +3411,10 @@ function shopBuyDrink(p,id){
   const d=SHOP_DRINKS.find(x=>x.id===id);if(!d)return;
   const no=drinkTargetNo();
   if(!p.boost)p.boost={};
-  if(boostActive(p,d.stat,no)){toast(`${d.name}は効果中です(${d.term?'持続中は重ねて買えません':'1大会1本まで'})`);return;}
+  if(p.boost[d.stat]===no){toast(`${d.name}は${tName(no)}で効果中です(1大会1本まで)`);return;}
   if((p.money||0)<d.price){toast('所持金が足りません');return;}
   p.money-=d.price;p.boost[d.stat]=no;
-  const span=(d.term||1)>1?`${tName(no)}〜${tName(no+d.term-1)}`:tName(no);
-  L(`ショップ: ${p.name} が${d.name}を購入(${fmt(d.price)}pt、${span}で${STAT_LABEL[d.stat]}×${d.mul||DRINK_MUL})`);
+  L(`ショップ: ${p.name} が${d.name}を購入(${fmt(d.price)}pt、${tName(no)}で${STAT_LABEL[d.stat]}×${DRINK_MUL})`);
   saveSoon();renderShop();
 }
 function shopList(){
@@ -3539,9 +3445,9 @@ function shopBodyHTML(p){
       <small class="dim">${esc(x.desc)}</small><small>${fmt(x.price)} pt${st}</small></div>${btn}</div>`;
   }).join('');
   const drinks=SHOP_DRINKS.map(d=>{
-    const on=boostActive(p,d.stat,no);
+    const on=!!(p.boost&&p.boost[d.stat]===no);
     const btn=on?'<button disabled>効果中</button>':`<button data-dbuy="${d.id}" ${money<d.price?'disabled':''}>購入</button>`;
-    return `<div class="shop-item"><div class="shop-main"><span class="drink-can${d.id==='aqua'?' aqua':''}" style="--c:${DRINK_COL[d.id]}"><b>${d.id==='aqua'?'AQUA PAULOWNIA':STAT_LABEL[d.stat]}</b></span><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${d.mul||DRINK_MUL})</small>
+    return `<div class="shop-item"><div class="shop-main"><span class="drink-can" style="--c:${DRINK_COL[d.id]}"><b>${STAT_LABEL[d.stat]}</b></span><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${DRINK_MUL})</small>
       <small>${fmt(d.price)} pt</small></div></div>${btn}</div>`;
   }).join('');
   const fxs=SHOP_EFFECTS.map(x=>{
@@ -3556,7 +3462,7 @@ function shopBodyHTML(p){
   return `<h3>${esc(p.name)} <small class="dim">${esc(rankLabel(p))}</small></h3>
     <p>所持金: <b>${fmt(money)} pt</b> ・ 名札: <b>${esc(plateName(p))}</b></p>
     <h4>名札(プレート)</h4>${plates}
-    <h4>ドリンク(${esc(tName(no))}の間、効果あり)</h4>${drinks}
+    <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}
     <h4>大将撃破の演出(装備は1種類)</h4>${fxs}
     <h4>2つ名(前後それぞれ5文字まで・何度でも編集可)</h4>${nickHTML(p,money)}
     <h4>お守り</h4>${charmHTML(p,money)}
