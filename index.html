@@ -254,16 +254,10 @@ input[type=search],input[type=text]{width:100%}
 .pfimg{display:block;width:100%;max-width:220px;aspect-ratio:1/1;object-fit:cover;border-radius:18px;margin:8px auto;border:4px solid var(--line)}
 
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
-#tab_standings{text-align:center}
-#tab_standings .row{justify-content:center}
-#tab_standings h3{display:flex;justify-content:center;align-items:center;text-align:center;width:100%}
-.hoshi{width:100%;overflow-x:auto;text-align:center}
-.hoshi table{border-collapse:collapse;font-size:15px;width:auto;margin:0 auto}
-.hoshi th,.hoshi td{padding:4px 2px;text-align:center;white-space:nowrap;line-height:1.3}
-.hoshi th{font-weight:600}
-.hoshi td.hs{width:22px;min-width:22px;max-width:22px;padding:4px 0;font-size:13px;overflow:hidden}
-.hoshi td.nm,.hoshi th.nm{text-align:left;padding-right:10px}
-.hoshi td.rec,.hoshi th.rec{text-align:left;padding:2px 10px 2px 2px}
+#tab_standings h3{display:flex;align-items:center;gap:8px;text-align:left}
+.hoshi th.rk,.hoshi td.rk{text-align:center;font-weight:600;padding:2px 8px;border-left:1px solid #bbb;border-right:1px solid #bbb}
+.hoshi td.nmr{text-align:right;padding-left:10px;padding-right:2px}
+.hoshi td.rec{text-align:left}
 .tabs button{padding:7px 17px}
 .tabs button.on{background:linear-gradient(135deg,var(--btn1),var(--btn2));border-color:transparent;color:var(--on-accent);font-weight:700;box-shadow:0 3px 10px rgba(155,87,201,.3)}
 .pane{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:16px;min-height:240px;box-shadow:var(--shadow)}
@@ -3246,28 +3240,51 @@ function renderBanzuke(){
 function renderStandings(){
   const el=$('tab_standings');
   const g=GROUPS.find(x=>x.key===UI.sFilter)||GROUPS[0];
-  const list=S.people.filter(p=>g.divs.includes(p.div)).sort((a,b)=>b.w-a.w||trRestN(a)-trRestN(b)||a.l-b.l||ordKey(a)-ordKey(b));
+  const list=S.people.filter(p=>g.divs.includes(p.div)).sort(bzCmp);   // 番付順(番付表と同じ並び)
   el.innerHTML=`<div class="row"><label>階級 <select id="sFilter">${GROUPS.map(x=>`<option value="${x.key}"${x.key===g.key?' selected':''}>${x.key}</option>`).join('')}</select></label></div>${hoshiHTML(list,g)}`;
   $('sFilter').onchange=e=>{UI.sFilter=e.target.value;renderStandings();};
 }
 /* 星取表: 勝ち○ 負け● 不戦勝□ 不戦敗■ 休み「や」(休みの日は空欄にしない) */
 const HOSHI_SYM={W:'⚪︎',L:'⚫︎',FW:'◻︎',FL:'◼︎',R:'や'};
-function hoshiHTML(list,g){
-  const B=S.basho,T=B.tr,days=g.days;
-  const head=`<tr><th>番付</th><th class="nm">名前</th><th class="rec">成績</th>${Array.from({length:days},(_,i)=>`<th>${i+1}</th>`).join('')}</tr>`;
-  const rows=list.map(p=>{
-    const cells=Array.from({length:days},(_,i)=>{
-      const d=i+1;
-      let c='';
-      if(T&&T.full[p.id])c=d<=B.day?'R':'';                      // 全休は、進んだ日まで「や」
-      else if(T&&T.hoshi&&T.hoshi[p.id])c=T.hoshi[p.id][d]||'';
-      return `<td class="hs ${c==='W'?'w':c==='L'?'x':''}">${c?HOSHI_SYM[c]:''}</td>`;
-    }).join('');
-    const n=trRestN(p);
-    return `<tr><td>${rankLabel(p)}</td><td class="nm">${rowName(p)}</td><td class="rec">${p.w}勝${p.l}敗${n>0?n+'休':''}</td>${cells}</tr>`;
-  }).join('');
-  return `<h3>星取表</h3><div class="hoshi"><table><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+/* 番付表と同じ東西の振り分け: 同じ番付の中で、偶数番目が東、その次の奇数番目が西 */
+function bzPairs(list){
+  const rows=[],cnt={};
+  for(const p of list){
+    const base=(TOP_DIVS.includes(p.div)||p.div==='前相撲')?p.div:p.div+':'+p.slot;
+    const n=cnt[base]=(cnt[base]||0)+1,idx=n-1;
+    if(idx%2===0)rows.push({e:p,w:null});else rows[rows.length-1].w=p;
+  }
+  return rows;
 }
+function hoshiCells(p,days,T){
+  return Array.from({length:days},(_,i)=>{
+    const d=i+1;let c='';
+    if(!p)return '<td class="hs"></td>';
+    if(T&&T.full[p.id])c=d<=S.basho.day?'R':'';                 // 全休は、進んだ日まで「や」
+    else if(T&&T.hoshi&&T.hoshi[p.id])c=T.hoshi[p.id][d]||'';
+    return `<td class="hs ${c==='W'?'w':c==='L'?'x':''}">${c?HOSHI_SYM[c]:''}</td>`;
+  }).join('');
+}
+function hoshiRecCell(p){
+  if(!p)return '<td class="rec"></td>';
+  const n=trRestN(p);
+  return `<td class="rec">${p.w}勝${p.l}敗${n>0?n+'休':''}</td>`;
+}
+function hoshiNameCell(p){return p?`<td class="nm">${rowName(p)}</td>`:'<td class="nm"></td>';}
+function hoshiHTML(list,g){
+  const T=S.basho.tr,days=g.days;
+  if(!list.length)return '';
+  const pairs=bzPairs(list);
+  // 左: 東(名前・成績・日別) / 中央: 番付 / 右: 西(日別・成績・名前)
+  const head=`<tr><th class="nm">名前</th><th class="rec">成績</th>${Array.from({length:days},(_,i)=>`<th>${i+1}</th>`).join('')}<th class="rk">番付</th>${Array.from({length:days},(_,i)=>`<th>${i+1}</th>`).join('')}<th class="rec">成績</th><th class="nm">名前</th></tr>`;
+  const body=pairs.map(x=>{
+    const e=x.e,w=x.w;
+    const mid=e?rankLabel(e):(w?rankLabel(w):'');
+    return `<tr>${hoshiNameCell(e)}${hoshiRecCell(e)}${hoshiCells(e,days,T)}<td class="rk">${mid}</td>${hoshiCells(w,days,T)}${hoshiRecCell(w)}${hoshiNameCell(w).replace('class="nm"','class="nm nmr"')}</tr>`;
+  }).join('');
+  return `<h3>星取表</h3><div class="hoshi"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+}
+
 /* ---------- 総合優勝争い ----------
    4日目終了以降、総合優勝の対象(大将〜戦士)で勝ち数が最も多い人を表示する。
    6日目終了以降で首位の人数が少ないとき(RACE_CHASE_MAX人以下)は、首位と1勝差の人も表示する。 */
