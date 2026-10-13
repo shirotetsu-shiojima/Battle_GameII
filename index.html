@@ -209,6 +209,8 @@ input[type=search],input[type=text]{width:100%}
 .nick-prev{width:100%;font-size:13px}
 .shop-item>.shop-main{flex-direction:row;align-items:center;gap:10px}
 .drink-can{width:34px;height:52px;border-radius:7px 7px 10px 10px;background:linear-gradient(90deg,rgba(255,255,255,.45),rgba(255,255,255,0) 35%,rgba(0,0,0,.18)),var(--c);box-shadow:0 2px 6px #0004;display:flex;align-items:center;justify-content:center;flex:none;position:relative}
+.drink-can.aqua b{writing-mode:horizontal-tb;font-size:6px;line-height:1.1;letter-spacing:0;white-space:normal;width:32px;text-align:center;font-weight:800}
+.drink-can.aqua{background:linear-gradient(90deg,rgba(255,255,255,.45),rgba(255,255,255,0) 35%,rgba(0,0,0,.14)),linear-gradient(160deg,#7fe6ff 0%,#6fb1ff 45%,#9b6bff 100%)}
 .drink-can::before{content:"";position:absolute;top:-4px;left:4px;right:4px;height:6px;border-radius:3px;background:#cfd6de}
 .drink-can b{writing-mode:vertical-rl;font-size:11px;color:#fff;text-shadow:0 1px 2px #0008;letter-spacing:.05em}
 .fx-prev{position:relative;width:100%;max-width:280px;height:96px;border-radius:10px;background:linear-gradient(#b9a6e8,#f3e8ff);overflow:hidden;margin:6px 0 4px}
@@ -3360,6 +3362,7 @@ const SHOP_DRINKS=[
   {id:'power',  stat:'pw',name:'パワードリンク',  price:7500,desc:'パワーを強化'},
   {id:'guard',  stat:'gd',name:'ガードドリンク',  price:7500,desc:'ガードを強化'},
   {id:'energy', stat:'iq',name:'エナジードリンク',price:10000,desc:'IQを強化'},
+  {id:'aqua',   stat:'all',name:'アクアポローニアドリンク',price:777777,desc:'全能力を強化(3大会持続)',mul:1.99,term:3},
 ];
 /* 大将撃破の演出: 相手が大将で、その大将に勝ったときに再生する(勝者の番付は問わない)。装備は1種類 */
 const SHOP_EFFECTS=[
@@ -3370,14 +3373,24 @@ const SHOP_EFFECTS=[
 ];
 function effectOf(id){return SHOP_EFFECTS.find(x=>x.id===id);}
 const DRINK_MUL=1.1;
-const DRINK_COL={stamina:'#3ec1d3',power:'#ef476f',guard:'#4d96ff',energy:'#ffd166'};
-const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ'};
+const DRINK_COL={stamina:'#3ec1d3',power:'#ef476f',guard:'#4d96ff',energy:'#ffd166',aqua:'#6fb1ff'};
+const STAT_LABEL={hp:'体力',pw:'パワー',gd:'ガード',iq:'IQ',all:'全能力'};
+const ALL_STATS=['hp','pw','gd','iq'];
 function plateOf(id){return SHOP_PLATES.find(x=>x.id===id);}
 function plateName(p){const x=plateOf(p.plate);return x?x.name:'なし';}
 /* 能力の強化値: ドリンクの効果が及ぶ大会の間だけ強化する */
+/* ドリンクの効果期間: 購入した大会(start)から term 大会の間。term 省略時は1大会 */
+function boostTerm(stat){const d=SHOP_DRINKS.find(x=>x.stat===stat);return (d&&d.term)||1;}
+function boostActive(p,stat,no){
+  const st=p.boost&&p.boost[stat];
+  return st!=null&&no>=st&&no<st+boostTerm(stat);
+}
 function boostedStat(p,k){
   const v=p[k];
-  return (p.boost&&p.boost[k]===S.basho.no)?Math.round(v*DRINK_MUL):v;
+  let m=1;
+  if(ALL_STATS.includes(k)&&boostActive(p,'all',S.basho.no))m*=SHOP_DRINKS.find(x=>x.stat==='all').mul;
+  if(boostActive(p,k,S.basho.no))m*=DRINK_MUL;
+  return m===1?v:Math.round(v*m);
 }
 /* ドリンクの効果が及ぶ大会番号: 大会と大会の間(終了後)なら次の大会、それ以外は今の大会 */
 function drinkTargetNo(){const B=S.basho;return (B.phase==='done'||B.phase==='submit')?B.no+1:B.no;}
@@ -3491,10 +3504,11 @@ function shopBuyDrink(p,id){
   const d=SHOP_DRINKS.find(x=>x.id===id);if(!d)return;
   const no=drinkTargetNo();
   if(!p.boost)p.boost={};
-  if(p.boost[d.stat]===no){toast(`${d.name}は${tName(no)}で効果中です(1大会1本まで)`);return;}
+  if(boostActive(p,d.stat,no)){toast(`${d.name}は効果中です(${d.term?'持続中は重ねて買えません':'1大会1本まで'})`);return;}
   if((p.money||0)<d.price){toast('所持金が足りません');return;}
   p.money-=d.price;p.boost[d.stat]=no;
-  L(`ショップ: ${p.name} が${d.name}を購入(${fmt(d.price)}pt、${tName(no)}で${STAT_LABEL[d.stat]}×${DRINK_MUL})`);
+  const span=(d.term||1)>1?`${tName(no)}〜${tName(no+d.term-1)}`:tName(no);
+  L(`ショップ: ${p.name} が${d.name}を購入(${fmt(d.price)}pt、${span}で${STAT_LABEL[d.stat]}×${d.mul||DRINK_MUL})`);
   saveSoon();renderShop();
 }
 function shopList(){
@@ -3525,9 +3539,9 @@ function shopBodyHTML(p){
       <small class="dim">${esc(x.desc)}</small><small>${fmt(x.price)} pt${st}</small></div>${btn}</div>`;
   }).join('');
   const drinks=SHOP_DRINKS.map(d=>{
-    const on=!!(p.boost&&p.boost[d.stat]===no);
+    const on=boostActive(p,d.stat,no);
     const btn=on?'<button disabled>効果中</button>':`<button data-dbuy="${d.id}" ${money<d.price?'disabled':''}>購入</button>`;
-    return `<div class="shop-item"><div class="shop-main"><span class="drink-can" style="--c:${DRINK_COL[d.id]}"><b>${STAT_LABEL[d.stat]}</b></span><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${DRINK_MUL})</small>
+    return `<div class="shop-item"><div class="shop-main"><span class="drink-can${d.id==='aqua'?' aqua':''}" style="--c:${DRINK_COL[d.id]}"><b>${d.id==='aqua'?'AQUA PAULOWNIA':STAT_LABEL[d.stat]}</b></span><div><b>${esc(d.name)}</b> <small class="dim">${esc(d.desc)}(×${d.mul||DRINK_MUL})</small>
       <small>${fmt(d.price)} pt</small></div></div>${btn}</div>`;
   }).join('');
   const fxs=SHOP_EFFECTS.map(x=>{
@@ -3542,7 +3556,7 @@ function shopBodyHTML(p){
   return `<h3>${esc(p.name)} <small class="dim">${esc(rankLabel(p))}</small></h3>
     <p>所持金: <b>${fmt(money)} pt</b> ・ 名札: <b>${esc(plateName(p))}</b></p>
     <h4>名札(プレート)</h4>${plates}
-    <h4>ドリンク(${esc(tName(no))}の間、能力×${DRINK_MUL})</h4>${drinks}
+    <h4>ドリンク(${esc(tName(no))}の間、効果あり)</h4>${drinks}
     <h4>大将撃破の演出(装備は1種類)</h4>${fxs}
     <h4>2つ名(前後それぞれ5文字まで・何度でも編集可)</h4>${nickHTML(p,money)}
     <h4>お守り</h4>${charmHTML(p,money)}
