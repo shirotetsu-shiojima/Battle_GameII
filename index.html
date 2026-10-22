@@ -692,7 +692,14 @@ function rollSupers(no){
     return Math.random()*100<pr;
   }).map(p=>p.id);
 }
-function isSuper(p){const B=S.basho;return !!(B&&B.supers&&B.supers.includes(p.id));}
+/* 大将昇進がかかる大会: 副将で、前の大会に総合優勝している人。今大会で優勝すると大将に上がるため、
+   その大会の間はドリンクと超絶好調を無効にして、本来の力で優勝を争う(サーバーの昇進条件と同じ) */
+function promoStake(p,no){
+  const n=no!=null?no:(S.basho?S.basho.no:null);
+  if(n==null)return false;
+  return p.div==='副将'&&(p.titles||[]).some(t=>t.key==='総合'&&t.b===n-1);
+}
+function isSuper(p){const B=S.basho;return !!(B&&B.supers&&B.supers.includes(p.id))&&!promoStake(p);}
 function maxDays(){return 15;}
 function met(a,b){return a.met.includes(b.id);}
 function ordKey(p){return rankSortKey(p)*10000-p.ab;}   // 小さいほど上位
@@ -3210,7 +3217,8 @@ function renderMatches(){
   <span class="dim">${B.day?`${B.day}日目の取組(下位から上位の順)`:'「▶ 次の1番」か「今日を進める」で開幕します'}</span></div>`;
   let html=sel;
   if(B.phase==='playoff'){const n=nextMatch();html+=`<p class="dim">🏆 優勝決定戦 進行中${n?` — 次:${esc(GROUPS[n.gi].label)} ${esc(n.a.name)} vs ${esc(n.b.name)}`:''}</p>`;}
-  if(B.supers&&B.supers.length)html+=`<p class="dim">⚡ 今大会の超絶好調: ${B.supers.map(id=>idLink(id)).join('、')}</p>`;
+  const supOn=(B.supers||[]).map(id=>S.byId.get(id)).filter(p=>p&&isSuper(p));
+  if(supOn.length)html+=`<p class="dim">⚡ 今大会の超絶好調: ${supOn.map(p=>idLink(p.id)).join('、')}</p>`;
   if(B.day){
     html+='<div class="mlist">';
     B.matches.forEach((m,i)=>{
@@ -3406,6 +3414,7 @@ function boostActive(p,stat,no){
 }
 function boostedStat(p,k){
   const v=p[k];
+  if(promoStake(p))return v;   // 大将昇進がかかる大会は、ドリンクを無効にする
   let m=1;
   if(ALL_STATS.includes(k)&&boostActive(p,'all',S.basho.no))m*=SHOP_DRINKS.find(x=>x.stat==='all').mul;
   if(boostActive(p,k,S.basho.no))m*=DRINK_MUL;
@@ -3574,6 +3583,7 @@ function shopBodyHTML(p){
   }).join('');
   return `<h3>${esc(p.name)} <small class="dim">${esc(rankLabel(p))}</small></h3>
     <p>所持金: <b>${fmt(money)} pt</b> ・ 名札: <b>${esc(plateName(p))}</b></p>
+    ${promoStake(p)?'<p class="dim">今大会は大将昇進がかかっているため、ドリンクと超絶好調の効果は無効です(本来の力で優勝を争います)</p>':''}
     <h4>名札(プレート)</h4>${plates}
     <h4>ドリンク(${esc(tName(no))}の間、効果あり)</h4>${drinks}
     <h4>大将撃破の演出(装備は1種類)</h4>${fxs}
