@@ -1829,14 +1829,12 @@ function resetVars(s,o,turn){
   s.baseMax=boostedStat(p,'hp');s.bonusTurn=0;   // 体力の増減は今ターンぶんを毎ターン決め直す
   s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
 }
-/* 体力(最大体力)の増減を現在HPへ反映: 上限を超えた分は切り捨て、増えた分は加算。
-   効果が切れても「減らした分」は戻らない */
 /* 体力(最大体力)の反映: 今ターンの体力(基礎値+増減)が上限になる。
-   上限が増えた分は現在HPにも加え、減った分は上限で切り捨てる。
-   毎ターン同じ増減を加算し直すことはしない(受けたダメージが回復してしまうため) */
+   上限が変わったときは、現在HPの「残り割合」を維持する(例: 3000/5000 → 上限10000なら 6000/10000)。
+   毎ターン増減を加算し直すことはしない(受けたダメージが回復してしまうため) */
 function syncHp(s){
   const newMax=Math.max(1,s.baseMax+s.bonusTurn);
-  if(newMax>s.maxHp)s.hp+=newMax-s.maxHp;
+  if(newMax!==s.maxHp&&s.maxHp>0)s.hp=s.hp*newMax/s.maxHp;   // 残率を維持
   s.maxHp=newMax;s.max=newMax;
   if(s.hp>s.maxHp)s.hp=s.maxHp;
 }
