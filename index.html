@@ -2136,7 +2136,8 @@ function applyManeki(m,win){
   m.bounty=Math.round(m.bounty*k);
   if(m.bountyInfo){m.bountyInfo.amount=m.bounty;m.bountyInfo.tip+=` ／ 招き猫 ×${k.toFixed(2)}`;}
 }
-function simulate(a,b,place,noSuper){
+/* tries: 取り直しの回数。両者の体力が同時に0になった一番は、ゲームセットにせず取り直す(上限あり) */
+function simulate(a,b,place,noSuper,tries=0){
   const A=mkSide(a,place,'A',noSuper),B=mkSide(b,place,'B',noSuper);
   const useSp=S.settings.special!==false;
   A.cmds=useSp?compileCmds(a):[];
@@ -2164,6 +2165,7 @@ function simulate(a,b,place,noSuper){
     flushPend(ctx,A);flushPend(ctx,B);
     tick(A);tick(B);
   }
+  if(A.hp<=0&&B.hp<=0&&tries<50)return simulate(a,b,place,noSuper,tries+1);
   let win;
   if(B.hp<=0&&A.hp>0)win='A';else if(A.hp<=0&&B.hp>0)win='B';
   else win=(A.hp/A.max>=B.hp/B.max)?'A':'B';
