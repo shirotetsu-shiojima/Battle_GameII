@@ -1800,8 +1800,9 @@ function describeCmd(a){
    「条件分岐より下のコマンド」だけが対象。毎ターン判定する(複数あれば AND)。
    体力の判定は、設定 gateHp が有効なら「現在のHP」、無効なら「データ上の体力値」(原作どおり) */
 function statOf(p,k){
-  if(k===6)return (p.hp+p.pw+p.gd+p.com+p.gaku)*(p.iq/100);
-  return [p.hp,p.pw,p.gd,p.com,p.gaku,p.iq][k]||0;
+  const sh=gakuShare(p);
+  if(k===6)return (p.hp+p.pw+p.gd+p.com+p.gaku)*(p.iq/100);   // 学力の合計は4分割しても同じ
+  return [p.hp+sh,p.pw+sh,p.gd+sh,p.com+sh,0,p.iq][k]||0;
 }
 function gateStat(side,k){
   if(k===0&&S.settings.gateHp!==false)return side.hp;
@@ -1850,7 +1851,7 @@ function mkSide(p,place,key,noSuper){
 }
 function resetVars(s,o,turn){
   const p=s.copyP||s.p,m=cardTurnMul(s,o,turn);
-  s.v={pw:boostedStat(p,'pw')*m,gd:boostedStat(p,'gd')*m,iq:boostedStat(p,'iq')*m,com:p.com*m,gaku:p.gaku*m};
+  s.v={pw:boostedStat(p,'pw')*m,gd:boostedStat(p,'gd')*m,iq:boostedStat(p,'iq')*m,com:(p.com+gakuShare(p))*m,gaku:0};
   s.baseMax=boostedStat(p,'hp');s.bonusTurn=0;   // 体力の増減は今ターンぶんを毎ターン決め直す
   s.critO=null;s.missO=null;s.defO=null;s.critMult=DEF_CRIT_MULT;
 }
@@ -3438,8 +3439,10 @@ function boostActive(p,stat,no){
   const st=p.boost&&p.boost[stat];
   return st!=null&&no>=st&&no<st+boostTerm(stat);
 }
+/* 学力を4分割した1割り分(体力・パワー・ガード・コミュ力にそれぞれ上乗せする) */
+function gakuShare(p){return Math.round((p.gaku||0)/4);}
 function boostedStat(p,k){
-  const v=p[k];
+  const v=p[k]+(['hp','pw','gd'].includes(k)?gakuShare(p):0);
   if(promoStake(p))return v;   // 大将昇進がかかる大会は、ドリンクを無効にする
   let m=1;
   if(ALL_STATS.includes(k)&&boostActive(p,'all',S.basho.no))m*=SHOP_DRINKS.find(x=>x.stat==='all').mul;
