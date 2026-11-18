@@ -282,6 +282,14 @@ h3:nth-of-type(3n)::before{background:linear-gradient(160deg,#d8434f,var(--fuu))
 
 .tabs{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
 #tab_standings h3{display:flex;align-items:center;gap:8px;text-align:left}
+.zk table{width:100%;border-collapse:collapse;font-size:12px;min-width:620px}
+.zk th,.zk td{border:1px solid var(--line);text-align:center;padding:6px 3px;vertical-align:middle}
+.zk th.yr{background:var(--chip);font-weight:700;white-space:nowrap}
+.zk td{min-width:78px;line-height:1.35}
+.zk td.z-win{background:rgba(46,139,87,.16);box-shadow:inset 0 0 0 2px #2e8b57}
+.zk td.z-other{background:var(--chip);color:var(--dim)}
+.zk td.z-cur{background:rgba(26,127,184,.10)}
+.zk td.z-none{color:var(--dim)}
 .hoshi{overflow-x:auto;max-width:100%;text-align:left}
 .hoshi table{border-collapse:collapse;font-size:15px;width:auto;table-layout:fixed}
 .hoshi th,.hoshi td{padding:4px 2px;text-align:center;white-space:nowrap;line-height:1.3;overflow:hidden}
@@ -444,6 +452,7 @@ a.btn{color:var(--ink);text-decoration:none}
     <button data-tab="matches">取組</button>
     <button data-tab="banzuke">番付</button>
     <button data-tab="standings">成績</button>
+    <button data-tab="zukan">成績図鑑</button>
     <button data-tab="titles">優勝</button>
     <button data-tab="search">検索・観戦</button>
     <button data-tab="shop">ショップ</button>
@@ -455,6 +464,7 @@ a.btn{color:var(--ink);text-decoration:none}
   <div class="pane" id="tab_matches"></div>
   <div class="pane" id="tab_banzuke" hidden></div>
   <div class="pane" id="tab_standings" hidden></div>
+  <div class="pane" id="tab_zukan" hidden></div>
   <div class="pane" id="tab_titles" hidden></div>
   <div class="pane" id="tab_search" hidden></div>
   <div class="pane" id="tab_shop" hidden></div>
@@ -3802,7 +3812,47 @@ function renderDuel(){
   $('dGo').onclick=go;$('dRep').onclick=go;
   showAiai();
 }
-const TABS={duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,shop:renderShop,gacha:renderGacha,log:renderLog,settings:renderSettings};
+/* ---------- 成績図鑑(Wikipedia風の年×場所の表) ----------
+   この端末に保存された記録(p.rec)で表示する。記録が無く、この端末で進行していない大会は「他の端末で進行」と表示する。 */
+function zukanCell(p,b){
+  const B=S.basho,cur=B?B.no:0;
+  if(b>cur)return '<td class="z-none"><span class="dim">–</span></td>';
+  const e=(p.rec||[]).find(r=>r.b===b);
+  if(e){
+    const t=(p.titles||[]).find(x=>x.b===b);
+    const k=e.k?'-'+e.k:'';
+    return `<td class="${t?'z-win':''}">${esc(e.div)}<br><b>${e.w}-${e.l}${k}</b>${t?`<br><small>${esc(t.key)}優勝</small>`:''}</td>`;
+  }
+  if(b===cur){
+    return B.day>0?`<td class="z-cur">${esc(rankLabel(p))}<br><b>${p.w}-${p.l}</b><br><small>進行中</small></td>`:'<td><span class="dim">–</span></td>';
+  }
+  if(S.history.some(h=>h.no===b))return '<td><span class="dim">記録なし</span></td>';
+  return '<td class="z-other"><small>他の端末で<br>進行</small></td>';
+}
+function renderZukan(){
+  const el=$('tab_zukan');
+  const list=S.people.slice().sort(bzCmp);
+  if(!list.length){el.innerHTML='<p class="dim">キャラクターがまだ読み込まれていません</p>';return;}
+  const p=S.byId.get(UI.zId)||list[0];
+  const cur=S.basho?S.basho.no:0;
+  const years=Math.max(1,tYear(Math.max(cur,1)));
+  const hdr=TOURN_MONTHS.map((m,i)=>`<th>${m}月<br><small>${esc(PLACES[i].name)}</small></th>`).join('');
+  let body='';
+  for(let y=1;y<=years;y++){
+    body+=`<tr><th class="yr">${y}年目</th>`+TOURN_MONTHS.map((m,i)=>zukanCell(p,(y-1)*TOURN_MONTHS.length+i+1)).join('')+'</tr>';
+  }
+  const sel=`<select id="zPick">${list.map(x=>`<option value="${x.id}"${x.id===p.id?' selected':''}>${esc(x.name)}(${esc(rankLabel(x))})</option>`).join('')}</select>`;
+  const cr=careerOf(p);
+  const best=bestRankOf(p);
+  const titles=(p.titles||[]).map(t=>`${tName(t.b)} ${t.key}`).join('、')||'なし';
+  el.innerHTML=`<div class="row"><label>キャラクター ${sel}</label></div>
+  <h3>${esc(p.name)} <small class="dim">${esc(rankLabel(p))}</small></h3>
+  <p class="dim"><small>通算(記録分): ${cr.w}勝${cr.l}敗${cr.k?cr.k+'休':''} ／ 最高位: ${best?esc(best.div)+'('+tName(best.b)+')':'記録なし'} ／ 優勝: ${esc(titles)}</small></p>
+  <div class="tbl zk"><table><thead><tr><th class="yr">年</th>${hdr}</tr></thead><tbody>${body}</tbody></table></div>
+  <p class="dim"><small>緑の枠=優勝、灰色=この端末では詳細不明(他の端末で進行された大会)、–=まだ開催されていない大会。記録はこの端末に保存された直近40大会分です。</small></p>`;
+  $('zPick').onchange=e=>{UI.zId=+e.target.value;renderZukan();};
+}
+const TABS={zukan:renderZukan,duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,shop:renderShop,gacha:renderGacha,log:renderLog,settings:renderSettings};
 function renderTab(){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===UI.tab));
   document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!=='tab_'+UI.tab);
