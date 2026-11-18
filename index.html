@@ -486,7 +486,7 @@ const DATA=[[1,"葛西 鐘歌",1323,3325,2328,115,2795.9,275,"","",100,"",0,513,
    - 昇進ルール: 旗頭→先鋒→副将→大将
    ===================================================================== */
 const PLACES=[
-  {key:'舞愛',name:'舞愛'},{key:'御卦原',name:'みけ原'},{key:'エアロ',name:'エアロ'},
+  {key:'舞愛',name:'舞愛'},{key:'御卦原',name:'珱羽',alias:['みけ原']},{key:'エアロ',name:'エアロ'},
   {key:'三花',name:'三花'},{key:'ブルテ',name:'ブルテ'},{key:'檸檬',name:'檸檬'}
 ];
 /* 得意場所・苦手場所の表記ゆれを、開催地のkeyにそろえる。
@@ -494,7 +494,7 @@ const PLACES=[
 function placeKey(s){
   const t=String(s==null?'':s).replace(/[\s\u3000]/g,'');
   if(t===''||t==='なし'||t==='(null)'||t==='null')return '';
-  const p=PLACES.find(x=>x.key===t||x.name===t);
+  const p=PLACES.find(x=>x.key===t||x.name===t||(x.alias||[]).includes(t));
   return p?p.key:null;
 }
 function placeLabel(key){const p=PLACES.find(x=>x.key===key);return p?p.name:(key||'');}
@@ -548,7 +548,9 @@ function imgUrl(u){
 const DEBUT_ADJ={1:2.1341,2:2.0602,3:1.5248,4:1.1407,5:0.9192,6:1.0};
 const DEBUT_RANGES=[[1,79,1],[80,121,2],[122,194,3],[195,333,4],[334,421,5],[422,464,6]];   // [開始ID, 終了ID, 期]
 const DEBUT_HALL=[445];
+const DEBUT_ENABLED=false;   // 現在時期補正: false で無効(倍率は全員1)。再度有効にするときは true
 function debutFactor(id){
+  if(!DEBUT_ENABLED)return 1;
   if(DEBUT_HALL.includes(id))return 1;
   const g=DEBUT_RANGES.find(([a,b])=>id>=a&&id<=b);
   return g?DEBUT_ADJ[g[2]]:1;
