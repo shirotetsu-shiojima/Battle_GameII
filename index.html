@@ -2054,6 +2054,26 @@ function passivePhase(ctx,s,o){
   for(const r of s.cmds){
     if(r.exc||(r.t!==1&&r.t!==3))continue;
     if(r.gates.length&&!gateOK(r,s,o,ctx))continue;
+    r.judgedTurn=ctx.t;   // 今ターンの条件判定を済ませた(攻撃時に再判定しない)
+    let go=false;
+    if(r.trig===0)go=r.active>0&&!r.now;
+    else if(r.trig===1)go=inWindow(r,ctx.t)&&roll(pr(s,r));
+    else if(r.trig===2)go=inWindow(r,ctx.t)&&hpCond(r,s,o)&&roll(pr(s,r));
+    if(!go)continue;
+    const loud=r.trig!==0&&(r.prob<100||!r.logged);
+    if(r.trig!==0)r.logged=true;
+    applyEffect(ctx,s,o,r,loud);
+  }
+}
+/* 攻撃時の防御判定: ターション頭では条件を満たさなかった防御系コマンド(条件分岐つき)を、
+   相手(攻撃側)の今の値で判定し直す。相手が自分のターン中に能力を上げた場合も反映される。
+   同じターンに判定済みのものは、もう一度は判定しない。 */
+function defensePhase(ctx,s,o){
+  if(s.hp<=0||s.sealed)return;
+  for(const r of s.cmds){
+    if(r.exc||r.t!==3||!r.gates.length||r.judgedTurn===ctx.t)continue;
+    if(!gateOK(r,s,o,ctx))continue;
+    r.judgedTurn=ctx.t;
     let go=false;
     if(r.trig===0)go=r.active>0&&!r.now;
     else if(r.trig===1)go=inWindow(r,ctx.t)&&roll(pr(s,r));
@@ -2066,6 +2086,7 @@ function passivePhase(ctx,s,o){
 }
 function act(ctx,s,o){
   if(s.hp<=0||o.hp<=0)return;
+  defensePhase(ctx,o,s);   // 攻撃の前に、防御側の条件付き防御を相手の今の値で判定
   if(s.hasMeter&&s.meter>=METER_MAX&&!s.sealed){
     const cand=s.cmds.filter(r=>r.trig===0&&r.active!==Infinity&&gateOK(r,s,o,ctx));   // 永続化済みのものは再発動しない
     if(cand.length){
