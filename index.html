@@ -2104,14 +2104,16 @@ function act(ctx,s,o){
       for(const r of cand)if(r.now&&(r.t===1||r.t===3))applyEffect(ctx,s,o,r,true);
     }
   }
+  defensePhase(ctx,o,s);   // メーター技などで攻撃者のパワーが変わった場合に備え、攻撃の直前にも再判定
   const special=s.sealed?[]:s.cmds.filter(r=>r.trig===0&&r.t===2&&r.active>0&&gateOK(r,s,o,ctx));
   const extra=s.sealed?[]:s.cmds.filter(r=>(r.trig===1||r.trig===2)&&r.t===2&&inWindow(r,ctx.t)&&gateOK(r,s,o,ctx)&&(r.trig===1||hpCond(r,s,o))&&roll(pr(s,r)));
   let dealt=0;
   for(const r of special.concat(extra)){
     if(s.hp<=0||o.hp<=0)break;
+    defensePhase(ctx,o,s);   // 追撃・必殺の1発ごとに、防御側の条件を今の相手の値で判定
     dealt+=doAttack(ctx,s,o,r,special.includes(r)?'sp':'ex');
   }
-  if(!special.length&&s.hp>0&&o.hp>0)dealt+=normalAttack(ctx,s,o);
+  if(!special.length&&s.hp>0&&o.hp>0){defensePhase(ctx,o,s);dealt+=normalAttack(ctx,s,o);}
   s.last=dealt;
 }
 function tick(s){
