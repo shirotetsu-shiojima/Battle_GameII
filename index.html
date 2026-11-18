@@ -2053,6 +2053,7 @@ function passivePhase(ctx,s,o){
   if(s.hp<=0||s.sealed)return;
   for(const r of s.cmds){
     if(r.exc||(r.t!==1&&r.t!==3))continue;
+    if(r.judgedTurn===ctx.t)continue;   // 今ターン判定済み(2回目の走査で二重発動しない)
     if(r.gates.length&&!gateOK(r,s,o,ctx))continue;
     r.judgedTurn=ctx.t;   // 今ターンの条件判定を済ませた(攻撃時に再判定しない)
     let go=false;
@@ -2232,6 +2233,7 @@ function simulate(a,b,place,noSuper,tries=0){
     if(A.hasMeter)A.meter=Math.min(METER_MAX,A.meter+meterGain(A,B,ctx));
     if(B.hasMeter)B.meter=Math.min(METER_MAX,B.meter+meterGain(B,A,ctx));
     passivePhase(ctx,A,B);passivePhase(ctx,B,A);
+    passivePhase(ctx,A,B);passivePhase(ctx,B,A);   // 2回目: 相手の強化(先に判定された側の後)を、条件判定に反映する
     flushPend(ctx,A);flushPend(ctx,B);
     syncHp(A);syncHp(B);
     if(A.hp<=0||B.hp<=0)break;
