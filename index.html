@@ -784,6 +784,11 @@ const MM={
   BONUS:{TT:{5:70,6:90,7:200},TF:{5:50,6:75,7:120},FF:{5:50,6:75,7:110},
          TS:{5:30,6:45,7:70},FS:{5:25,6:40,7:60},SS:{5:20,6:35,7:50}},
   REMATCH1:-1000, REMATCH2:-3000,                             // 再戦ペナルティ(§19)
+  /* 戦士同士(前頭相当)の総合・1〜10日目。幕内の星取表(2007〜2026年・120場所)から作った組み方。
+     W: 日ごとの「枚数差の許容幅」(この枚数差までは同じ扱い=番付の近さだけで決まる)
+     PEN: 許容幅を超えた枚数差1枚ごとの減点 / WC: 勝ち数差の重み(%)。
+     実データでは序盤は勝ち数差が無作為と同じ(見ていない)ため、今は全日0。日数(1日目〜)の順に並べる。 */
+  SEN10:{W:[1,1,2,2,3,3,4,5,5,5], PEN:30, WC:[0,0,0,0,0,0,0,0,0,0]},
   SPREAD:10,                                                  // 大将の対戦相手(旗頭・戦士上位)の分散: 既に大将と戦った回数×この値を減点
   NOISE:3,                                                    // ランダム補正 ±3(§23)
   RESTARTS:4,
@@ -876,7 +881,12 @@ function mmEval(a,b,day,ctx){
   else{dist=Math.abs(a.slot-b.slot);rf=5;for(const [mx,v] of MM.RANK_FIT)if(dist<=mx){rf=v;break;}}
   const diff=Math.abs(a.w-b.w),cf=MM.REC_FIT[Math.min(diff,MM.REC_FIT.length-1)];
   const st=ctx.stage;
-  const tbl=MM.W[Math.min(ca,cb)],[rw,cw]=tbl[Math.min(st,tbl.length)-1];   // 上位クラス側の表を使う(段階で引く)
+  let rw,cw;
+  if(ctx.days===15&&day<=MM.SEN10.W.length&&a.div==='戦士'&&b.div==='戦士'){   // 戦士同士の1〜10日目は幕内データの組み方(MM.SEN10)
+    cw=MM.SEN10.WC[day-1];rw=100-cw;const wd=MM.SEN10.W[day-1];rf=dist<=wd?100:Math.max(0,100-MM.SEN10.PEN*(dist-wd));
+  }else{
+    const tbl=MM.W[Math.min(ca,cb)];[rw,cw]=tbl[Math.min(st,tbl.length)-1];   // 上位クラス側の表を使う(段階で引く)
+  }
   const base=(rf*rw+cf*cw)/100;
   const k=topPairKey(a,b);
   let bonus=(k&&MM.BONUS[k]&&MM.BONUS[k][st])||0;
