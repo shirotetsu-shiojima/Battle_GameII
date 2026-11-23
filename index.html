@@ -321,6 +321,15 @@ h3:nth-of-type(3n)::before{background:linear-gradient(160deg,#d8434f,var(--fuu))
 .m.cur{background:color-mix(in srgb,var(--accent) 14%,transparent);outline:2px solid var(--accent);outline-offset:-2px}
 /* 検索タブ用: 行が1要素のとき */
 #tab_search .m{grid-template-columns:70px 1fr auto}
+.ust{display:inline-block;font-size:12px;font-weight:700;padding:1px 9px;border-radius:999px;color:#fff;white-space:nowrap}
+.wbox{background:#fff;border:1px solid #ddd;border-radius:10px;padding:10px 12px;margin:8px 0 12px}
+.wh{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.wscore{display:flex;gap:10px;align-items:center;font-size:13px;margin:6px 0;flex-wrap:wrap}
+.wbar{flex:1;min-width:120px;height:8px;background:#eee;border-radius:4px;overflow:hidden}
+.wbar i{display:block;height:100%;background:#1f9c78}
+.wlog{max-height:46vh;overflow:auto;font-size:13px;line-height:1.6;border-top:1px dashed #ddd;padding-top:6px}
+.wlog div{padding:1px 0}
+.wlog .wt{color:#8a8296;font-size:11px;margin-right:6px}
 a.nl{color:inherit;cursor:pointer;text-decoration:underline dotted var(--dim);text-underline-offset:3px;overflow-wrap:anywhere}
 a.nl:hover{color:var(--accent)}
 /* 番付表: 特殊能力が未実装の闘士以上は名前を赤で表示 */
@@ -463,6 +472,7 @@ a.btn{color:var(--ink);text-decoration:none}
     <button data-tab="zukan">成績図鑑</button>
     <button data-tab="titles">優勝</button>
     <button data-tab="search">検索・観戦</button>
+    <button data-tab="users">ユーザー</button>
     <button data-tab="shop">ショップ</button>
     <button data-tab="gacha">ガチャ</button>
     <button data-tab="duel">練習戦</button>
@@ -475,6 +485,7 @@ a.btn{color:var(--ink);text-decoration:none}
   <div class="pane" id="tab_zukan" hidden></div>
   <div class="pane" id="tab_titles" hidden></div>
   <div class="pane" id="tab_search" hidden></div>
+  <div class="pane" id="tab_users" hidden></div>
   <div class="pane" id="tab_shop" hidden></div>
   <div class="pane" id="tab_gacha" hidden></div>
   <div class="pane" id="tab_duel" hidden></div>
@@ -3040,6 +3051,8 @@ async function showBattle(m,res,animate){
     stage.finish(m,res);return;
   }
   UI.skip=false;
+  liveBegin(m,res);
+  let k=0;
   for(const e of res.ev){
     if(UI.skip||UI.stop)break;
     const side=e.s==='A'?stage.el.L:stage.el.R;
@@ -3063,8 +3076,10 @@ async function showBattle(m,res,animate){
       stage.flash(tgtEl,'hit');
       snd.play(e.type==='crit'?'crit':'hit');
     }
+    k++;liveFlush(res,k,false);
     await sleep(wait);
   }
+  liveFlush(res,k,true);
   stage.finish(m,res);
   if(!UI.stop)snd.play('gameset');
   if(!UI.stop)stage.victory(m,res);
@@ -3300,6 +3315,7 @@ async function runUntil(kind){
   }
 }
 function setBusy(b){
+  presenceBeat();
   ['bOne','bDay','bBasho','bNext','bAuto','bUpd'].forEach(id=>$(id).disabled=b);
     $('bStop').hidden=!b;
 }
@@ -3968,7 +3984,138 @@ function renderZukan(){
   // 読み込み時と作り直し時は、一番下(最新の大会)が見えるようにする。上へスクロールすると過去が見られる
   const box=$('zkScroll');if(box)box.scrollTop=box.scrollHeight;
 }
-const TABS={zukan:renderZukan,duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,shop:renderShop,gacha:renderGacha,log:renderLog,settings:renderSettings};
+/* =====================================================================
+   オンライン表示と試合の観戦(Supabase)
+   ・ログイン中のゲームは30秒ごとに presence_beat を送る(待機=online / 試合中=in_match)。
+     最後の反応から90秒たつと、一覧では offline と表示する。
+   ・観戦モード(anim)で試合を見せているあいだは、戦闘ログを live_battles に送る。観戦側は1.2秒ごとに読んで同じログを表示する。
+   ・書き込みは RPC のみ。登録済みのアカウント名(AUTH_USERS)の人だけ書ける。
+   ===================================================================== */
+const PRESENCE={beatMs:30000,listMs:5000,watchMs:1200,flushMs:1200,chunk:200};
+const LIVE={key:null,user:null,sent:0,chain:Promise.resolve(),last:0,ok:true};
+const WATCH={user:null,key:null,n:0,timer:null,listTimer:null};
+const ST_LABEL={online:['オンライン','#1f9c78'],in_match:['試合中','#d28a1e'],offline:['オフライン','#8a8296']};
+function sbHeaders(){const C=SUPABASE_CONFIG,h={'Content-Type':'application/json',apikey:C.anonKey};if(!/^sb_/.test(C.anonKey))h.Authorization='Bearer '+C.anonKey;return h;}
+async function sbRpc(name,body){
+  const r=await fetch(`${SUPABASE_CONFIG.url}/rest/v1/rpc/${name}`,{method:'POST',headers:sbHeaders(),body:JSON.stringify(body)});
+  if(!r.ok)throw new Error(`${name} ${r.status}`);
+  const t=await r.text();return t?JSON.parse(t):null;
+}
+async function sbGet(path){
+  const r=await fetch(`${SUPABASE_CONFIG.url}/rest/v1/${path}`,{headers:sbHeaders()});
+  if(!r.ok)throw new Error(`GET ${r.status}`);
+  return r.json();
+}
+function presenceBeat(){
+  const u=currentUser();
+  if(!u||!sbEnabled())return;
+  const b=S.basho||{},busy=!!UI.busy;
+  sbRpc('presence_beat',{p_user:u,p_status:busy?'in_match':'online',p_watchable:busy&&UI.mode==='anim',p_basho:b.no??null,p_place:(b.place&&b.place.name)||''}).catch(()=>{});
+}
+function startPresence(){
+  if(!currentUser()||!sbEnabled())return;
+  presenceBeat();
+  setInterval(presenceBeat,PRESENCE.beatMs);
+  WATCH.listTimer=setInterval(()=>{if(UI.tab==='users')loadUsers();},PRESENCE.listMs);
+}
+/* 戦闘ログの送信は1本の列にまとめる(順番が入れ替わらないように) */
+function liveQueue(fn){
+  LIVE.chain=LIVE.chain.then(()=>{if(LIVE.ok)return fn();}).catch(()=>{LIVE.ok=false;});
+  return LIVE.chain;
+}
+function liveBegin(m,res){
+  const u=currentUser();
+  LIVE.key=null;
+  if(!u||!sbEnabled()||UI.mode!=='anim')return;
+  const b=S.basho||{};
+  LIVE.user=u;LIVE.key=sbUuid();LIVE.sent=0;LIVE.last=0;LIVE.ok=true;
+  const key=LIVE.key,title=`${b.no?tName(b.no):''} ${m.playoff?'決定戦 ':''}`.trim();
+  liveQueue(()=>sbRpc('battle_start',{p_user:u,p_key:key,p_title:title,p_a:m.a.name,p_b:m.b.name,p_place:(b.place&&b.place.name)||''}));
+}
+/* k 件目までの表示済みログを送る。done のときは残りをすべて送って試合の終わりを知らせる */
+function liveFlush(res,k,done){
+  if(!LIVE.key)return;
+  const now=Date.now();
+  if(!done&&now-LIVE.last<PRESENCE.flushMs)return;
+  if(!done&&k<=LIVE.sent)return;
+  LIVE.last=now;
+  const u=LIVE.user,key=LIVE.key;
+  for(let i=LIVE.sent;i<k;i+=PRESENCE.chunk){
+    const part=res.ev.slice(i,Math.min(k,i+PRESENCE.chunk)),from=i;
+    liveQueue(()=>sbRpc('battle_append',{p_user:u,p_key:key,p_from:from,p_events:part,p_done:false}));
+  }
+  LIVE.sent=k;
+  if(done){
+    const from=k;
+    liveQueue(()=>sbRpc('battle_append',{p_user:u,p_key:key,p_from:from,p_events:[],p_done:true}));
+    LIVE.key=null;
+  }
+}
+/* ---------- ユーザー一覧・観戦画面 ---------- */
+function renderUsers(){
+  const el=$('tab_users');
+  if(!sbEnabled()){el.innerHTML='<p class="dim">オンライン情報は、サーバーに接続しているときだけ表示されます。</p>';return;}
+  if(!$('usersList')){
+    el.innerHTML=`<h2>ユーザー</h2><p class="dim"><small>30秒ごとに状態を更新します。最後の反応から90秒たつとオフラインになります。</small></p><div id="usersWatch"></div><div id="usersList"><p class="dim">読み込み中…</p></div>`;
+    el.onclick=e=>{
+      const w=e.target.closest('[data-watch]');if(w){openWatch(w.dataset.watch);return;}
+      if(e.target.closest('#wClose')){closeWatch();return;}
+    };
+  }
+  loadUsers();
+  if(WATCH.user&&!$('wLog'))openWatch(WATCH.user);
+}
+async function loadUsers(){
+  const box=$('usersList');if(!box)return;
+  let rows;
+  try{rows=await sbGet('presence_view?select=*');}catch(e){box.innerHTML='<p class="dim">状態を取得できませんでした。</p>';return;}
+  const by=new Map(rows.map(r=>[r.user_id,r]));
+  box.innerHTML=`<table class="bz"><thead><tr><th>ユーザー</th><th>状態</th><th>大会・場所</th><th></th></tr></thead><tbody>${Object.keys(AUTH_USERS).map(u=>{
+    const r=by.get(u)||{status:'offline'};
+    const [lab,col]=ST_LABEL[r.status]||ST_LABEL.offline;
+    const where=r.status==='offline'?'':`${r.basho_no?tName(r.basho_no):''} ${esc(r.place||'')}`;
+    const act=r.status==='in_match'?(r.watchable?`<button data-watch="${esc(u)}">観戦</button>`:'<span class="dim"><small>高速モードのため観戦できません</small></span>'):'';
+    return `<tr><td>${esc(u)}${u===currentUser()?' <small class="dim">(自分)</small>':''}</td><td><span class="ust" style="background:${col}">${lab}</span></td><td>${where}</td><td>${act}</td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+function openWatch(u){
+  WATCH.user=u;WATCH.key=null;WATCH.n=0;   // 画面を作り直すので、ログは最初から読み直す
+  $('usersWatch').innerHTML=`<div class="wbox"><div class="wh"><b id="wTitle">${esc(u)} の試合</b><button id="wClose">観戦を終了</button></div><div id="wScore" class="wscore"></div><div id="wLog" class="wlog"></div></div>`;
+  clearInterval(WATCH.timer);
+  WATCH.timer=setInterval(pollWatch,PRESENCE.watchMs);
+  pollWatch();
+}
+function closeWatch(){
+  clearInterval(WATCH.timer);WATCH.timer=null;WATCH.user=null;WATCH.key=null;WATCH.n=0;
+  const w=$('usersWatch');if(w)w.innerHTML='';
+}
+async function pollWatch(){
+  if(!WATCH.user)return;
+  if(UI.tab!=='users'){clearInterval(WATCH.timer);WATCH.timer=null;return;}
+  let rows;
+  try{rows=await sbGet(`live_battles?user_id=eq.${encodeURIComponent(WATCH.user)}&select=*`);}catch(e){return;}
+  const b=rows&&rows[0];
+  const title=$('wTitle'),score=$('wScore'),log=$('wLog');
+  if(!title||!log)return;
+  if(!b){score.innerHTML='<span class="dim">まだ試合の記録がありません。</span>';return;}
+  if(b.match_key!==WATCH.key){WATCH.key=b.match_key;WATCH.n=0;log.innerHTML='';}
+  const ev=b.events||[];
+  for(let i=WATCH.n;i<ev.length;i++){
+    const e=ev[i];
+    const d=document.createElement('div');
+    d.innerHTML=`<span class="wt">${e.t?e.t+'T':''}</span>${esc(e.text||'')}`;
+    log.appendChild(d);
+  }
+  WATCH.n=ev.length;
+  log.scrollTop=log.scrollHeight;
+  title.textContent=`${b.title||''} ${b.a_name} vs ${b.b_name}${b.place?'（'+b.place+'）':''}${b.done?' ［試合終了］':''}`;
+  const last=ev.length?ev[ev.length-1]:null;
+  const pct=(h,m)=>m>0?Math.max(0,Math.min(100,Math.round(h/m*100))):0;
+  score.innerHTML=last?`<span>${esc(b.a_name)} ${fmt(Math.max(0,last.hpA||0))} / ${fmt(last.maxA||0)}</span><span class="wbar"><i style="width:${pct(last.hpA,last.maxA)}%"></i></span><span>vs</span><span class="wbar"><i style="width:${pct(last.hpB,last.maxB)}%"></i></span><span>${esc(b.b_name)} ${fmt(Math.max(0,last.hpB||0))} / ${fmt(last.maxB||0)}</span>`:'<span class="dim">開始待ち…</span>';
+  if(b.done){clearInterval(WATCH.timer);WATCH.timer=null;}
+}
+
+const TABS={users:renderUsers,zukan:renderZukan,duel:renderDuel,matches:renderMatches,banzuke:renderBanzuke,standings:renderStandings,titles:renderTitles,search:renderSearch,shop:renderShop,gacha:renderGacha,log:renderLog,settings:renderSettings};
 function renderTab(){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===UI.tab));
   document.querySelectorAll('.pane').forEach(p=>p.hidden=p.id!=='tab_'+UI.tab);
@@ -4103,7 +4250,7 @@ async function bootGame(){
   document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.tab;renderTab();});
   document.addEventListener('click',e=>{const a=e.target.closest('a.nl');if(a)openProfile(+a.dataset.id);});
   document.addEventListener('click',e=>{if(e.target.closest('a.nl'))return;const r=e.target.closest('.m[data-mi]');if(r)openMatchInfo(+r.dataset.mi);});
-  document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>{UI.mode=r.value;syncModeUI();saveSoon();});
+  document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>{UI.mode=r.value;syncModeUI();saveSoon();presenceBeat();});
   $('speed').oninput=e=>{UI.speed=+e.target.value;saveSoon();};
   $('bOne').onclick=()=>{
     if(UI.busy)return;UI.busy=true;UI.stop=false;setBusy(true);
@@ -4121,6 +4268,7 @@ async function bootGame(){
   await shopPull();
   renderAll();setBusy(false);
   sbCatchUp();
+  startPresence();
 }
 /* ---------- カード・ガチャ ----------
    カードはショップと同じくキャラごとに持ち、所持金・購入品と一緒に全員で同期する(shop の保存内容に含める)。
