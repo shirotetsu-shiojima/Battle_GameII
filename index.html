@@ -1784,6 +1784,11 @@ function describeMain(a){
       const val=a[4]===0?'自分の数値':`${a[4]}`;
       return `【条件】${tg}の${st}が ${val} ${['以上','以下','超過','未満','等しい'][a[5]]||''} の場合、以降のコマンドを実行`;
     }
+    if(a[2]===3){
+      const val=a[4]===0?'自分の数値':`${a[4]}`;
+      return `【条件】${tg}の実行時の体力が ${val} ${['以上','以下','超過','未満','等しい'][a[5]]||''} の場合、以降のコマンドを実行`;
+    }
+    if(a[2]===4)return '【条件】直前の条件分岐が成立しない場合(else)、以降のコマンドを実行';
     const list=Array.isArray(a[6])?a[6]:[];
     if(a[2]===1){
       const names=list.map(i=>(PLACES[i-1]||{}).name||i).join('・')||'(なし)';
@@ -1848,6 +1853,11 @@ function evalGate(a,s,o,place){
     switch(a[5]){case 0:return v>=cmp;case 1:return v<=cmp;case 2:return v>cmp;case 3:return v<cmp;case 4:return v===cmp;}
     return true;
   }
+  if(menu===3){                                   // 実行時の体力(今のHPそのもの)。比較の書き方はステータス参照(menu 0)と同じ
+    const v=tgt.hp,cmp=a[4]===0?s.hp:a[4];
+    switch(a[5]){case 0:return v>=cmp;case 1:return v<=cmp;case 2:return v>cmp;case 3:return v<cmp;case 4:return v===cmp;}
+    return true;
+  }
   const list=Array.isArray(a[6])?a[6]:[];
   const val=menu===1?PLACES.indexOf(place)+1:o.p.id;
   const has=list.includes(val);
@@ -1858,7 +1868,13 @@ function compileCmds(p){
   const out=[],gates=[];
   for(const c of cmds){
     const a=c.a,t=a[0];
-    if(t===4){gates.push(a);continue;}
+    if(t===4){
+      if(a[2]===4){                                 // else: 直前の条件分岐を反転して置き換える(それ以前の条件はそのまま)
+        if(gates.length){const last=gates.pop(),n=last.slice();n.neg=!last.neg;gates.push(n);}
+        continue;
+      }
+      gates.push(a);continue;
+    }
     if(t===9){out.push({t,a,exc:true,trig:-1,gates:[]});continue;}
     if(t!==1&&t!==2&&t!==3&&t!==5)continue;
     out.push({t,a,trig:a[8],prob:a[7],dur:a[11],active:0,now:false,logged:false,gates:gates.slice()});
@@ -1866,7 +1882,7 @@ function compileCmds(p){
   return out;
 }
 function gateOK(r,s,o,ctx){
-  for(const g of r.gates)if(!evalGate(g,s,o,ctx.place))return false;
+  for(const g of r.gates)if(!!evalGate(g,s,o,ctx.place)===!!g.neg)return false;   // neg=else(反転)
   return true;
 }
 
