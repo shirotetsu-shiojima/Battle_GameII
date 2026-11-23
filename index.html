@@ -1791,6 +1791,12 @@ function describeMain(a){
     }
     return `【条件】相手のIDが ${list.join(',')||'(なし)'} に${a[7]===0?'含まれる':'含まれない'}場合、以降のコマンドを実行`;
   }
+  if(type===5){
+    const n=a[2],c=n>0?CARD_LIST[n-1]:null;
+    if(!(a[1]===0||a[1]===1)||!Number.isInteger(n)||n<0||n>CARD_LIST.length)return '(不明なカード指定)';
+    const nm=n===0?'すべてのカード':`カード「${c.name}」`;
+    return a[1]===0?`相手の${nm}を無効化する`:`相手の${nm}をコピーして自分も使う`;
+  }
   if(type===9)return a[1]===1?'相手の特殊能力をコピーして使用(カスタム能力)':`例外コード ${a[1]} を呼び出す`;
   return '(不明なコマンド)';
 }
@@ -1854,7 +1860,7 @@ function compileCmds(p){
     const a=c.a,t=a[0];
     if(t===4){gates.push(a);continue;}
     if(t===9){out.push({t,a,exc:true,trig:-1,gates:[]});continue;}
-    if(t!==1&&t!==2&&t!==3)continue;
+    if(t!==1&&t!==2&&t!==3&&t!==5)continue;
     out.push({t,a,trig:a[8],prob:a[7],dur:a[11],active:0,now:false,logged:false,gates:gates.slice()});
   }
   return out;
@@ -1965,6 +1971,7 @@ function effSys(ctx,s,o,x,a){
 }
 function applyEffect(ctx,s,o,r,announce){
   const a=r.a;
+  if(r.t===5){if(cardIntervene(ctx,s,o,a)){recalcPreMul(s,o);recalcPreMul(o,s);}return;}
   for(const x of targetsOf(a[1],s,o)){
     if(r.t===1)effStat(s,o,x,a);else effSys(ctx,s,o,x,a);
   }
@@ -2085,6 +2092,43 @@ function defensePhase(ctx,s,o){
     applyEffect(ctx,s,o,r,loud);
   }
 }
+/* ---------- カードへの介入(種別5) ----------
+   [5 操作 カード番号 0 0 0 0 確率 発動条件 HP対象 HP% ターン数]
+   操作: 0=相手のカードを無効化(この試合の間) / 1=相手のカードをコピーして自分も使う
+   カード番号: 0=すべて、1〜=カード一覧の順(不死鳥1・天変地異2・金剛不壊3・絶対領域4・ジャイアントキリング5・招き猫6・
+              スタートダッシュ7・ラストスパート8・カウンター9・リベンジ10・連勝ブースト11・逆境強化12・ビギナーズラック13)
+   確率・発動条件・ターン数は種別1・3と同じ。毎ターンの最初に、絶対領域の封印や天変地異の強奪より先に解決する。 */
+function cardIntervene(ctx,s,o,a){
+  if(!(a[1]===0||a[1]===1))return false;
+  const n=a[2];
+  if(!Number.isInteger(n)||n<0||n>CARD_LIST.length)return false;
+  const ids=n===0?CARD_LIST.map(c=>c.id):[CARD_LIST[n-1].id];
+  if(!o.cards||!s.cards)return false;
+  const hit=ids.filter(id=>o.cards.has(id));
+  if(!hit.length)return false;
+  if(a[1]===0){
+    hit.forEach(id=>o.cards.delete(id));
+    emit(ctx,{s:s.key,tgt:o.key,kind:'fx',text:`✦ ${s.p.name}: ${o.p.name}のカード「${hit.map(id=>cardOf(id).name).join('・')}」を無効化した`});
+    return true;
+  }
+  const gain=hit.filter(id=>!s.cards.has(id));
+  if(!gain.length)return false;
+  gain.forEach(id=>s.cards.add(id));
+  emit(ctx,{s:s.key,tgt:o.key,kind:'fx',text:`✦ ${s.p.name}: ${o.p.name}のカード「${gain.map(id=>cardOf(id).name).join('・')}」をコピーした`});
+  return true;
+}
+function cardPhase(ctx,s,o){
+  if(s.hp<=0)return;
+  for(const r of s.cmds){
+    if(r.t!==5)continue;
+    if(r.gates.length&&!gateOK(r,s,o,ctx))continue;
+    let go=false;
+    if(r.trig===0)go=r.active>0&&!r.now;
+    else if(r.trig===1)go=inWindow(r,ctx.t)&&roll(pr(s,r));
+    else if(r.trig===2)go=inWindow(r,ctx.t)&&hpCond(r,s,o)&&roll(pr(s,r));
+    if(go&&cardIntervene(ctx,s,o,r.a)){recalcPreMul(s,o);recalcPreMul(o,s);}
+  }
+}
 function act(ctx,s,o){
   if(s.hp<=0||o.hp<=0)return;
   defensePhase(ctx,o,s);   // 攻撃の前に、防御側の条件付き防御を相手の今の値で判定
@@ -2102,7 +2146,7 @@ function act(ctx,s,o){
         }
       }
       if(!fired)emit(ctx,{s:s.key,kind:'fx',text:`  …しかし不発に終わった`});
-      for(const r of cand)if(r.now&&(r.t===1||r.t===3))applyEffect(ctx,s,o,r,true);
+      for(const r of cand)if(r.now&&(r.t===1||r.t===3||r.t===5))applyEffect(ctx,s,o,r,true);
     }
   }
   defensePhase(ctx,o,s);   // メーター技などで攻撃者のパワーが変わった場合に備え、攻撃の直前にも再判定
@@ -2162,7 +2206,12 @@ function pendMsg(s,t){(s.pend=s.pend||[]).push(t);}
 function flushPend(ctx,s){if(s.pend&&s.pend.length){for(const t of s.pend)emit(ctx,{s:s.key,kind:'fx',text:t});s.pend=[];}}
 /* 戦闘開始前に決める効果(試合中ずっと同じ値): 合い口・連勝・ビギナーズラック */
 function cardPrep(s,o){
-  s.cards=new Set(s.p.equip||[]);s.pend=[];s.preMul=1;
+  s.cards=new Set(s.p.equip||[]);s.pend=[];
+  recalcPreMul(s,o);
+}
+/* 戦闘前の合い口・連勝・ビギナーズラックによる倍率。カードが無効化・コピーされたときに計算し直す */
+function recalcPreMul(s,o){
+  s.preMul=1;
   if(hasC(s,'revenge')){const r=aiaiGet(s.p,o.p);if(r){const lose=r[1]-r[0];if(lose>0)s.preMul*=1+Math.min(0.2,0.05*lose);}}
   if(hasC(s,'streak')){let n=0;const rs=s.p.res||[];for(let i=rs.length-1;i>=0&&rs[i].w===1;i--)n++;if(n>0)s.preMul*=1+Math.min(0.15,0.03*n);}
   if(hasC(s,'beginner'))s.preMul*=1.03;
@@ -2227,6 +2276,8 @@ function simulate(a,b,place,noSuper,tries=0){
   let turn=0;
   while(A.hp>0&&B.hp>0&&turn<TURN_LIMIT){
     turn++;ctx.t=turn;
+    resetVars(A,B,turn);resetVars(B,A,turn);   // カード介入の条件判定用に、今ターンの基礎値を先に用意
+    cardPhase(ctx,A,B);cardPhase(ctx,B,A);
     A.sealed=turn<=3&&hasC(B,'zetsuryo');B.sealed=turn<=3&&hasC(A,'zetsuryo');
     if(turn===1){tenpestCopy(ctx,A,B);tenpestCopy(ctx,B,A);}
     resetVars(A,B,turn);resetVars(B,A,turn);
