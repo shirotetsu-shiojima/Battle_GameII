@@ -323,6 +323,10 @@ h3:nth-of-type(3n)::before{background:linear-gradient(160deg,#d8434f,var(--fuu))
 #tab_search .m{grid-template-columns:70px 1fr auto}
 a.nl{color:inherit;cursor:pointer;text-decoration:underline dotted var(--dim);text-underline-offset:3px;overflow-wrap:anywhere}
 a.nl:hover{color:var(--accent)}
+/* 番付表: 特殊能力が未実装の闘士以上は名前を赤で表示 */
+a.nl.nocmd{color:#d32f2f}a.nl.nocmd:hover{color:#b71c1c}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]) a.nl.nocmd{color:#ff6b60}:root:not([data-theme=light]) a.nl.nocmd:hover{color:#ff9a92}}
+:root[data-theme=dark] a.nl.nocmd{color:#ff6b60}
 
 .tbl{max-height:560px;overflow:auto;border:1px solid var(--line);border-radius:16px}
 .tbl.small{max-height:220px;margin:8px 0}
@@ -3322,6 +3326,10 @@ function renderStatus(){
   $('stChamp').textContent=t?pname(t.id):'-';
 }
 function kdot(p){const k=String(p.kanri||'').replace(/[^\u3040-\u30ff\u4e00-\u9fff]/g,'').slice(0,2);return k?`<i class="kd k${esc(k)}" title="${esc(String(p.kanri))}"></i>`:'';}
+/* 特殊能力が未実装(コマンドが1つも読み取れない)の闘士以上か */
+const NOCMD_DIVS=['大将','副将','先鋒','旗頭','戦士','闘士'];
+function noCmdTop(p){return NOCMD_DIVS.includes(p.div)&&!parseCommands(p.cmd||'').cmds.length;}
+function rowNameBz(p){const h=rowName(p);return noCmdTop(p)?h.replace('class="nl"','class="nl nocmd" title="特殊能力が未実装"'):h;}
 function rowName(p){return `<a class="nl" data-id="${p.id}">${kdot(p)}${esc(p.name)}</a>`;}
 function rowNameS(p){return `<a class="nl" data-id="${p.id}">${kdot(p)}${esc(p.name)}${isSuper(p)?'<span class="sup" title="今大会 超絶好調">⚡</span>':''}</a>`;}
 function idLink(id){const p=S.byId.get(id);return p?rowName(p):`<span class="dim">${esc(pname(id))}(整理済)</span>`;}
@@ -3406,7 +3414,7 @@ function renderBanzuke(){
     const champs=p.titles.filter(t=>t.key==='総合').length;
     const rn=trRestN(p);const mt=[arrow(p),S.basho.day?`${p.w}勝${p.l}敗${rn>0?rn+'休':''}`:'',p.rec.length?`前${p.rec[p.rec.length-1].w}勝`:'',champs?'★'.repeat(Math.min(champs,6))+(champs>6?'+'+(champs-6):''):''].filter(Boolean).join(' ');
     const m=`<span class="mt">${mt}</span>`;
-    return `<div class="cell">${east?m+rowName(p):rowName(p)+m}</div>`;
+    return `<div class="cell">${east?m+rowNameBz(p):rowNameBz(p)+m}</div>`;
   };
   let last='';
   const body=rows.map(r=>{
@@ -3414,7 +3422,7 @@ function renderBanzuke(){
     return `<tr class="${first?'dvs':''}" style="--dc:${DIV_COLOR[r.div]||'#aaa'}"><td class="e">${cell(r.e,true)}</td><td class="c">${esc(r.label)}</td><td class="w">${cell(r.w,false)}</td></tr>`;
   }).join('');
   el.innerHTML=`<div class="row"><label>表示 <select id="bFilter">${divs.map(k=>`<option value="${k}"${UI.bFilter===k?' selected':''}>${k==='all'?'全て':k}</option>`).join('')}</select></label><span class="dim">${list.length}人</span></div>
-  <p class="dim"><small>大将・副将・先鋒・旗頭は、前大会の成績が高い順(同じ成績なら前回上にいた人が上)に、東→西→次の行の東…と並びます。総合優勝して番付が変わらなかった人は先頭の東、昇進直後の人は同じ番付の最後尾です。</small></p>
+  <p class="dim"><small><span style="color:#d32f2f">赤い名前</span>は特殊能力が未実装の闘士以上です。大将・副将・先鋒・旗頭は、前大会の成績が高い順(同じ成績なら前回上にいた人が上)に、東→西→次の行の東…と並びます。総合優勝して番付が変わらなかった人は先頭の東、昇進直後の人は同じ番付の最後尾です。</small></p>
   <div class="tbl"><table class="bz"><thead><tr><th>東</th><th>番付</th><th>西</th></tr></thead><tbody>${body}</tbody></table></div>`;
   $('bFilter').onchange=e=>{UI.bFilter=e.target.value;renderBanzuke();};
 }
